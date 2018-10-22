@@ -10,3 +10,6 @@
 [submodule "cable"]
 	path = cmake/cable
 	url = https://github.com/ethereum/cable
+[submodule "googletest"]
+  path = testfuzzer/googletest
+  url = https://github.com/google/googletest.git 

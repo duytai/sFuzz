@@ -1,7 +1,7 @@
 ################################
 # GTest
 ################################
-ADD_SUBDIRECTORY (googletest-1.8.1)
+ADD_SUBDIRECTORY (googletest)
 enable_testing()
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 
@@ -9,7 +9,7 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 # Unit Tests
 ################################
 # Add test cpp file
-add_executable( runUnitTests testgtest.cpp )
+add_executable( testfuzzer testgtest.cpp )
 # Link test executable against gtest & gtest_main
-target_link_libraries(runUnitTests gtest gtest_main)
-add_test(runUnitTests runUnitTests)
+target_link_libraries(testfuzzer gtest gtest_main libfuzzer)
+add_test(testfuzze testfuzzer)

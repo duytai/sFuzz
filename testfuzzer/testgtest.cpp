@@ -1,8 +1,10 @@
 #include <iostream>
 
 #include "gtest/gtest.h"
+#include <libfuzzer/Abi.h>
 
-TEST(sample_test_case, sample_test)
+TEST(Abi, encode)
 {
-    EXPECT_EQ(1, 1);
+    int result = add(10, 1);
+    EXPECT_EQ(result, 11);
 }
