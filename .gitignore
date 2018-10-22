@@ -27,6 +27,7 @@ ipch
 
 # Xcode stuff
 build_xc
+build-xcode
 
 *.user
 *.user.*
@@ -78,3 +79,4 @@ doc/html
 node_modules/
 
 dependency_graph.svg
+testfuzzer/googletest-1.8.1/

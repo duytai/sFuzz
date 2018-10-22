@@ -121,12 +121,15 @@ add_subdirectory(libethashseal)
 
 add_subdirectory(libwebthree)
 add_subdirectory(libweb3jsonrpc)
+add_subdirectory(libfuzzer)
+add_subdirectory(testfuzzer)
 
 add_subdirectory(aleth)
 
 if (TOOLS)
     add_subdirectory(aleth-key)
     add_subdirectory(aleth-vm)
+    add_subdirectory(fuzzer)
     add_subdirectory(rlp)
 endif()
 
