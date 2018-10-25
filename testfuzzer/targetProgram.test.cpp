@@ -15,5 +15,6 @@ TEST(TargetProgram, deploy)
   bytes data = encodeABI("", vector<string>{"int32"}, vector<bytes>{fromHex("4")});
   bytes addData = encodeABI("add", vector<string> {"int32", "int32"}, vector<bytes> {fromHex("1"), fromHex("4")});
   p.invokeConstructor(data);
-  p.invokeFunction(addData);
+  auto r = p.invokeFunction(addData);
+//  cout << r.output << endl;
 }
