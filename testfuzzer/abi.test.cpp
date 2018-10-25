@@ -34,6 +34,8 @@ TEST(ABI, fullType)
 
 TEST(ABI, encodeParam)
 {
-  bytes d = encode("baz", vector<string> {"uint32", "bool"});
+  vector<string> types = {"uint32", "bool"};
+  vector<string> values = {"0x05", "0x01"};
+  bytes d = encode("baz", types, values);
   EXPECT_EQ(d.size(), 68);
 }

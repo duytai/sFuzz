@@ -14,51 +14,61 @@
 using namespace dev;
 using namespace eth;
 
+
 namespace fuzzer {
-  TargetProgram::TargetProgram() : state(State(0)), sender(Address(1)), addr(112233){
-    gas = ChainParams(genesisInfo(Network::MainNetwork)).maxGasLimit.convert_to<int64_t>();
-    gasPrice = 0;
-    value = 0;
-    nonce = 0;
-    blockHeader.setGasLimit(gas);
+  TargetProgram::TargetProgram(): state(State(0)), sender(Address(69)), contractAddress(Address(100)) {
+    Network networkName = Network::MainNetworkTest;
+    LastBlockHashes lastBlockHashes;
+    BlockHeader blockHeader;
+    int64_t maxGasLimit = ChainParams(genesisInfo(networkName))
+      .maxGasLimit.convert_to<int64_t>();
+    // add value
+    blockHeader.setGasLimit(maxGasLimit);
     blockHeader.setTimestamp(0);
-  }
-  
-  void TargetProgram::warmup() {
+    gas = maxGasLimit;
     Ethash::init();
     NoProof::init();
+    se = ChainParams(genesisInfo(networkName)).createSealEngine();
+    envInfo = new EnvInfo(blockHeader, lastBlockHashes, 0);
+    nonce = 0;
   }
-  
-  ExecutionResult TargetProgram::deployContract(bytes code) {
-    bytes data;
-    ExecutionResult response;
-    Network networkName = Network::MainNetworkTest;
-    unique_ptr<SealEngineFace> se(ChainParams(genesisInfo(networkName)).createSealEngine());
-    EnvInfo const envInfo(blockHeader, lastBlockHashes, 0);
-    Transaction t = Transaction(value, gasPrice, gas, data, nonce);
-    executive = new Executive(state, envInfo, *se);
-    state.setCode(addr, bytes{code});
-    t.forceSender(sender);
-    executive->setResultRecipient(response);
-    executive->initialize(t);
-    executive->call(addr, sender, value, gasPrice, &data, gas);
-    executive->go();
-    executive->finalize();
-    state.setCode(addr, bytes{response.output});
-    nonce ++;
-    return response;
+
+  void TargetProgram::deploy(bytes code) {
+    state.setCode(contractAddress, bytes{code});
   }
   
   ExecutionResult TargetProgram::invokeFunction(bytes data) {
-    ExecutionResult response;
+    return invoke(data);
+  }
+  
+  ExecutionResult TargetProgram::invokeConstructor(bytes data) {
+    bytes code = state.code(contractAddress);
+    code.insert(code.end(), data.begin(), data.end());
+    state.setCode(contractAddress, bytes{code});
+    ExecutionResult res = invoke(data);
+    state.setCode(contractAddress, bytes{res.output});
+    return res;
+  }
+  
+  ExecutionResult TargetProgram::invoke(bytes data) {
+    ExecutionResult res;
+    u256 value = 0;
+    u256 gasPrice = 0;
     Transaction t = Transaction(value, gasPrice, gas, data, nonce);
     t.forceSender(sender);
-    executive->setResultRecipient(response);
-    executive->initialize(t);
-    executive->call(addr, sender, value, gasPrice, &data, gas);
-    executive->go();
-    executive->finalize();
-    return response;
+    Executive executive(state, *envInfo, *se);
+    executive.setResultRecipient(res);
+    executive.initialize(t);
+    executive.call(contractAddress, sender, value, gasPrice, &data, gas);
+    executive.go();
+    executive.finalize();
+    nonce ++;
+    return res;
+  }
+  
+  TargetProgram::~TargetProgram() {
+    delete se;
+    delete envInfo;
   }
 }
 

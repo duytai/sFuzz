@@ -4,6 +4,7 @@
 #include <libethereum/Block.h>
 #include <libethereum/ChainParams.h>
 #include <libethereum/Executive.h>
+#include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
 #include "LastBlockHashes.h"
 
@@ -13,23 +14,21 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  void startEVMWithCode(bytes code);
   class TargetProgram {
+    private:
+      State state;
+      u256 gas;
+      u256 nonce;
+      Address sender;
+      Address contractAddress;
+      SealEngineFace* se;
+      EnvInfo* envInfo;
+      ExecutionResult invoke(bytes data);
     public:
       TargetProgram();
-      void warmup();
-      ExecutionResult deployContract(bytes code);
+      ~TargetProgram();
+      void deploy(bytes code);
+      ExecutionResult invokeConstructor(bytes data);
       ExecutionResult invokeFunction(bytes data);
-    private:
-      u256 gas;
-      u256 gasPrice;
-      u256 value;
-      u256 nonce;
-      BlockHeader blockHeader;
-      LastBlockHashes lastBlockHashes;
-      State state;
-      Address sender;
-      Address addr;
-      Executive* executive;
   };
 }

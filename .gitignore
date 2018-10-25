@@ -28,6 +28,7 @@ ipch
 # Xcode stuff
 build_xc
 build-xcode
+build-xc
 
 *.user
 *.user.*
