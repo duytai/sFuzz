@@ -35,16 +35,15 @@ TEST(ABI, encodeConstructor)
 {
   vector<string> types = {"uint32", "bool"};
   vector<string> values = {"0x05", "0x01"};
-  bytes d = encode("", types, values);
+  bytes d = encodeABI("", types, values);
   EXPECT_EQ(d.size(), 64);
-  cout << toHex(d) << endl;
   EXPECT_EQ(d, fromHex("00000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000001"));
 }
 TEST(ABI, encodeFunction)
 {
   vector<string> types = {"uint32", "bool"};
   vector<string> values = {"0x05", "0x01"};
-  bytes d = encode("baz", types, values);
+  bytes d = encodeABI("baz", types, values);
   EXPECT_EQ(d.size(), 68);
   EXPECT_EQ(d, fromHex("cdcd77c000000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000001"));
 }

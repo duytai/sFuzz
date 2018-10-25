@@ -27,7 +27,7 @@ namespace fuzzer {
     return bytes(fullSelector.begin(), fullSelector.begin() + 4);
   }
   
-  bytes encode(string name, vector<string> types, vector<string> values) {
+  bytes encodeABI(string name, vector<string> types, vector<string> values) {
     auto isArray = [](string type){ return type.find_last_of("]") == type.length() - 1;};
     auto paddingLeft = [](bytes d, int size) {
       if ((int) d.size() > size) throw "No need to pad";
