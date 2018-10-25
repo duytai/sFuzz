@@ -21,8 +21,7 @@ namespace fuzzer {
       u256 nonce;
       Address sender;
       Address contractAddress;
-      SealEngineFace* se;
-      EnvInfo* envInfo;
+      Executive *executive;
       ExecutionResult invoke(bytes data);
     public:
       TargetProgram();

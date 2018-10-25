@@ -28,8 +28,9 @@ namespace fuzzer {
     gas = maxGasLimit;
     Ethash::init();
     NoProof::init();
-    se = ChainParams(genesisInfo(networkName)).createSealEngine();
-    envInfo = new EnvInfo(blockHeader, lastBlockHashes, 0);
+    SealEngineFace *se = ChainParams(genesisInfo(networkName)).createSealEngine();
+    EnvInfo envInfo(blockHeader, lastBlockHashes, 0);
+    executive = new Executive(state, envInfo, *se);
     nonce = 0;
   }
 
@@ -56,19 +57,17 @@ namespace fuzzer {
     u256 gasPrice = 0;
     Transaction t = Transaction(value, gasPrice, gas, data, nonce);
     t.forceSender(sender);
-    Executive executive(state, *envInfo, *se);
-    executive.setResultRecipient(res);
-    executive.initialize(t);
-    executive.call(contractAddress, sender, value, gasPrice, &data, gas);
-    executive.go();
-    executive.finalize();
+    executive->setResultRecipient(res);
+    executive->initialize(t);
+    executive->call(contractAddress, sender, value, gasPrice, &data, gas);
+    executive->go();
+    executive->finalize();
     nonce ++;
     return res;
   }
   
   TargetProgram::~TargetProgram() {
-    delete se;
-    delete envInfo;
+    delete executive;
   }
 }
 
