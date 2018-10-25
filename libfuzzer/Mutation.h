@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <functional>
 #include <libdevcore/CommonIO.h>
 #include <libethereum/Block.h>
 #include <libethereum/ChainParams.h>
@@ -9,12 +10,21 @@
 
 using namespace dev;
 using namespace eth;
+using namespace std;
+using OnMutateFunc = function<void(bytes b)>;
 
 namespace fuzzer {
   class Mutation {
     bytes data;
+    int dataSize;
     public:
       Mutation(bytes data);
-      void bitflip(void(*cb)(bytes data));
+      void flipbit(int pos);
+      void singleWalkingBit(OnMutateFunc cb);
+      void twoWalkingBit(OnMutateFunc cb);
+      void fourWalkingBit(OnMutateFunc cb);
+      void singleWalkingByte(OnMutateFunc cb);
+      void twoWalkingByte(OnMutateFunc cb);
+      void fourWalkingByte(OnMutateFunc cb);
   };
 }

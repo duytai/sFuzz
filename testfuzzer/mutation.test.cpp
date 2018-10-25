@@ -8,9 +8,16 @@ using namespace std;
 
 TEST(Mutation, bitFlip)
 {
-  Mutation m = Mutation(fromHex("0xffffffff"));
-  m.bitflip([](bytes d) {
-    cout << toHex(d) << endl;
-  });
+  Mutation m = Mutation(fromHex("0xffffffffaaaaaaaabbbbbbbbcccccccc"));
+  auto emptyCallback = [](bytes){};
+  auto outCallback = [](bytes b) {
+    cout << toHex(b) << endl;
+  };
+  m.singleWalkingBit(emptyCallback);
+  m.twoWalkingBit(emptyCallback);
+  m.fourWalkingBit(emptyCallback);
+  m.singleWalkingByte(emptyCallback);
+  m.twoWalkingByte(emptyCallback);
+  m.fourWalkingByte(outCallback);
   EXPECT_EQ(1, 1);
 }
