@@ -7,6 +7,6 @@ using namespace dev;
 
 namespace fuzzer {
     bytes functionSelector(string name, vector<string> types);
-    bytes encode(string name, vector<string> types);
+    bytes encode(string name, vector<string> types, vector<string> values);
     string tofullType(string type);
 };
