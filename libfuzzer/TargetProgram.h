@@ -14,6 +14,8 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
+  static const int CONTRACT_CONSTRUCTOR = 1;
+  static const int CONTRACT_FUNCTION = 2;
   class TargetProgram {
     private:
       State state;
@@ -28,7 +30,6 @@ namespace fuzzer {
       ~TargetProgram();
       void deploy(bytes code);
       void reset();
-      ExecutionResult invokeConstructor(bytes data, OnOpFunc onOp);
-      ExecutionResult invokeFunction(bytes data, OnOpFunc onOp);
+      ExecutionResult invoke(int type, bytes data, OnOpFunc onOp);
   };
 }

@@ -27,13 +27,11 @@ void TargetContainer::exec(bytes data) {
     vector<bytes> values = decodeElem(it.second, elemData);
     // Try to decode and call function here
     bytes signature = encodeABI(it.first, it.second, values);
-    if (it.first == "")
-      program.invokeConstructor(signature, onOp);
-    else
-      program.invokeFunction(signature, onOp);
+    int type = it.first == "" ? CONTRACT_CONSTRUCTOR : CONTRACT_FUNCTION;
+    program.invoke(type, signature, onOp);
     startAt += elemSize;
   }
-  // Reset program and deploy contract
+  // Reset program and deploy again becuase it changed after invoke constructor
   program.reset();
   program.deploy(code);
 }

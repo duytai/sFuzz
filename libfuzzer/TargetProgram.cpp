@@ -38,17 +38,23 @@ namespace fuzzer {
     state.setCode(contractAddress, bytes{code});
   }
   
-  ExecutionResult TargetProgram::invokeFunction(bytes data, OnOpFunc onOp) {
-    return invoke(data, onOp);
-  }
-  
-  ExecutionResult TargetProgram::invokeConstructor(bytes data, OnOpFunc onOp) {
-    bytes code = state.code(contractAddress);
-    code.insert(code.end(), data.begin(), data.end());
-    state.setCode(contractAddress, bytes{code});
-    ExecutionResult res = invoke(data, onOp);
-    state.setCode(contractAddress, bytes{res.output});
-    return res;
+  ExecutionResult TargetProgram::invoke(int type, bytes data, OnOpFunc onOp) {
+    switch (type) {
+      case CONTRACT_CONSTRUCTOR: {
+        bytes code = state.code(contractAddress);
+        code.insert(code.end(), data.begin(), data.end());
+        state.setCode(contractAddress, bytes{code});
+        ExecutionResult res = invoke(data, onOp);
+        state.setCode(contractAddress, bytes{res.output});
+        return res;
+      }
+      case CONTRACT_FUNCTION: {
+        return invoke(data, onOp);
+      }
+      default: {
+        throw "Unknown invoke type";
+      }
+    }
   }
   
   ExecutionResult TargetProgram::invoke(bytes data, OnOpFunc onOp) {

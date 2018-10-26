@@ -16,7 +16,7 @@ TEST(TargetProgram, DISABLED_deploy)
   p.deploy(fromHex(codeStr));
   bytes data = encodeABI("", vector<string>{"int32"}, vector<bytes>{fromHex("4")});
   bytes addData = encodeABI("add", vector<string> {"int32", "int32"}, vector<bytes> {fromHex("1"), fromHex("4")});
-  p.invokeConstructor(data, onOp);
-  auto r = p.invokeFunction(addData, onOp);
+  p.invoke(CONTRACT_CONSTRUCTOR,data, onOp);
+  auto r = p.invoke(CONTRACT_FUNCTION,addData, onOp);
   cout << r.output << endl;
 }
