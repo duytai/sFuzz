@@ -38,20 +38,20 @@ namespace fuzzer {
     state.setCode(contractAddress, bytes{code});
   }
   
-  ExecutionResult TargetProgram::invokeFunction(bytes data) {
-    return invoke(data);
+  ExecutionResult TargetProgram::invokeFunction(bytes data, OnOpFunc onOp) {
+    return invoke(data, onOp);
   }
   
-  ExecutionResult TargetProgram::invokeConstructor(bytes data) {
+  ExecutionResult TargetProgram::invokeConstructor(bytes data, OnOpFunc onOp) {
     bytes code = state.code(contractAddress);
     code.insert(code.end(), data.begin(), data.end());
     state.setCode(contractAddress, bytes{code});
-    ExecutionResult res = invoke(data);
+    ExecutionResult res = invoke(data, onOp);
     state.setCode(contractAddress, bytes{res.output});
     return res;
   }
   
-  ExecutionResult TargetProgram::invoke(bytes data) {
+  ExecutionResult TargetProgram::invoke(bytes data, OnOpFunc onOp) {
     ExecutionResult res;
     u256 value = 0;
     u256 gasPrice = 0;
@@ -60,7 +60,7 @@ namespace fuzzer {
     executive->setResultRecipient(res);
     executive->initialize(t);
     executive->call(contractAddress, sender, value, gasPrice, &data, gas);
-    executive->go();
+    executive->go(onOp);
     executive->finalize();
     nonce ++;
     return res;

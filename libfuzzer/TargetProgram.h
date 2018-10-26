@@ -22,13 +22,13 @@ namespace fuzzer {
       Address sender;
       Address contractAddress;
       Executive *executive;
-      ExecutionResult invoke(bytes data);
+      ExecutionResult invoke(bytes data, OnOpFunc onOp);
     public:
       TargetProgram();
       ~TargetProgram();
       void deploy(bytes code);
       void reset();
-      ExecutionResult invokeConstructor(bytes data);
-      ExecutionResult invokeFunction(bytes data);
+      ExecutionResult invokeConstructor(bytes data, OnOpFunc onOp);
+      ExecutionResult invokeFunction(bytes data, OnOpFunc onOp);
   };
 }

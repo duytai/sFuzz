@@ -11,23 +11,29 @@ TargetContainer::TargetContainer(bytes c, map<string, vector<string>> a): code(c
 }
 
 void TargetContainer::exec(bytes data) {
+  OnOpFunc onOp = [](uint64_t, uint64_t pc, Instruction inst, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {
+    auto info = instructionInfo(inst);
+    cout << ":: " << info.name << endl;
+    if (inst == Instruction::JUMPI) {
+      cout << " -> " << pc << endl;
+    }
+  };
   int startAt = 0;
-  ExecutionResult res;
   for (auto it : abi) {
-    // break into function data
+    // Break into function data
     auto elemSize = getElemSize(it.second);
     bytes elemData;
     copy(data.begin() + startAt, data.begin() + startAt + elemSize, back_inserter(elemData));
     vector<bytes> values = decodeElem(it.second, elemData);
-    // try to decode and call function here
+    // Try to decode and call function here
     bytes signature = encodeABI(it.first, it.second, values);
     if (it.first == "")
-      res = program.invokeConstructor(signature);
+      program.invokeConstructor(signature, onOp);
     else
-      res = program.invokeFunction(signature);
+      program.invokeFunction(signature, onOp);
     startAt += elemSize;
   }
-  // reset program and deploy contract
+  // Reset program and deploy contract
   program.reset();
   program.deploy(code);
 }
