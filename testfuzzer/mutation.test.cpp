@@ -8,11 +8,8 @@ using namespace std;
 
 TEST(Mutation, bitFlip)
 {
-  Mutation m = Mutation(fromHex("0xffffffffaaaaaaaabbbbbbbbcccccccc"));
+  Mutation m = Mutation(fromHex("0xffffffffaaaaaaaabbbbbbbbccccccccddddddddeeeeeeee"));
   auto emptyCallback = [](bytes){};
-//  auto outCallback = [](bytes b) {
-//    cout << toHex(b) << endl;
-//  };
   m.singleWalkingBit(emptyCallback);
   m.twoWalkingBit(emptyCallback);
   m.fourWalkingBit(emptyCallback);

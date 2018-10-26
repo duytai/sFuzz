@@ -66,6 +66,10 @@ namespace fuzzer {
     return res;
   }
   
+  void TargetProgram::reset() {
+    state.clearStorage(contractAddress);
+  }
+  
   TargetProgram::~TargetProgram() {
     delete executive;
   }

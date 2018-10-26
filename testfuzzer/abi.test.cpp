@@ -57,16 +57,21 @@ TEST(ABI, encodeFunction)
 
 TEST(ABI, encodeTestcase) {
   vector<string> types = {"int32", "int32", "bool", "address", "uint"};
-  bytes d = createEmptyTestcase(types);
+  bytes d = createElem(types);
   EXPECT_EQ(d.size(), 61);
 }
 
 TEST(ABI, decodeTestcase) {
   vector<string> types = {"int32", "int32", "bool", "address"};
   bytes data = fromHex("0000000a0000000b01000000000000000000000000000000000000000f");
-  vector<bytes> result = decodeTestcase(types, data);
+  vector<bytes> result = decodeElem(types, data);
   EXPECT_EQ(result[0], fromHex("0x0000000a"));
   EXPECT_EQ(result[1], fromHex("0x0000000b"));
   EXPECT_EQ(result[2], fromHex("0x1"));
   EXPECT_EQ(result[3], fromHex("0x000000000000000000000000000000000000000f"));
+}
+
+TEST(ABI, getTestElemSize) {
+  vector<string> types = {"int32", "int32", "bool", "address", "uint"};
+  EXPECT_EQ(getElemSize(types), 61);
 }

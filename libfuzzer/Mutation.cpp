@@ -1,9 +1,18 @@
 #include "Mutation.h"
+#include "Util.h"
 
 using namespace std;
 using namespace fuzzer;
 
-Mutation::Mutation(bytes b): data(b), dataSize(b.size()) {}
+Mutation::Mutation(bytes b): data(b), dataSize(b.size()) {
+  effCount = 0;
+  eff = bytes(effALen(dataSize), 0);
+  eff[0] = 1;
+  if (effAPos(dataSize - 1) != 0) {
+    eff[effAPos(dataSize - 1)] = 1;
+    effCount++;
+  }
+}
 
 void Mutation::flipbit(int pos) {
   data[pos >> 3] ^= (128 >> (pos & 7));

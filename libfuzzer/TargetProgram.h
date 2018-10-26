@@ -27,6 +27,7 @@ namespace fuzzer {
       TargetProgram();
       ~TargetProgram();
       void deploy(bytes code);
+      void reset();
       ExecutionResult invokeConstructor(bytes data);
       ExecutionResult invokeFunction(bytes data);
   };

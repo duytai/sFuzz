@@ -29,9 +29,10 @@ namespace fuzzer {
   }
   // TODO: handle dynamic case
   int getTypeSize(string type) {
+    string exactType = toExactType(type);
     smatch sm;
-    regex_match(type, sm, regex("[a-z]+(\\d+)"));
-    return stoi(sm[1]);
+    regex_match(exactType, sm, regex("[a-z]+(\\d+)"));
+    return stoi(sm[1]) / 8;
   }
   
   bytes functionSelector(string name, vector<string> types) {
@@ -63,22 +64,28 @@ namespace fuzzer {
     return base;
   }
   // TODO: handle dynamic case
-  bytes createEmptyTestcase(vector<string> types) {
+  bytes createElem(vector<string> types) {
     int totalSize = 0;
-    for (auto type : types) totalSize += getTypeSize(toExactType(type)) / 8;
+    for (auto type : types) totalSize += getTypeSize(type);
     return bytes(totalSize, 0);
   }
   // TODO: handle dynamic case
-  vector<bytes> decodeTestcase(vector<string> types, bytes data) {
+  vector<bytes> decodeElem(vector<string> types, bytes data) {
     vector<bytes> results;
     int startAt = 0;
     for (auto type : types) {
       bytes d;
-      int size = getTypeSize(toExactType(type)) / 8;
+      int size = getTypeSize(type);
       copy(data.begin() + startAt, data.begin() + startAt + size, back_inserter(d));
       results.push_back(d);
       startAt += size;
     }
     return results;
+  }
+  // TODO: handle dynamic case
+  int getElemSize(vector<string> types) {
+    int totalSize = 0;
+    for (auto type : types) totalSize += getTypeSize(type);
+    return totalSize;
   }
 }

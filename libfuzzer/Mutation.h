@@ -17,6 +17,8 @@ namespace fuzzer {
   class Mutation {
     bytes data;
     int dataSize;
+    int effCount;
+    bytes eff;
     public:
       Mutation(bytes data);
       void flipbit(int pos);
