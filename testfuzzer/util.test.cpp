@@ -6,7 +6,7 @@
 using namespace fuzzer;
 using namespace std;
 
-TEST(Util, f)
+TEST(Util, DISABLED_f)
 {
   EXPECT_EQ(effAPos(20), 2);
   EXPECT_EQ(effRem(20), 4);

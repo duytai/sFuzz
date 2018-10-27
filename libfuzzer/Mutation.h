@@ -19,9 +19,9 @@ namespace fuzzer {
     int dataSize;
     int effCount;
     bytes eff;
+    void flipbit(int pos);
     public:
       Mutation(bytes data);
-      void flipbit(int pos);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);

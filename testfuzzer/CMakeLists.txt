@@ -15,6 +15,7 @@ add_executable(testfuzzer
   mutation.test.cpp
   util.test.cpp
   targetContainer.test.cpp
+  fuzzer.test.cpp
 )
 # Link test executable against gtest & gtest_main
 target_link_libraries(testfuzzer gtest gtest_main libfuzzer)

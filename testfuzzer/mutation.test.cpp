@@ -6,7 +6,7 @@
 using namespace fuzzer;
 using namespace std;
 
-TEST(Mutation, bitFlip)
+TEST(Mutation, DISABLED_bitFlip)
 {
   Mutation m = Mutation(fromHex("0xffffffffaaaaaaaabbbbbbbbccccccccddddddddeeeeeeee"));
   auto emptyCallback = [](bytes){};

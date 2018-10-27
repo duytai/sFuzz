@@ -11,12 +11,7 @@ TargetContainer::TargetContainer(bytes c, map<string, vector<string>> a): code(c
 }
 
 void TargetContainer::exec(bytes data) {
-  OnOpFunc onOp = [](uint64_t, uint64_t pc, Instruction inst, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {
-    auto info = instructionInfo(inst);
-    cout << ":: " << info.name << endl;
-    if (inst == Instruction::JUMPI) {
-      cout << " -> " << pc << endl;
-    }
+  OnOpFunc onOp = [](uint64_t, uint64_t, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {
   };
   int startAt = 0;
   for (auto it : abi) {

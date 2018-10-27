@@ -5,21 +5,21 @@
 
 using namespace fuzzer;
 
-TEST(ABI, encodeMethod)
+TEST(ABI, DISABLED_encodeMethod)
 {
   EXPECT_EQ(functionSelector("inc", vector<string> {"int", "uint[2]"}), fromHex("0x99481ac9"));
   EXPECT_EQ(functionSelector("baz", vector<string> {"uint32", "bool"}), fromHex("0xcdcd77c0"));
   EXPECT_EQ(functionSelector("f", vector<string> {"uint", "uint32[]", "bytes10", "bytes"}), fromHex("0x8be65246"));
 }
 
-TEST(ABI, toExactType)
+TEST(ABI, DISABLED_toExactType)
 {
   EXPECT_EQ(toExactType("bool"), "uint8");
   EXPECT_EQ(toExactType("address"), "uint160");
   EXPECT_EQ(toExactType("int"), "int256");
 }
 
-TEST(ABI, fullType)
+TEST(ABI, DISABLED_fullType)
 {
   EXPECT_EQ(tofullType("int"), "int256");
   EXPECT_EQ(tofullType("int2"), "int2");
@@ -38,7 +38,7 @@ TEST(ABI, fullType)
   EXPECT_EQ(tofullType("ufixed[10]"), "ufixed128x128[10]");
   EXPECT_EQ(tofullType("ufixed2[10]"), "ufixed2[10]");
 }
-TEST(ABI, encodeConstructor)
+TEST(ABI, DISABLED_encodeConstructor)
 {
   vector<string> types = {"uint32", "bool"};
   vector<bytes> values = {fromHex("0x05"), fromHex("0x01")};
@@ -46,7 +46,7 @@ TEST(ABI, encodeConstructor)
   EXPECT_EQ(d.size(), 64);
   EXPECT_EQ(d, fromHex("00000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000001"));
 }
-TEST(ABI, encodeFunction)
+TEST(ABI, DISABLED_encodeFunction)
 {
   vector<string> types = {"uint32", "bool"};
   vector<bytes> values = {fromHex("0x05"), fromHex("0x01")};
@@ -55,13 +55,13 @@ TEST(ABI, encodeFunction)
   EXPECT_EQ(d, fromHex("cdcd77c000000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000001"));
 }
 
-TEST(ABI, encodeTestcase) {
+TEST(ABI, DISABLED_encodeTestcase) {
   vector<string> types = {"int32", "int32", "bool", "address", "uint"};
   bytes d = createElem(types);
   EXPECT_EQ(d.size(), 61);
 }
 
-TEST(ABI, decodeTestcase) {
+TEST(ABI, DISABLED_decodeTestcase) {
   vector<string> types = {"int32", "int32", "bool", "address"};
   bytes data = fromHex("0000000a0000000b01000000000000000000000000000000000000000f");
   vector<bytes> result = decodeElem(types, data);
@@ -71,7 +71,7 @@ TEST(ABI, decodeTestcase) {
   EXPECT_EQ(result[3], fromHex("0x000000000000000000000000000000000000000f"));
 }
 
-TEST(ABI, getTestElemSize) {
+TEST(ABI, DISABLED_getTestElemSize) {
   vector<string> types = {"int32", "int32", "bool", "address", "uint"};
   EXPECT_EQ(getElemSize(types), 61);
 }
