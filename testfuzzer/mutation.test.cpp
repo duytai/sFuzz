@@ -2,14 +2,19 @@
 
 #include "gtest/gtest.h"
 #include <libfuzzer/Mutation.h>
+#include <libfuzzer/Fuzzer.h>
 
 using namespace fuzzer;
 using namespace std;
 
 TEST(Mutation, DISABLED_bitFlip)
 {
-  Mutation m = Mutation(fromHex("0xffffffffaaaaaaaabbbbbbbbccccccccddddddddeeeeeeee"));
-  auto emptyCallback = [](bytes){};
+  FuzzItem item(fromHex("0xffffffffaaaaaaaabbbbbbbbccccccccddddddddeeeeeeee"));
+  Mutation m = Mutation(item);
+  auto emptyCallback = [](bytes d){
+    FuzzItem item(d);
+    return item;
+  };
   m.singleWalkingBit(emptyCallback);
   m.twoWalkingBit(emptyCallback);
   m.fourWalkingBit(emptyCallback);

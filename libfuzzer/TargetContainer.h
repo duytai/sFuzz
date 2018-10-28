@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <vector>
 #include <map>
@@ -14,12 +15,27 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
+  struct TargetContainerResult {
+    TargetContainerResult() {}
+    TargetContainerResult(bytes tracebits, h256 cksum, double exTime) {
+      this->tracebits = tracebits;
+      this->cksum = cksum;
+      this->exTime = exTime;
+    }
+    /* Contains execution paths */
+    bytes tracebits;
+    /* Contains checksum of tracebits */
+    h256 cksum;
+    /* Execution time */
+    double exTime;
+  };
+  
   class TargetContainer {
     bytes code;
     map<string, vector<string>> abi;
     TargetProgram program;
     public:
       TargetContainer(bytes c, map<string, vector<string>> a);
-      void exec(bytes data);
+      TargetContainerResult exec(bytes data);
   };
 }

@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <vector>
 #include <functional>
@@ -7,26 +8,31 @@
 #include <libethereum/Executive.h>
 #include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
+#include "TargetContainer.h"
+#include "Fuzzer.h"
 
 using namespace dev;
 using namespace eth;
 using namespace std;
-using OnMutateFunc = function<void(bytes b)>;
 
 namespace fuzzer {
+  using OnMutateFunc = function<FuzzItem (bytes b)>;
   class Mutation {
-    bytes data;
+    FuzzItem curFuzzItem;
     int dataSize;
     int effCount;
     bytes eff;
     void flipbit(int pos);
     public:
-      Mutation(bytes data);
+      Mutation(FuzzItem item);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);
       void singleWalkingByte(OnMutateFunc cb);
       void twoWalkingByte(OnMutateFunc cb);
       void fourWalkingByte(OnMutateFunc cb);
+      void singleArith(OnMutateFunc cb);
+      void twoArith(OnMutateFunc cb);
+      void fourArith(OnMutateFunc cb);
   };
 }
