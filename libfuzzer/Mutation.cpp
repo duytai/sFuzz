@@ -5,6 +5,7 @@ using namespace std;
 using namespace fuzzer;
 
 int Mutation::havocDiv = 1;
+
 Mutation::Mutation(FuzzItem item): curFuzzItem(item), dataSize(item.data.size()) {
   effCount = 0;
   spliceCycle = 0;
@@ -294,7 +295,7 @@ void Mutation::havoc(OnMutateFunc) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
     for (u32 i = 0; i < useStacking; i += 1) {
       u32 val = UR(15 + ((extrasCnt + aExtrasCnt) ? 2 : 0));
-      val = 4;
+      val = 13;
       switch (val) {
         case 0: {
           /* Flip a single bit somewhere. Spooky! */
@@ -398,7 +399,9 @@ void Mutation::havoc(OnMutateFunc) {
         case 11 ... 12: {
           break;
         }
-        case 13:
+        case 13: {
+          break;
+        }
         case 14:
         case 15:
         case 16:

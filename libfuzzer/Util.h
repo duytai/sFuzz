@@ -14,6 +14,11 @@ namespace fuzzer {
   typedef int32_t  s32;
   typedef int64_t  s64;
   
+  static u32 HAVOC_BLK_XL = 32768;
+  static u32 HAVOC_BLK_SMALL = 32;
+  static u32 HAVOC_BLK_MEDIUM = 128;
+  static u32 HAVOC_BLK_LARGE = 1500;
+  static u32 MAX_FILE = (1 * 1024 * 1024); // 100MB
   static u32 MIN_AUTO_EXTRA = 3;
   static u32 MAX_AUTO_EXTRA = 32;
   static int HAVOC_STACK_POW2 = 7;
@@ -41,7 +46,7 @@ namespace fuzzer {
   bool couldBeBitflip(u32 xorVal);
   bool couldBeArith(u32 oldVal, u32 newVal, u8 len);
   bool couldBeInterest(u32 oldVal, u32 newVal, u8 blen, u8 checkLe);
-  void maybeAddAuto(u8* mem, u32 len);
+  u32 chooseBlockLen(u32 limit);
   u32 UR(u32 limit);
   /* Swap 2 bytes */
   u16 swap16(u16 x);

@@ -129,5 +129,27 @@ namespace fuzzer {
   u32 swap32(u32 x) {
     return x << 24 | x >> 24 | ((x << 8) & 0x00FF0000) | ((x >> 8) & 0x0000FF00);
   }
+  
+  u32 chooseBlockLen(u32 limit) {
+    u32 minValue, maxValue;
+    auto MIN = [](u32 a, u32 b) {
+      if (a > b) return b;
+      return a;
+    };
+    switch (UR(1)) {
+      case 0: {
+        minValue = 1;
+        maxValue = HAVOC_BLK_SMALL;
+        break;
+      }
+      case 1: {
+        minValue = HAVOC_BLK_SMALL;
+        maxValue = HAVOC_BLK_MEDIUM;
+        break;
+      }
+    }
+    if (minValue >= limit) minValue = 1;
+    return minValue + UR(MIN(maxValue, limit) - minValue + 1);
+  }
 }
 

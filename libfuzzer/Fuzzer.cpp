@@ -85,5 +85,7 @@ void Fuzzer::start() {
     cout << "TOTAl : " << totalFuzzed << endl;
     cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;
     idx ++;
+    // TODO: update queue cycle
+    mutation.queueCycle ++;
   }
 }
