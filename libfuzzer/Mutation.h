@@ -22,7 +22,6 @@ namespace fuzzer {
     int dataSize;
     int effCount;
     /* update later */
-    vector<u8> aCollect;
     u32 spliceCycle;
     u8 doingDet;
     u32 perfScore;
