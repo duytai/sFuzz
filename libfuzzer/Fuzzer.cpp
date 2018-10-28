@@ -75,6 +75,8 @@ void Fuzzer::start() {
     mutation.singleArith(commomFuzzStuff);
     mutation.twoArith(commomFuzzStuff);
     mutation.fourArith(commomFuzzStuff);
+    mutation.singleInterest(commomFuzzStuff);
+    mutation.twoInterest(commomFuzzStuff);
     cout << "EXEC  : " << timer.elapsed() << endl;
     cout << "TOTAl : " << totalFuzzed << endl;
     cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;

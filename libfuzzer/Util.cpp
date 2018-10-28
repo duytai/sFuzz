@@ -32,6 +32,49 @@ namespace fuzzer {
       return true;
     return false;
   }
+  /* Helper function to see if a particular value is reachable through
+   arithmetic operations. Used for similar purposes. */
+  bool couldBeArith(uint32_t old_val, uint32_t new_val, uint8_t blen) {
+    uint32_t i, ov = 0, nv = 0, diffs = 0;
+    if (old_val == new_val) return true;
+    /* See if one-byte adjustments to any byte could produce this result. */
+    for (i = 0; i < blen; i++) {
+      uint8_t a = old_val >> (8 * i),
+      b = new_val >> (8 * i);
+      if (a != b) { diffs++; ov = a; nv = b; }
+    }
+    /* If only one byte differs and the values are within range, return 1. */
+    if (diffs == 1) {
+      if ((uint8_t)(ov - nv) <= ARITH_MAX ||
+          (uint8_t)(nv - ov) <= ARITH_MAX) return true;
+    }
+    if (blen == 1) return false;
+    /* See if two-byte adjustments to any byte would produce this result. */
+    diffs = 0;
+    for (i = 0; i < blen / 2; i++) {
+      uint16_t a = old_val >> (16 * i),
+      b = new_val >> (16 * i);
+      if (a != b) { diffs++; ov = a; nv = b; }
+    }
+    /* If only one word differs and the values are within range, return 1. */
+    if (diffs == 1) {
+      if ((uint16_t)(ov - nv) <= ARITH_MAX || (uint16_t)(nv - ov) <= ARITH_MAX)
+        return  true;
+      ov = swap16(ov); nv = swap16(nv);
+      if ((uint16_t)(ov - nv) <= ARITH_MAX || (uint16_t)(nv - ov) <= ARITH_MAX)
+        return true;
+    }
+    /* Finally, let's do the same thing for dwords. */
+    if (blen == 4) {
+      if ((uint32_t)(old_val - new_val) <= (uint32_t) ARITH_MAX || (uint32_t)(new_val - old_val) <= (uint32_t) ARITH_MAX)
+        return true;
+      new_val = swap32(new_val);
+      old_val = swap32(old_val);
+      if ((uint32_t)(old_val - new_val) <= (uint32_t) ARITH_MAX || (uint32_t)(new_val - old_val) <= (uint32_t) ARITH_MAX)
+        return true;
+    }
+    return false;
+  }
   
   uint16_t swap16(uint16_t x) {
     return x << 8 | x >> 8;

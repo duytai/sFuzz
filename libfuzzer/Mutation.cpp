@@ -12,6 +12,14 @@ Mutation::Mutation(FuzzItem item): curFuzzItem(item), dataSize(item.data.size())
     eff[effAPos(dataSize - 1)] = 1;
     effCount ++;
   }
+  interesting8 = INTERESTING_8;
+  // Copy to interesting 16
+  copy(INTERESTING_8.begin(), INTERESTING_8.end(), back_inserter(interesting16));
+  copy(INTERESTING_16.begin(), INTERESTING_16.end(), back_inserter(interesting16));
+  // Copy to interesting 32
+  copy(INTERESTING_8.begin(), INTERESTING_8.end(), back_inserter(interesting32));
+  copy(INTERESTING_16.begin(), INTERESTING_16.end(), back_inserter(interesting32));
+  copy(INTERESTING_32.begin(), INTERESTING_32.end(), back_inserter(interesting32));
 }
 
 void Mutation::flipbit(int pos) {
@@ -194,4 +202,33 @@ void Mutation::fourArith(OnMutateFunc cb) {
       *(uint32_t*)(buf + i) = orig;
     }
   }
+}
+
+void Mutation::singleInterest(OnMutateFunc cb) {
+  vector<int8_t> interesting8 = INTERESTING_8;
+  for (int i = 0; i < dataSize; i += 1) {
+    uint8_t orig = curFuzzItem.data[i];
+    /* Let's consult the effector map... */
+    if (!eff[effAPos(i)]) {
+      continue;
+    }
+    for (int j = 0; j < (int) interesting8.size(); j += 1) {
+      if (couldBeBitflip(orig ^ (uint8_t)interesting8[j]) || couldBeArith(orig, (uint8_t)interesting8[j], 1)) {
+        continue;
+      }
+      curFuzzItem.data[i] = interesting8[j];
+      cb(curFuzzItem.data);
+      curFuzzItem.data[i] = orig;
+    }
+  }
+}
+
+void Mutation::twoInterest(OnMutateFunc) {
+//  byte *buf = &curFuzzItem.data[0];
+//  for (int i = 0; i < dataSize - 1; i += 1) {
+//    uint16_t orig = *(uint16_t*)(buf + i);
+//    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
+//      continue;
+//    }
+//  }
 }

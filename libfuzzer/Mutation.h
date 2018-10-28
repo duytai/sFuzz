@@ -23,6 +23,9 @@ namespace fuzzer {
     int effCount;
     bytes eff;
     void flipbit(int pos);
+    vector<int8_t> interesting8;
+    vector<int16_t> interesting16;
+    vector<int32_t> interesting32;
     public:
       Mutation(FuzzItem item);
       void singleWalkingBit(OnMutateFunc cb);
@@ -34,5 +37,7 @@ namespace fuzzer {
       void singleArith(OnMutateFunc cb);
       void twoArith(OnMutateFunc cb);
       void fourArith(OnMutateFunc cb);
+      void singleInterest(OnMutateFunc cb);
+      void twoInterest(OnMutateFunc cb);
   };
 }
