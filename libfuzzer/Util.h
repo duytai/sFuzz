@@ -14,6 +14,8 @@ namespace fuzzer {
   typedef int32_t  s32;
   typedef int64_t  s64;
   
+  static u32 MIN_AUTO_EXTRA = 3;
+  static u32 MAX_AUTO_EXTRA = 32;
   static int HAVOC_STACK_POW2 = 7;
   static int HAVOC_CYCLES_INIT = 1024;
   static int HAVOC_CYCLES = 256;
@@ -39,6 +41,7 @@ namespace fuzzer {
   bool couldBeBitflip(u32 xorVal);
   bool couldBeArith(u32 oldVal, u32 newVal, u8 len);
   bool couldBeInterest(u32 oldVal, u32 newVal, u8 blen, u8 checkLe);
+  void maybeAddAuto(u8* mem, u32 len);
   u32 UR(u32 limit);
   /* Swap 2 bytes */
   u16 swap16(u16 x);

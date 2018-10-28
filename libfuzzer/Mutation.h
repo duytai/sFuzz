@@ -22,10 +22,11 @@ namespace fuzzer {
     int dataSize;
     int effCount;
     /* update later */
-    int spliceCycle;
-    int doingDet;
-    int perfScore;
-    int havocDiv;
+    vector<u8> aCollect;
+    u32 spliceCycle;
+    u8 doingDet;
+    u32 perfScore;
+    h256 prevCksum;
     bytes eff;
     void flipbit(int pos);
     public:
@@ -44,5 +45,6 @@ namespace fuzzer {
       void fourInterest(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       void splice(OnMutateFunc cb);
+      static int havocDiv;
   };
 }

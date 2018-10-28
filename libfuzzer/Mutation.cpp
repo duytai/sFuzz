@@ -4,12 +4,14 @@
 using namespace std;
 using namespace fuzzer;
 
+int Mutation::havocDiv = 1;
 Mutation::Mutation(FuzzItem item): curFuzzItem(item), dataSize(item.data.size()) {
+  aCollect = vector<u8>(MAX_AUTO_EXTRA, 0);
   effCount = 0;
   spliceCycle = 0;
   doingDet = 1;
   perfScore = 100;
-  havocDiv = 1;
+  prevCksum = curFuzzItem.res.cksum;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;
   if (effAPos(dataSize - 1) != 0) {
@@ -24,10 +26,33 @@ void Mutation::flipbit(int pos) {
 
 void Mutation::singleWalkingBit(OnMutateFunc cb) {
   int maxStage = dataSize << 3;
+  u32 aLen = 0;
+  u8 *out_buf = &curFuzzItem.data[0];
   for (int i = 0; i < maxStage ; i += 1) {
     flipbit(i);
-    cb(curFuzzItem.data);
+    FuzzItem item = cb(curFuzzItem.data);
     flipbit(i);
+    /* Add auto extras */
+    if ((i & 7) == 7) {
+      h256 cksum = item.res.cksum;
+      if (i == maxStage - 1 && cksum == prevCksum) {
+        if (aLen < MAX_AUTO_EXTRA) aCollect[aLen] = out_buf[i >> 3];
+        aLen ++;
+        if (aLen >= MIN_AUTO_EXTRA && aLen <= MAX_AUTO_EXTRA) {
+          //maybe_add_auto(a_collect, a_len);
+        }
+      } else if (cksum != prevCksum) {
+        if (aLen >= MIN_AUTO_EXTRA && aLen <= MAX_AUTO_EXTRA) {
+          //maybe_add_auto(a_collect, a_len);
+        }
+        aLen = 0;
+        prevCksum = cksum;
+      }
+      if (cksum != curFuzzItem.res.cksum) {
+        if (aLen < MAX_AUTO_EXTRA) aCollect[aLen] = out_buf[i >> 3];
+        aLen ++;
+      }
+    } 
   }
 }
 
