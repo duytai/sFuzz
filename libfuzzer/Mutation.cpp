@@ -12,14 +12,6 @@ Mutation::Mutation(FuzzItem item): curFuzzItem(item), dataSize(item.data.size())
     eff[effAPos(dataSize - 1)] = 1;
     effCount ++;
   }
-  interesting8 = INTERESTING_8;
-  // Copy to interesting 16
-  copy(INTERESTING_8.begin(), INTERESTING_8.end(), back_inserter(interesting16));
-  copy(INTERESTING_16.begin(), INTERESTING_16.end(), back_inserter(interesting16));
-  // Copy to interesting 32
-  copy(INTERESTING_8.begin(), INTERESTING_8.end(), back_inserter(interesting32));
-  copy(INTERESTING_16.begin(), INTERESTING_16.end(), back_inserter(interesting32));
-  copy(INTERESTING_32.begin(), INTERESTING_32.end(), back_inserter(interesting32));
 }
 
 void Mutation::flipbit(int pos) {
@@ -87,30 +79,30 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
 
 void Mutation::twoWalkingByte(OnMutateFunc cb) {
   int maxStage = dataSize - 1;
-  uint8_t *buf = &curFuzzItem.data[0];
+  u8 *buf = &curFuzzItem.data[0];
   for (int i = 0; i < maxStage; i += 1) {
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
       continue;
     }
-    *(uint16_t*)(buf + i) ^= 0xFFFF;
+    *(u16*)(buf + i) ^= 0xFFFF;
     cb(curFuzzItem.data);
-    *(uint16_t*)(buf + i) ^= 0xFFFF;
+    *(u16*)(buf + i) ^= 0xFFFF;
   }
 }
 
 void Mutation::fourWalkingByte(OnMutateFunc cb) {
   int maxStage = dataSize - 3;
-  uint8_t *buf = &curFuzzItem.data[0];
+  u8 *buf = &curFuzzItem.data[0];
   for (int i = 0; i < maxStage; i += 1) {
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] &&
         !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
       continue;
     }
-    *(uint32_t*)(buf + i) ^= 0xFFFFFFFF;
+    *(u32*)(buf + i) ^= 0xFFFFFFFF;
     cb(curFuzzItem.data);
-    *(uint32_t*)(buf + i) ^= 0xFFFFFFFF;
+    *(u32*)(buf + i) ^= 0xFFFFFFFF;
   }
 }
 
@@ -140,32 +132,32 @@ void Mutation::singleArith(OnMutateFunc cb) {
 void Mutation::twoArith(OnMutateFunc cb) {
   byte *buf = &curFuzzItem.data[0];
   for (int i = 0; i < dataSize - 1; i += 1) {
-    uint16_t orig = *(uint16_t*)(buf + i);
+    u16 orig = *(u16*)(buf + i);
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
       continue;
     }
     for (int j = 0; j < ARITH_MAX; j += 1) {
-      uint16_t r1 = orig ^ (orig + j);
-      uint16_t r2 = orig ^ (orig - j);
-      uint16_t r3 = orig ^ swap16(swap16(orig) + j);
-      uint16_t r4 = orig ^ swap16(swap16(orig) - j);
+      u16 r1 = orig ^ (orig + j);
+      u16 r2 = orig ^ (orig - j);
+      u16 r3 = orig ^ swap16(swap16(orig) + j);
+      u16 r4 = orig ^ swap16(swap16(orig) - j);
       if ((orig & 0xFF) + j > 0xFF && !couldBeBitflip(r1)) {
-        *(uint16_t*)(buf + i) = orig + j;
+        *(u16*)(buf + i) = orig + j;
         cb(curFuzzItem.data);
       }
       if ((orig & 0xFF) < j && !couldBeBitflip(r2)) {
-        *(uint16_t*)(buf + i) = orig - j;
+        *(u16*)(buf + i) = orig - j;
         cb(curFuzzItem.data);
       }
       if ((orig >> 8) + j > 0xFF && !couldBeBitflip(r3)) {
-        *(uint16_t*)(buf + i) = swap16(swap16(orig) + j);
+        *(u16*)(buf + i) = swap16(swap16(orig) + j);
         cb(curFuzzItem.data);
       };
       if ((orig >> 8) < j && !couldBeBitflip(r4)) {
-        *(uint16_t*)(buf + i) = swap16(swap16(orig) - j);
+        *(u16*)(buf + i) = swap16(swap16(orig) - j);
         cb(curFuzzItem.data);
       };
-      *(uint16_t*)(buf + i) = orig;
+      *(u16*)(buf + i) = orig;
     }
   }
 }
@@ -173,62 +165,108 @@ void Mutation::twoArith(OnMutateFunc cb) {
 void Mutation::fourArith(OnMutateFunc cb) {
   byte *buf = &curFuzzItem.data[0];
   for (int i = 0; i < dataSize - 3; i += 1) {
-    uint32_t orig = *(uint32_t*)(buf + i);
+    u32 orig = *(u32*)(buf + i);
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] && !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
       continue;
     }
     for (int j = 0; j < ARITH_MAX; j += 1) {
-      uint32_t r1 = orig ^ (orig + j);
-      uint32_t r2 = orig ^ (orig - j);
-      uint32_t r3 = orig ^ swap32(swap32(orig) + j);
-      uint32_t r4 = orig ^ swap32(swap32(orig) - j);
+      u32 r1 = orig ^ (orig + j);
+      u32 r2 = orig ^ (orig - j);
+      u32 r3 = orig ^ swap32(swap32(orig) + j);
+      u32 r4 = orig ^ swap32(swap32(orig) - j);
       if ((orig & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r1)) {
-        *(uint32_t*)(buf + i) = orig + j;
+        *(u32*)(buf + i) = orig + j;
         cb(curFuzzItem.data);
       }
-      if ((orig & 0xFFFF) < (uint32_t)j && !couldBeBitflip(r2)) {
-        *(uint32_t*)(buf + i) = orig - j;
+      if ((orig & 0xFFFF) < (u32)j && !couldBeBitflip(r2)) {
+        *(u32*)(buf + i) = orig - j;
         cb(curFuzzItem.data);
       };
       if ((swap32(orig) & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r3)) {
-        *(uint32_t*)(buf + i) = swap32(swap32(orig) + j);
+        *(u32*)(buf + i) = swap32(swap32(orig) + j);
         cb(curFuzzItem.data);
       };
-      if ((swap32(orig) & 0xFFFF) < (uint32_t) j && !couldBeBitflip(r4)) {
-        *(uint32_t*)(buf + i) = swap32(swap32(orig) - j);
+      if ((swap32(orig) & 0xFFFF) < (u32) j && !couldBeBitflip(r4)) {
+        *(u32*)(buf + i) = swap32(swap32(orig) - j);
         cb(curFuzzItem.data);
       };
-      *(uint32_t*)(buf + i) = orig;
+      *(u32*)(buf + i) = orig;
     }
   }
 }
 
 void Mutation::singleInterest(OnMutateFunc cb) {
-  vector<int8_t> interesting8 = INTERESTING_8;
   for (int i = 0; i < dataSize; i += 1) {
-    uint8_t orig = curFuzzItem.data[i];
+    u8 orig = curFuzzItem.data[i];
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)]) {
       continue;
     }
-    for (int j = 0; j < (int) interesting8.size(); j += 1) {
-      if (couldBeBitflip(orig ^ (uint8_t)interesting8[j]) || couldBeArith(orig, (uint8_t)interesting8[j], 1)) {
+    for (int j = 0; j < (int) INTERESTING_8.size(); j += 1) {
+      if (couldBeBitflip(orig ^ (u8)INTERESTING_8[j]) || couldBeArith(orig, (u8)INTERESTING_8[j], 1)) {
         continue;
       }
-      curFuzzItem.data[i] = interesting8[j];
+      curFuzzItem.data[i] = INTERESTING_8[j];
       cb(curFuzzItem.data);
       curFuzzItem.data[i] = orig;
     }
   }
 }
 
-void Mutation::twoInterest(OnMutateFunc) {
-//  byte *buf = &curFuzzItem.data[0];
-//  for (int i = 0; i < dataSize - 1; i += 1) {
-//    uint16_t orig = *(uint16_t*)(buf + i);
-//    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
-//      continue;
-//    }
-//  }
+void Mutation::twoInterest(OnMutateFunc cb) {
+  byte *out_buf = &curFuzzItem.data[0];
+  for (int i = 0; i < dataSize - 1; i += 1) {
+    u16 orig = *(u16*)(out_buf + i);
+    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
+      continue;
+    }
+    for (int j = 0; j < (int) INTERESTING_16.size() / 2; j += 1) {
+      if (!couldBeBitflip(orig ^ (u16)INTERESTING_16[j]) &&
+          !couldBeArith(orig, (u16)INTERESTING_16[j], 2) &&
+          !couldBeInterest(orig, (u16)INTERESTING_16[j], 2, 0)) {
+        *(u16*)(out_buf + i) = INTERESTING_16[j];
+        cb(curFuzzItem.data);
+      }
+      
+      if ((u16)INTERESTING_16[j] != swap16(INTERESTING_16[j]) &&
+          !couldBeBitflip(orig ^ swap16(INTERESTING_16[j])) &&
+          !couldBeArith(orig, swap16(INTERESTING_16[j]), 2) &&
+          !couldBeInterest(orig, swap16(INTERESTING_16[j]), 2, 1)) {
+        *(u16*)(out_buf + i) = swap16(INTERESTING_16[j]);
+        cb(curFuzzItem.data);
+      }
+    }
+    *(u16*)(out_buf + i) = orig;
+  }
+}
+
+void Mutation::fourInterest(OnMutateFunc cb) {
+  byte *out_buf = &curFuzzItem.data[0];
+  for (int i = 0; i < dataSize - 3; i++) {
+    u32 orig = *(u32*)(out_buf + i);
+    /* Let's consult the effector map... */
+    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] &&
+        !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
+      continue;
+    }
+    for (int j = 0; j < (int) INTERESTING_32.size() / 4; j++) {
+      /* Skip if this could be a product of a bitflip, arithmetics,
+       or word interesting value insertion. */
+      if (!couldBeBitflip(orig ^ (u32)INTERESTING_32[j]) &&
+          !couldBeArith(orig, INTERESTING_32[j], 4) &&
+          !couldBeInterest(orig, INTERESTING_32[j], 4, 0)) {
+        *(u32*)(out_buf + i) = INTERESTING_32[j];
+        cb(curFuzzItem.data);
+      }
+      if ((u32)INTERESTING_32[j] != swap32(INTERESTING_32[j]) &&
+          !couldBeBitflip(orig ^ swap32(INTERESTING_32[j])) &&
+          !couldBeArith(orig, swap32(INTERESTING_32[j]), 4) &&
+          !couldBeInterest(orig, swap32(INTERESTING_32[j]), 4, 1)) {
+        *(u32*)(out_buf + i) = swap32(INTERESTING_32[j]);
+        cb(curFuzzItem.data);
+      }
+    }
+    *(u32*)(out_buf + i) = orig;
+  }
 }

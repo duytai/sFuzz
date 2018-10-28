@@ -8,8 +8,8 @@
 #include <libethereum/Executive.h>
 #include <libethereum/LastBlockHashesFace.h>
 #include <libevm/VMFactory.h>
-
 #include "TargetProgram.h"
+#include "Util.h"
 
 using namespace dev;
 using namespace eth;
@@ -20,8 +20,8 @@ namespace fuzzer {
     Network networkName = Network::MainNetworkTest;
     LastBlockHashes lastBlockHashes;
     BlockHeader blockHeader;
-    int64_t maxGasLimit = ChainParams(genesisInfo(networkName))
-      .maxGasLimit.convert_to<int64_t>();
+    s64 maxGasLimit = ChainParams(genesisInfo(networkName))
+      .maxGasLimit.convert_to<s64>();
     // add value
     blockHeader.setGasLimit(maxGasLimit);
     blockHeader.setTimestamp(0);

@@ -9,6 +9,7 @@
 #include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
 #include "TargetContainer.h"
+#include "Util.h"
 
 using namespace dev;
 using namespace eth;
@@ -37,7 +38,7 @@ namespace fuzzer {
       bytes virginbits;
       bytes createInitialInput();
     public:
-      uint8_t hasNewBits(bytes tracebits);
+      u8 hasNewBits(bytes tracebits);
       Fuzzer(bytes c /* code */, map<string, vector<string>> a /* abi */);
       void start();
   };

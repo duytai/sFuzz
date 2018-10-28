@@ -21,8 +21,8 @@ bytes Fuzzer::createInitialInput() {
 }
 
 /* Detect new branch by comparing tracebits to virginbits */
-uint8_t Fuzzer::hasNewBits(bytes tracebits) {
-  uint8_t ret = 0;
+u8 Fuzzer::hasNewBits(bytes tracebits) {
+  u8 ret = 0;
   for (vector<int>::size_type i = 0; i < tracebits.size(); i += 1) {
     byte cur = tracebits[i];
     byte virgin = virginbits[i];
@@ -77,6 +77,8 @@ void Fuzzer::start() {
     mutation.fourArith(commomFuzzStuff);
     mutation.singleInterest(commomFuzzStuff);
     mutation.twoInterest(commomFuzzStuff);
+    mutation.fourInterest(commomFuzzStuff);
+    // 16365
     cout << "EXEC  : " << timer.elapsed() << endl;
     cout << "TOTAl : " << totalFuzzed << endl;
     cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;
