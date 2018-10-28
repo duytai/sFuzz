@@ -78,6 +78,8 @@ void Fuzzer::start() {
     mutation.singleInterest(commomFuzzStuff);
     mutation.twoInterest(commomFuzzStuff);
     mutation.fourInterest(commomFuzzStuff);
+    mutation.havoc(commomFuzzStuff);
+    mutation.splice(commomFuzzStuff);
     // 16365
     cout << "EXEC  : " << timer.elapsed() << endl;
     cout << "TOTAl : " << totalFuzzed << endl;

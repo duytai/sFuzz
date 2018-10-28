@@ -1,6 +1,10 @@
 #include "Util.h"
 
 namespace fuzzer {
+  u32 UR(u32 limit) {
+    return random() % limit;
+  }
+  
   int effAPos(int p) {
     return p >> EFF_MAP_SCALE2;
   }

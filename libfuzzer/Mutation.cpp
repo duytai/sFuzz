@@ -6,6 +6,10 @@ using namespace fuzzer;
 
 Mutation::Mutation(FuzzItem item): curFuzzItem(item), dataSize(item.data.size()) {
   effCount = 0;
+  spliceCycle = 0;
+  doingDet = 1;
+  perfScore = 100;
+  havocDiv = 1;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;
   if (effAPos(dataSize - 1) != 0) {
@@ -269,4 +273,141 @@ void Mutation::fourInterest(OnMutateFunc cb) {
     }
     *(u32*)(out_buf + i) = orig;
   }
+}
+/*
+ Has to update: doingDet, perfScore, havocDiv, extraCnt, aExtraCnt
+ */
+void Mutation::havoc(OnMutateFunc) {
+  int stageMax = 0;
+  int extrasCnt = 0;
+  int aExtrasCnt = 0;
+  int tempLen = dataSize;
+  byte *out_buf = &curFuzzItem.data[0];
+  if (!spliceCycle) {
+    stageMax = (doingDet ? HAVOC_CYCLES_INIT : HAVOC_CYCLES) * perfScore / havocDiv / 100;
+  } else {
+    stageMax = SPLICE_HAVOC * perfScore / havocDiv / 100;
+  }
+  if (stageMax < HAVOC_MIN) stageMax = HAVOC_MIN;
+  for (int stageCur = 0; stageCur < stageMax; stageCur += 1) {
+    u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
+    for (u32 i = 0; i < useStacking; i += 1) {
+      u32 val = UR(15 + ((extrasCnt + aExtrasCnt) ? 2 : 0));
+      val = 4;
+      switch (val) {
+        case 0: {
+          /* Flip a single bit somewhere. Spooky! */
+          flipbit(UR(tempLen << 3));
+          break;
+        }
+        case 1: {
+          /* Set byte to interesting value. */
+          curFuzzItem.data[UR(tempLen)] = INTERESTING_8[UR(INTERESTING_8.size())];
+          break;
+        }
+        case 2: {
+          /* Set word to interesting value, randomly choosing endian. */
+          if (tempLen < 2) break;
+          if (UR(2)) {
+            *(u16*)(out_buf + UR(tempLen - 1)) = INTERESTING_16[UR(INTERESTING_16.size() >> 1)];
+          } else {
+            *(u16*)(out_buf + UR(tempLen - 1)) = swap16(INTERESTING_16[UR(INTERESTING_16.size() >> 1)]);
+          }
+          break;
+        }
+        case 3: {
+          /* Set dword to interesting value, randomly choosing endian. */
+          if (tempLen < 4) break;
+          if (UR(2)) {
+            *(u32*)(out_buf + UR(tempLen - 3)) = INTERESTING_32[UR(INTERESTING_32.size() >> 2)];
+          } else {
+            *(u32*)(out_buf + UR(tempLen - 3)) = swap32(INTERESTING_32[UR(INTERESTING_32.size() >> 2)]);
+          }
+          break;
+        }
+        case 4: {
+          /* Randomly subtract from byte. */
+          out_buf[UR(tempLen)] -= 1 + UR(ARITH_MAX);
+          break;
+        }
+        case 5: {
+          /* Randomly add to byte. */
+          out_buf[UR(tempLen)] += 1 + UR(ARITH_MAX);
+          break;
+        }
+        case 6: {
+          /* Randomly subtract from word, random endian. */
+          if (tempLen < 2) break;
+          if (UR(2)) {
+            u32 pos = UR(tempLen - 1);
+            *(u16*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(tempLen - 1);
+            u16 num = 1 + UR(ARITH_MAX);
+            *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) - num);
+          }
+          break;
+        }
+        case 7: {
+          /* Randomly add to word, random endian. */
+          if (tempLen < 2) break;
+          if (UR(2)) {
+            u32 pos = UR(tempLen - 1);
+            *(u16*)(out_buf + pos) += 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(tempLen - 1);
+            u16 num = 1 + UR(ARITH_MAX);
+            *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) + num);
+          }
+          break;
+        }
+        case 8: {
+          /* Randomly subtract from dword, random endian. */
+          if (tempLen < 4) break;
+          if (UR(2)) {
+            u32 pos = UR(tempLen - 3);
+            *(u32*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(tempLen - 3);
+            u32 num = 1 + UR(ARITH_MAX);
+            *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) - num);
+          }
+          break;
+        }
+        case 9: {
+          /* Randomly add to dword, random endian. */
+          if (tempLen < 4) break;
+          if (UR(2)) {
+            u32 pos = UR(tempLen - 3);
+            *(u32*)(out_buf + pos) += 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(tempLen - 3);
+            u32 num = 1 + UR(ARITH_MAX);
+            *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) + num);
+          }
+          break;
+        }
+        case 10: {
+          /* Just set a random byte to a random value. Because,
+           why not. We use XOR with 1-255 to eliminate the
+           possibility of a no-op. */
+          out_buf[UR(tempLen)] ^= 1 + UR(255);
+          break;
+        }
+        case 11 ... 12: {
+          break;
+        }
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+        default:
+          break;
+      }
+    }
+  }
+}
+
+void Mutation::splice(OnMutateFunc) {
+  
 }

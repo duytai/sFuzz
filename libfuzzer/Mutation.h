@@ -21,6 +21,11 @@ namespace fuzzer {
     FuzzItem curFuzzItem;
     int dataSize;
     int effCount;
+    /* update later */
+    int spliceCycle;
+    int doingDet;
+    int perfScore;
+    int havocDiv;
     bytes eff;
     void flipbit(int pos);
     public:
@@ -37,5 +42,7 @@ namespace fuzzer {
       void singleInterest(OnMutateFunc cb);
       void twoInterest(OnMutateFunc cb);
       void fourInterest(OnMutateFunc cb);
+      void havoc(OnMutateFunc cb);
+      void splice(OnMutateFunc cb);
   };
 }
