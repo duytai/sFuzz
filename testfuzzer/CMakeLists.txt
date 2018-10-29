@@ -16,6 +16,7 @@ add_executable(testfuzzer
   util.test.cpp
   targetContainer.test.cpp
   fuzzer.test.cpp
+  contractABI.test.cpp
 )
 # Link test executable against gtest & gtest_main
 target_link_libraries(testfuzzer gtest gtest_main libfuzzer)

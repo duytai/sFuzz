@@ -50,7 +50,7 @@ TEST(ABI, DISABLED_fullType)
   EXPECT_EQ(tofullType("ufixed2[10]"), "ufixed2[10]");
 }
 
-TEST(ABI, encodeDynamicType)
+TEST(ABI, DISABLED_encodeDynamicType)
 {
   vector<string> types = {"int", "bytes8", "string", "bytes"};
   bytes intType = bytes(32, 0);
