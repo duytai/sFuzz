@@ -51,56 +51,54 @@ namespace fuzzer {
     bytes fullSelector = sha3(name + "(" + boost::algorithm::join(fullTypes, ",") + ")").ref().toBytes();
     return bytes(fullSelector.begin(), fullSelector.begin() + 4);
   }
-  
+  /*
+   * Receive normalized data:
+   * - Already padding left (int, uint) and right (bytes, string)
+   */
   bytes encodeABI(string name, vector<string> types, vector<bytes> values) {
     auto isArray = [](string type){ return type.find_last_of("]") == type.length() - 1;};
-    auto paddingLeft = [](bytes d, int size) {
-      if ((int) d.size() > size) throw "No need to pad";
-      bytes temp(size - d.size(), 0);
-      temp.insert(temp.end(), d.begin(), d.end());
-      return temp;
-    };
-    auto paddingRight = [](bytes d, int size) {
-      if ((int) d.size() > size) throw "No need to pad";
-      bytes temp;
-      copy(d.begin(), d.end(), back_inserter(temp));
-      while ((int)temp.size() < size) temp.push_back(0);
-      return temp;
+    auto int4To32Bytes = [](u256 v) {
+      bytes ret;
+      for (int j = 0; j < 32; j++) {
+        auto b = (byte)(v >> ((32 - j - 1) * 8)) & 0xFF;
+        ret.push_back(b);
+      }
+      return ret;
     };
     /*
-     * Data size must be multiple of 32;
+     * OFFSET: if type is dynamic
+     * DATA: if type is static
      */
-    auto exactDataSize = [](int valueSize) {
-      int exactSize = valueSize % 32 == 0 ? valueSize : (valueSize / 32 + 1) * 32;
-      return exactSize;
+    u256 offset = types.size() * 32;
+    auto encodeHead = [&](string type, bytes value) {
+      if (type == "string" || type == "bytes") {
+        bytes ret = int4To32Bytes(offset);
+        offset += value.size() + 32;
+        return ret;
+      }
+      return value;
+    };
+    auto encodeTail = [=](string type, bytes value) {
+      bytes ret;
+      /* Only dynamic has tail */
+      if (type == "string" || type == "bytes") {
+        bytes bb = int4To32Bytes(value.size());
+        ret.insert(ret.end(), bb.begin(), bb.end());
+        ret.insert(ret.end(), value.begin(), value.end());
+      }
+      return ret;
     };
     bytes payload;
-    u256 offset = types.size() * 32;
     for (int i = 0; i < (int) values.size(); i += 1) {
       auto exactType = toExactType(types[i]);
       auto value = values[i];
       if (isArray(exactType)) {
         /* Dynamic or Both */
       } else {
-        if (exactType == "string" || exactType == "bytes") {
-          /* Dynamic: Add data offset from starting  */
-          for (int j = 0; j < 32; j++) {
-            auto v = (byte)(offset >> ((32 - j - 1) * 8)) & 0xFF;
-            payload.push_back(v);
-          }
-          /* 32: describe len and actual data size */
-          offset += exactDataSize(value.size()) + 32;
-        } else {
-          /*
-           * Static
-           * bytes - padding right
-           * int,uint - padding left
-           */
-          bytes d = boost::starts_with(exactType, "bytes")
-            ? paddingRight(value, 32)
-            : paddingLeft(value, 32);
-          payload.insert(payload.end(), d.begin(), d.end());
-        }
+        bytes bb;
+        /* Dynamic: Add data offset from starting  */
+        bytes head = encodeHead(exactType, value);
+        payload.insert(payload.end(), head.begin(), head.end());
       }
     }
     /* Add dynamic data */
@@ -110,17 +108,8 @@ namespace fuzzer {
       if (isArray(exactType)) {
         /* Dynamic or Both */
       } else {
-        if (exactType == "string" || exactType == "bytes") {
-          /* len */
-          u256 dataSize = value.size();
-          for (int j = 0; j < 32; j++) {
-            auto v = (byte)(dataSize >> ((32 - j - 1) * 8)) & 0xFF;
-            payload.push_back(v);
-          }
-          /* data */
-          bytes d = paddingRight(value, exactDataSize(value.size()));
-          payload.insert(payload.end(), d.begin(), d.end());
-        }
+        bytes tail = encodeTail(exactType, value);
+        payload.insert(payload.end(), tail.begin(), tail.end());
       }
     }
     bytes base = name == "" ? bytes{} : functionSelector(name, types);
