@@ -15,7 +15,8 @@ namespace fuzzer {
     for (int i = 0; i < 4; i += 1) {
       string pattern = searchPatterns[i];
       string candidate = replaceCandidates[i];
-      if (boost::starts_with(type, pattern)) return candidate + type.substr(pattern.length() - 1);
+      if (boost::starts_with(type, pattern))
+        return candidate + type.substr(pattern.length() - 1);
       if (type == pattern.substr(0, pattern.length() - 1)) return candidate;
     }
     return type;
@@ -23,13 +24,22 @@ namespace fuzzer {
   
   string toExactType(string type) {
     string fullType = tofullType(type);
-    if (fullType == "address") return "uint160";
-    if (fullType == "bool") return "uint8";
+    string searchPatterns[2] = {"address[", "bool["};
+    string replaceCandidates[2] = {"uint160", "uint8"};
+    for (int i = 0; i < 2; i += 1) {
+      string pattern = searchPatterns[i];
+      string candidate = replaceCandidates[i];
+      if (boost::starts_with(fullType, pattern))
+        return candidate + fullType.substr(pattern.length() - 1);
+      if (fullType == pattern.substr(0, pattern.length() - 1)) return candidate;
+    }
     return fullType;
   }
-  // TODO: handle dynamic case
+  
   int getTypeSize(string type) {
     string exactType = toExactType(type);
+    if (exactType == "string" || exactType == "bytes")
+      return MAX_DYNAMIC_SIZE;
     smatch sm;
     regex_match(exactType, sm, regex("[a-z]+(\\d+)"));
     return stoi(sm[1]) / 8;
@@ -41,7 +51,7 @@ namespace fuzzer {
     bytes fullSelector = sha3(name + "(" + boost::algorithm::join(fullTypes, ",") + ")").ref().toBytes();
     return bytes(fullSelector.begin(), fullSelector.begin() + 4);
   }
-  // TODO: handle dynamic case
+  
   bytes encodeABI(string name, vector<string> types, vector<bytes> values) {
     auto isArray = [](string type){ return type.find_last_of("]") == type.length() - 1;};
     auto paddingLeft = [](bytes d, int size) {
@@ -50,26 +60,80 @@ namespace fuzzer {
       temp.insert(temp.end(), d.begin(), d.end());
       return temp;
     };
+    auto paddingRight = [](bytes d, int size) {
+      if ((int) d.size() > size) throw "No need to pad";
+      bytes temp;
+      copy(d.begin(), d.end(), back_inserter(temp));
+      while ((int)temp.size() < size) temp.push_back(0);
+      return temp;
+    };
+    /*
+     * Data size must be multiple of 32;
+     */
+    auto exactDataSize = [](int valueSize) {
+      int exactSize = valueSize % 32 == 0 ? valueSize : (valueSize / 32 + 1) * 32;
+      return exactSize;
+    };
     bytes payload;
-    for (string type : types) {
-      if (isArray(type) || type == "string" || type == "bytes")
-        throw "Have not supported dynamic type yet !";
+    u256 offset = types.size() * 32;
+    for (int i = 0; i < (int) values.size(); i += 1) {
+      auto exactType = toExactType(types[i]);
+      auto value = values[i];
+      if (isArray(exactType)) {
+        /* Dynamic or Both */
+      } else {
+        if (exactType == "string" || exactType == "bytes") {
+          /* Dynamic: Add data offset from starting  */
+          for (int j = 0; j < 32; j++) {
+            auto v = (byte)(offset >> ((32 - j - 1) * 8)) & 0xFF;
+            payload.push_back(v);
+          }
+          /* 32: describe len and actual data size */
+          offset += exactDataSize(value.size()) + 32;
+        } else {
+          /*
+           * Static
+           * bytes - padding right
+           * int,uint - padding left
+           */
+          bytes d = boost::starts_with(exactType, "bytes")
+            ? paddingRight(value, 32)
+            : paddingLeft(value, 32);
+          payload.insert(payload.end(), d.begin(), d.end());
+        }
+      }
+    }
+    /* Add dynamic data */
+    for (int i = 0; i < (int) values.size(); i += 1) {
+      auto exactType = toExactType(types[i]);
+      auto value = values[i];
+      if (isArray(exactType)) {
+        /* Dynamic or Both */
+      } else {
+        if (exactType == "string" || exactType == "bytes") {
+          /* len */
+          u256 dataSize = value.size();
+          for (int j = 0; j < 32; j++) {
+            auto v = (byte)(dataSize >> ((32 - j - 1) * 8)) & 0xFF;
+            payload.push_back(v);
+          }
+          /* data */
+          bytes d = paddingRight(value, exactDataSize(value.size()));
+          payload.insert(payload.end(), d.begin(), d.end());
+        }
+      }
     }
     bytes base = name == "" ? bytes{} : functionSelector(name, types);
-    for (auto value: values) {
-      bytes d = paddingLeft(value, 32);
-      payload.insert(payload.end(), d.begin(), d.end());
-    }
     base.insert(base.end(), payload.begin(), payload.end());
     return base;
   }
-  // TODO: handle dynamic case
+  
   bytes createElem(vector<string> types) {
     int totalSize = 0;
     for (auto type : types) totalSize += getTypeSize(type);
     return bytes(totalSize, 0);
   }
-  // TODO: handle dynamic case
+  
   vector<bytes> decodeElem(vector<string> types, bytes data) {
     vector<bytes> results;
     int startAt = 0;
@@ -82,7 +146,7 @@ namespace fuzzer {
     }
     return results;
   }
-  // TODO: handle dynamic case
+  
   int getElemSize(vector<string> types) {
     int totalSize = 0;
     for (auto type : types) totalSize += getTypeSize(type);

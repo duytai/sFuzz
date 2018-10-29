@@ -6,12 +6,12 @@
 using namespace fuzzer;
 using namespace std;
 
-TEST(Util, swap32)
+TEST(Util, DISABLED_swap32)
 {
   EXPECT_EQ(swap32(2878005473), 3789589163);
   EXPECT_EQ(swap32(2747706352), 4037789347);
 }
-TEST(Util, swap16)
+TEST(Util, DISABLED_swap16)
 {
   EXPECT_EQ(swap16(4080), 61455);
   EXPECT_EQ(swap16(52275), 13260);
@@ -23,7 +23,7 @@ TEST(Util, DISABLED_f)
   EXPECT_EQ(effALen(20), 3);
 }
 
-TEST(Util, CouldBeBitflip)
+TEST(Util, DISABLED_CouldBeBitflip)
 {
   EXPECT_EQ(couldBeBitflip(32), true);
 }
