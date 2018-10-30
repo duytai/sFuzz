@@ -19,6 +19,7 @@ namespace fuzzer {
   
   class ContractABI {
     public:
+      static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);
       static bytes encodeSingle(DataType dt);
   };

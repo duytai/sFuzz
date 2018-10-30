@@ -4,6 +4,49 @@
 using namespace std;
 
 namespace fuzzer {
+  bytes ContractABI::encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic) {
+    bytes ret;
+    if (isDynamic) {
+      bytes payload;
+      bytes header;
+      u256 numElem = dtss.size();
+      if (isSubDynamic) {
+        /* Need Offset*/
+        vector<int> dataOffset = {0};
+        for (auto dts : dtss) {
+          bytes data = encodeArray(dts, isSubDynamic);
+          dataOffset.push_back(dataOffset.back() + data.size());
+          payload.insert(payload.end(), data.begin(), data.end());
+        }
+        for (int i = 0; i < numElem; i += 1) {
+          u256 headerOffset =  32 * numElem + dataOffset[i];
+          for (int i = 0; i < 32; i += 1) {
+            byte b = (byte) (headerOffset >> ((32 - i - 1) * 8)) & 0xFF;
+            header.push_back(b);
+          }
+        }
+      } else {
+        /* Count */
+        for (int i = 0; i < 32; i += 1) {
+          byte b = (byte) (numElem >> ((32 - i - 1) * 8)) & 0xFF;
+          header.push_back(b);
+        }
+        for (auto dts : dtss) {
+          bytes data = encodeArray(dts, isSubDynamic);
+          payload.insert(payload.end(), data.begin(), data.end());
+        }
+      }
+      ret.insert(ret.end(), header.begin(), header.end());
+      ret.insert(ret.end(), payload.begin(), payload.end());
+      return ret;
+    }
+    for (auto dts : dtss) {
+      bytes data = encodeArray(dts, isSubDynamic);
+      ret.insert(ret.end(), data.begin(), data.end());
+    }
+    return ret;
+  }
+  
   bytes ContractABI::encodeArray(vector<DataType> dts, bool isDynamicArray) {
     bytes ret;
     /* T[] */
@@ -11,18 +54,31 @@ namespace fuzzer {
       /* Calculate header and payload */
       bytes payload;
       bytes header;
-      int numElem = dts.size();
-      vector<int> dataOffset = {0};
-      for (auto dt : dts) {
-        bytes data = encodeSingle(dt);
-        dataOffset.push_back(dataOffset.back() + data.size());
-        payload.insert(payload.end(), data.begin(), data.end());
-      }
-      for (int i = 0; i < numElem; i += 1) {
-        u256 headerOffset =  32 * numElem + dataOffset[i];
+      u256 numElem = dts.size();
+      if (dts[0].isDynamic) {
+        /* If element is dynamic then needs offset */
+        vector<int> dataOffset = {0};
+        for (auto dt : dts) {
+          bytes data = encodeSingle(dt);
+          dataOffset.push_back(dataOffset.back() + data.size());
+          payload.insert(payload.end(), data.begin(), data.end());
+        }
+        for (int i = 0; i < numElem; i += 1) {
+          u256 headerOffset =  32 * numElem + dataOffset[i];
+          for (int i = 0; i < 32; i += 1) {
+            byte b = (byte) (headerOffset >> ((32 - i - 1) * 8)) & 0xFF;
+            header.push_back(b);
+          }
+        }
+      } else {
+        /* Do not need offset, count them */
         for (int i = 0; i < 32; i += 1) {
-          byte b = (byte) (headerOffset >> ((32 - i - 1) * 8)) & 0xFF;
+          byte b = (byte) (numElem >> ((32 - i - 1) * 8)) & 0xFF;
           header.push_back(b);
+        }
+        for (auto dt : dts) {
+          bytes data = encodeSingle(dt);
+          payload.insert(payload.end(), data.begin(), data.end());
         }
       }
       ret.insert(ret.end(), header.begin(), header.end());
