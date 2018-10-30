@@ -1,4 +1,6 @@
 #include <iostream>
+#include <boost/algorithm/string.hpp>
+#include <regex>
 #include "ContractABI.h"
 
 using namespace std;
@@ -145,4 +147,54 @@ namespace fuzzer {
     if (this->padLeft) return paddingLeft(32);
     return paddingRight(32);
   }
+  
+  string TypeDef::toRealname(string name) {
+    string fullType = toFullname(name);
+    string searchPatterns[2] = {"address[", "bool["};
+    string replaceCandidates[2] = {"uint160", "uint8"};
+    for (int i = 0; i < 2; i += 1) {
+      string pattern = searchPatterns[i];
+      string candidate = replaceCandidates[i];
+      if (boost::starts_with(fullType, pattern))
+        return candidate + fullType.substr(pattern.length() - 1);
+      if (fullType == pattern.substr(0, pattern.length() - 1)) return candidate;
+    }
+    return fullType;
+  }
+  
+  string TypeDef::toFullname(string name) {
+    string searchPatterns[4] = {"int[", "uint[", "fixed[", "ufixed["};
+    string replaceCandidates[4] = {"int256", "uint256", "fixed128x128", "ufixed128x128"};
+    for (int i = 0; i < 4; i += 1) {
+      string pattern = searchPatterns[i];
+      string candidate = replaceCandidates[i];
+      if (boost::starts_with(name, pattern))
+        return candidate + name.substr(pattern.length() - 1);
+      if (name == pattern.substr(0, pattern.length() - 1)) return candidate;
+    }
+    return name;
+  }
+  
+  vector<int> TypeDef::getDimension(string name) {
+    vector<int> ret;
+    smatch sm;
+    regex_match(name, sm, regex("[a-z]+[0-9]*(\\[(\\d+)\\])*"));
+    for (auto a : sm) {
+      cout << a << endl;
+    }
+    return ret;
+  }
+  
+  TypeDef::TypeDef(string name) {
+    this->name = name;
+    this->fullname = toFullname(name);
+    this->realname = toRealname(name);
+    getDimension("uint256[1][20]");
+  }
+  /*
+    TypeDef::TypeDef(string name, vector<DataType> dts) {
+    }
+    TypeDef::TypeDef(string name, vector<vector<DataType>> dtss) {
+    }
+  */
 }

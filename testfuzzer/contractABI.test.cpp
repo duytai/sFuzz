@@ -5,6 +5,12 @@
 
 using namespace fuzzer;
 
+TEST(ContracABI, typeDef)
+{
+//  DataType dt1(fromHex("0x01"), true, false);
+  TypeDef td("uint[][]");
+}
+
 TEST(ContractABI, encode2DArray)
 {
   DataType dt1(fromHex("0x01"), true, false);
