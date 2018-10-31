@@ -1,6 +1,6 @@
 ## 1. Project structure
 
-I kept the same structure of origin project and added some folders:
+I keep the same structure of origin project and added some folders:
 - `libfuzzer`: fuzzer functions
 - `testfuzzer`: writing unit tests for libfuzzer
 - `fuzzer`: build executable fuzzer
@@ -12,11 +12,10 @@ cd YOUR_PROJECT_FOLDER/
 mkdir build 
 cd build
 cmake .. # common editors
-cmake -G Xcode .. # it will create a project structore for Xcode
+cmake -G Xcode .. # create Xcode's project structure
 ```
-
 ## 3. How to interact with c++ EVM
-The source code is not stable yet, but you can call like this:
+The source code is not stable yet, but you can do like this:
 
 ```c++
 #include <libfuzzer/TargetProgram.h>
@@ -39,5 +38,13 @@ int main() {
   p.invoke(CONTRACT_FUNCTION, functionData, onOp);
   return 1;
 }
-
 ```
+or you can take a look at this file [main.cpp](https://github.com/duytai/aleth/blob/master/aleth-vm/main.cpp) to see offcial example of etheremum c++.
+## 4. Suggestions
+- You can create new library and executable target for your project like: `libasan`(library) and `asan` (library)
+- If you are familar with CMake then it is easy to add new target otherwise [CMake](https://cmake.org/cmake-tutorial/) or copy my CMakelist.txt file and edit.
+
+## 5. IDE
+There are two great editors which support CMake by nature.
+- [Clion](https://www.jetbrains.com/clion/)
+- Xcode
