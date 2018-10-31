@@ -1,11 +1,23 @@
 #include <iostream>
 #include <boost/algorithm/string.hpp>
 #include <regex>
+#include <libdevcore/SHA3.h>
+#include <libdevcore/FixedHash.h>
 #include "ContractABI.h"
 
 using namespace std;
 
 namespace fuzzer {
+  bytes ContractABI::functionSelector(string name, vector<TypeDef> tds) {
+    vector<string> argTypes;
+    transform(tds.begin(), tds.end(), back_inserter(argTypes), [](TypeDef td) {
+      return td.fullname;
+    });
+    string signature = name + "(" + boost::algorithm::join(argTypes, ",") + ")";
+    bytes fullSelector = sha3(signature).ref().toBytes();
+    return bytes(fullSelector.begin(), fullSelector.begin() + 4);
+  }
+  
   bytes ContractABI::encodeTuple(vector<TypeDef> tds) {
     bytes ret;
     /* Payload */
