@@ -6,9 +6,95 @@
 using namespace std;
 
 namespace fuzzer {
-  bytes ContractABI::encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic) {
+  bytes ContractABI::encodeTuple(vector<TypeDef> tds) {
     bytes ret;
-    if (isDynamic) {
+    /* Payload */
+    bytes payload;
+    vector<int> dataOffset = {0};
+    for (auto td : tds) {
+      if (td.isDynamic || td.isDynamicArray || td.isSubDynamicArray) {
+        bytes data;
+        switch (td.dimensions.size()) {
+          case 0: {
+            data = encodeSingle(td.dt);
+            break;
+          }
+          case 1: {
+            data = encodeArray(td.dts, td.isDynamicArray);
+            break;
+          }
+          case 2: {
+            data = encode2DArray(td.dtss, td.isDynamicArray, td.isSubDynamicArray);
+            break;
+          }
+        }
+        dataOffset.push_back(dataOffset.back() + data.size());
+        payload.insert(payload.end(), data.begin(), data.end());
+      }
+    }
+    /* Calculate offset */
+    u256 headerOffset = 0;
+    for (auto td : tds) {
+      if (td.isDynamic || td.isDynamicArray || td.isSubDynamicArray) {
+        headerOffset += 32;
+      } else {
+        switch (td.dimensions.size()) {
+          case 0: {
+            headerOffset += encodeSingle(td.dt).size();
+            break;
+          }
+          case 1: {
+            headerOffset += encodeArray(td.dts, td.isDynamicArray).size();
+            break;
+          }
+          case 2: {
+            headerOffset += encode2DArray(td.dtss, td.isDynamicArray, td.isSubDynamicArray).size();
+            break;
+          }
+        }
+      }
+    }
+    bytes header;
+    int dynamicCount = 0;
+    for (auto td : tds) {
+      /* Dynamic in head */
+      if (td.isDynamic || td.isDynamicArray || td.isSubDynamicArray) {
+        u256 offset = headerOffset + dataOffset[dynamicCount];
+        /* Convert to byte */
+        for (int i = 0; i < 32; i += 1) {
+          byte b = (byte) (offset >> ((32 - i - 1) * 8)) & 0xFF;
+          header.push_back(b);
+        }
+        dynamicCount ++;
+      } else {
+        /* static in head */
+        bytes data;
+        switch (td.dimensions.size()) {
+          case 0: {
+            data = encodeSingle(td.dt);
+            break;
+          }
+          case 1: {
+            data = encodeArray(td.dts, td.isDynamicArray);
+            break;
+          }
+          case 2: {
+            data = encode2DArray(td.dtss, td.isDynamicArray, td.isSubDynamicArray);
+            break;
+          }
+        }
+        header.insert(header.end(), data.begin(), data.end());
+      }
+    }
+    /* Head + Payload */
+    ret.insert(ret.end(), header.begin(), header.end());
+    ret.insert(ret.end(), payload.begin(), payload.end());
+    return ret;
+  }
+  
+  bytes ContractABI::encode2DArray(vector<vector<DataType>> dtss, bool isDynamicArray, bool isSubDynamic) {
+    bytes ret;
+    if (isDynamicArray) {
       bytes payload;
       bytes header;
       u256 numElem = dtss.size();
@@ -19,6 +105,11 @@ namespace fuzzer {
           bytes data = encodeArray(dts, isSubDynamic);
           dataOffset.push_back(dataOffset.back() + data.size());
           payload.insert(payload.end(), data.begin(), data.end());
+        }
+        /* Count */
+        for (int i = 0; i < 32; i += 1) {
+          byte b = (byte) (numElem >> ((32 - i - 1) * 8)) & 0xFF;
+          header.push_back(b);
         }
         for (int i = 0; i < numElem; i += 1) {
           u256 headerOffset =  32 * numElem + dataOffset[i];
@@ -65,6 +156,12 @@ namespace fuzzer {
           dataOffset.push_back(dataOffset.back() + data.size());
           payload.insert(payload.end(), data.begin(), data.end());
         }
+        /* Count */
+        for (int i = 0; i < 32; i += 1) {
+          byte b = (byte) (numElem >> ((32 - i - 1) * 8)) & 0xFF;
+          header.push_back(b);
+        }
+        /* Offset */
         for (int i = 0; i < numElem; i += 1) {
           u256 headerOffset =  32 * numElem + dataOffset[i];
           for (int i = 0; i < 32; i += 1) {
@@ -175,26 +272,69 @@ namespace fuzzer {
     return name;
   }
   
-  vector<int> TypeDef::getDimension(string name) {
+  vector<int> TypeDef::extractDimension(string name) {
     vector<int> ret;
     smatch sm;
-    regex_match(name, sm, regex("[a-z]+[0-9]*(\\[(\\d+)\\])*"));
-    for (auto a : sm) {
-      cout << a << endl;
+    regex_match(name, sm, regex("[a-z]+[0-9]*\\[(\\d*)\\]\\[(\\d*)\\]"));
+    if (sm.size() == 3) {
+      /* Two dimension array */
+      ret.push_back(sm[1] == "" ? 0 : stoi(sm[1]));
+      ret.push_back(sm[2] == "" ? 0 : stoi(sm[2]));
+      return ret;
+    }
+    regex_match(name, sm, regex("[a-z]+[0-9]*\\[(\\d*)\\]"));
+    if (sm.size() == 2) {
+      /* One dimension array */
+      ret.push_back(sm[1] == "" ? 0 : stoi(sm[1]));
+      return ret;
     }
     return ret;
+  }
+  
+  void TypeDef::addValue(vector<vector<bytes>> vss) {
+    if (this->dimensions.size() != 2) throw "Invalid dimension";;
+    for (auto vs : vss) {
+      vector<DataType> dts;
+      for (auto v : vs) {
+        dts.push_back(DataType(v, this->padLeft, this->isDynamic));
+      }
+      this->dtss.push_back(dts);
+    }
+  }
+  
+  void TypeDef::addValue(vector<bytes> vs) {
+    if (this->dimensions.size() != 1) throw "Invalid dimension";
+    for (auto v : vs) {
+      this->dts.push_back(DataType(v, this->padLeft, this->isDynamic));
+    }
+  }
+  
+  void TypeDef::addValue(bytes v) {
+    if (this->dimensions.size()) throw "Invalid dimension";
+    this->dt = DataType(v, this->padLeft, this->isDynamic);
   }
   
   TypeDef::TypeDef(string name) {
     this->name = name;
     this->fullname = toFullname(name);
     this->realname = toRealname(name);
-    getDimension("uint256[1][20]");
+    this->dimensions = extractDimension(name);
+    this->padLeft = !boost::starts_with(this->fullname, "bytes") && !boost::starts_with(this->fullname, "string");
+    int numDimension = this->dimensions.size();
+    if (!numDimension) {
+      this->isDynamic = this->fullname == "string" || this->name == "bytes";
+      this->isDynamicArray = false;
+      this->isSubDynamicArray = false;
+    } else if (numDimension == 1) {
+      this->isDynamic = boost::starts_with(this->fullname, "string[")
+      || boost::starts_with(this->fullname, "bytes[");
+      this->isDynamicArray = this->dimensions[0] == 0;
+      this->isSubDynamicArray = false;
+    } else {
+      this->isDynamic = boost::starts_with(this->fullname, "string[")
+      || boost::starts_with(this->fullname, "bytes[");
+      this->isDynamicArray = this->dimensions[0] == 0;
+      this->isSubDynamicArray = this->dimensions[1] == 0;
+    }
   }
-  /*
-    TypeDef::TypeDef(string name, vector<DataType> dts) {
-    }
-    TypeDef::TypeDef(string name, vector<vector<DataType>> dtss) {
-    }
-  */
 }
