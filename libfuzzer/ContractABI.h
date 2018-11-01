@@ -39,8 +39,26 @@ namespace fuzzer {
     vector<vector<DataType>> dtss;
   };
   
+  struct FuncDef {
+    string name;
+    vector<TypeDef> tds;
+    FuncDef(){};
+    FuncDef(string name, vector<TypeDef> tds);
+  };
+  
   class ContractABI {
     public:
+      vector<FuncDef> fds;
+      ContractABI(){};
+      ContractABI(string abiJson);
+      /* encoded ABI of contract constructor */
+      bytes encodeConstructor();
+      /* encoded ABI of contract functions */
+      vector<bytes> encodeFunctions();
+      /* Create random testcase for fuzzer */
+      bytes randomTestcase();
+      /* Update then call encodeConstructor/encodeFunction to feed to evm */
+      void updateTestData(bytes data);
       static bytes encodeTuple(vector<TypeDef> tds);
       static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);

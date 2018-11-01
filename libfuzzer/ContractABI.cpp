@@ -1,13 +1,143 @@
 #include <iostream>
 #include <boost/algorithm/string.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/json_parser.hpp>
 #include <regex>
 #include <libdevcore/SHA3.h>
 #include <libdevcore/FixedHash.h>
 #include "ContractABI.h"
 
 using namespace std;
+namespace pt = boost::property_tree;
 
 namespace fuzzer {
+  FuncDef::FuncDef(string name, vector<TypeDef> tds) {
+    this->name = name;
+    this->tds = tds;
+  }
+  /*
+   * Start with a simple assumption:
+   * - dynamic_size: 32
+   * - array_size: 5
+   * - sub_array_size: 5
+   */
+  
+  void ContractABI::updateTestData(bytes data) {
+    int offset = 0;
+    for (auto &fd : this->fds) {
+      for (auto &td : fd.tds) {
+        switch (td.dimensions.size()) {
+          case 0: {
+            bytes d(data.begin() + offset, data.begin() + offset + 32);
+            td.addValue(d);
+            offset += 32;
+            break;
+          }
+          case 1: {
+            vector<bytes> ds;
+            int numElem = td.dimensions[0] ? td.dimensions[0] : 5;
+            for (int i = 0; i < numElem; i += 1) {
+              bytes d(data.begin() + offset, data.begin() + offset + 32);
+              ds.push_back(d);
+              offset += 32;
+            }
+            td.addValue(ds);
+            break;
+          }
+          case 2: {
+            vector<vector<bytes>> dss;
+            int numElem = td.dimensions[0] ? td.dimensions[0] : 5;
+            int numSubElem = td.dimensions[1] ? td.dimensions[1] : 5;
+            for (int i = 0; i < numElem; i += 1) {
+              vector<bytes> ds;
+              for (int j = 0; j < numSubElem; j += 1) {
+                bytes d(data.begin() + offset, data.begin() + offset + 32);
+                ds.push_back(d);
+                offset += 32;
+              }
+              dss.push_back(ds);
+            }
+            td.addValue(dss);
+            break;
+          }
+        }
+      }
+    }
+  }
+  
+  bytes ContractABI::randomTestcase() {
+    /* Random value for ABI */
+    bytes ret;
+    for (auto fd : this->fds) {
+      for (auto td : fd.tds) {
+        switch(td.dimensions.size()) {
+          case 0: {
+            bytes data(32, 0);
+            ret.insert(ret.end(), data.begin(), data.end());
+            break;
+          }
+          case 1: {
+            int numElem = td.dimensions[0] ? td.dimensions[0] : 5;
+            for (int i = 0; i < numElem; i += 1) {
+              bytes data = bytes(32, 0);
+              ret.insert(ret.end(), data.begin(), data.end());
+            }
+            break;
+          }
+          case 2: {
+            int numElem = td.dimensions[0] ? td.dimensions[0] : 5;
+            int numSubElem = td.dimensions[1] ? td.dimensions[1] : 5;
+            for (int i = 0; i < numElem; i += 1) {
+              for (int j = 0; j < numSubElem; j += 1) {
+                bytes data = bytes(32, 0);
+                ret.insert(ret.end(), data.begin(), data.end());
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+    return ret;
+  }
+  
+  ContractABI::ContractABI(string abiJson) {
+    stringstream ss;
+    ss << abiJson;
+    pt::ptree root;
+    pt::read_json(ss, root);
+    for (auto node : root) {
+      auto inputNodes = node.second.get_child("inputs");
+      vector<TypeDef> tds;
+      string type = node.second.get<string>("type");
+      string name = type == "constructor" ? "" : node.second.get<string>("name");
+      for (auto inputNode : inputNodes) {
+        string type = inputNode.second.get<string>("type");
+        tds.push_back(TypeDef(type));
+      }
+      this->fds.push_back(FuncDef(name, tds));
+    };
+  }
+  
+  bytes ContractABI::encodeConstructor() {
+    auto it = find_if(fds.begin(), fds.end(), [](FuncDef fd) { return fd.name == "";});
+    if (it != fds.end()) return encodeTuple((*it).tds);
+    return bytes(0, 0);
+  }
+  
+  vector<bytes> ContractABI::encodeFunctions() {
+    vector<bytes> ret;
+    for (auto fd : fds) {
+      if (fd.name != "") {
+        bytes selector = functionSelector(fd.name /* name */, fd.tds /* type defs */);
+        bytes data = encodeTuple(fd.tds);
+        selector.insert(selector.end(), data.begin(), data.end());
+        ret.push_back(selector);
+      }
+    }
+    return ret;
+  }
+  
   bytes ContractABI::functionSelector(string name, vector<TypeDef> tds) {
     vector<string> argTypes;
     transform(tds.begin(), tds.end(), back_inserter(argTypes), [](TypeDef td) {

@@ -5,6 +5,19 @@
 
 using namespace fuzzer;
 
+TEST(ABIParser, parseJSON)
+{
+  string json = "[{\"constant\":false,\"inputs\":[{\"name\":\"a\",\"type\":\"int256\"},{\"name\":\"b\",\"type\":\"int256\"},{\"name\":\"c\",\"type\":\"address\"},{\"name\":\"lol\",\"type\":\"bytes\"}],\"name\":\"add\",\"outputs\":[{\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"name\":\"init\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"}]";
+  ContractABI ca(json);
+  bytes data = ca.randomTestcase();
+  EXPECT_EQ(data, bytes(5 * 32, 0));
+  ca.updateTestData(bytes(5 * 32, 255));
+  EXPECT_EQ(ca.encodeConstructor(), bytes(32, 255));
+  vector<bytes> vs = ca.encodeFunctions();
+  EXPECT_EQ(vs[0], fromHex("0ec5ae90ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff00000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000020ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+}
+
+
 TEST(ContractABI, TypeDef001)
 {
   TypeDef td1("uint32");
