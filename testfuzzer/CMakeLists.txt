@@ -9,14 +9,8 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 # Unit Tests
 ################################
 # Add test cpp file
-add_executable(testfuzzer
-  targetProgram.test.cpp
-  mutation.test.cpp
-  util.test.cpp
-  targetContainer.test.cpp
-  fuzzer.test.cpp
-  contractABI.test.cpp
-)
+file(GLOB sources "*.cpp")
+add_executable(testfuzzer ${sources})
 # Link test executable against gtest & gtest_main
 target_link_libraries(testfuzzer gtest gtest_main libfuzzer)
 add_test(testfuzze testfuzzer)

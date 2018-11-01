@@ -16,6 +16,10 @@ namespace fuzzer {
   int effALen(int l) {
     return effAPos(l) + !!effRem(l);
   }
+  
+  int effSpanALen(int p, int l) {
+    return (effAPos(p + l - 1) - effAPos(p) + 1);
+  }
   /* Helper function to see if a particular change (xor_val = old ^ new) could
    be a product of deterministic bit flips with the lengths and stepovers
    attempted by afl-fuzz. This is used to avoid dupes in some of the

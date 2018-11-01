@@ -1,0 +1,13 @@
+#include <iostream>
+
+#include "gtest/gtest.h"
+#include <libfuzzer/Dictionary.h>
+
+using namespace fuzzer;
+
+TEST(Dictionary, DISABLED_parse)
+{
+  bytes data = fromHex("6080604052620186a0600055348015601657600080fd5b506040516020806082833981018060405281019080805190602001909291905050508060008190555050603580604d6000396000f3006080604052600080fd00a165627a7a72305820c8406c99177694f7fd1d592e0da71d4cb90fe6f9561428aa560b89e59e2b6fb40029");
+  Dictionary dict(data);
+  EXPECT_EQ(dict.extras.size(), 23);
+}

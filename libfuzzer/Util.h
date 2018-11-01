@@ -14,6 +14,7 @@ namespace fuzzer {
   typedef int32_t  s32;
   typedef int64_t  s64;
   
+  static u32 MAX_DET_EXTRAS = 200;
   static u32 HAVOC_BLK_XL = 32768;
   static u32 HAVOC_BLK_SMALL = 32;
   static u32 HAVOC_BLK_MEDIUM = 128;
@@ -27,7 +28,7 @@ namespace fuzzer {
   static int SPLICE_HAVOC = 32;
   static int HAVOC_MIN = 16;
   static int EFF_MIN_LEN = 1;
-  static int EFF_MAP_SCALE2 = 3;
+  static int EFF_MAP_SCALE2 = 5; // 32 bytes block
   static int MAP_SIZE_POW2 = 16;
   static int MAP_SIZE = (1 << MAP_SIZE_POW2);
   static int HASH_CONST = 0xa5b35705;
@@ -43,6 +44,8 @@ namespace fuzzer {
   int effRem(int x);
   /* Count number of efficient block*/
   int effALen(int l);
+  /* Len in effector map from position p to p + l */
+  int effSpanALen(int p, int l);
   bool couldBeBitflip(u32 xorVal);
   bool couldBeArith(u32 oldVal, u32 newVal, u8 len);
   bool couldBeInterest(u32 oldVal, u32 newVal, u8 blen, u8 checkLe);

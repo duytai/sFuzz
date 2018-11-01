@@ -1,4 +1,5 @@
 #include "Mutation.h"
+#include "Dictionary.h"
 #include "Util.h"
 
 using namespace std;
@@ -6,7 +7,7 @@ using namespace fuzzer;
 
 int Mutation::havocDiv = 1;
 
-Mutation::Mutation(FuzzItem item): curFuzzItem(item), dataSize(item.data.size()) {
+Mutation::Mutation(FuzzItem item, Dictionary dict): curFuzzItem(item), dict(dict), dataSize(item.data.size()) {
   effCount = 0;
   spliceCycle = 0;
   doingDet = 1;
@@ -274,6 +275,39 @@ void Mutation::fourInterest(OnMutateFunc cb) {
       }
     }
     *(u32*)(out_buf + i) = orig;
+  }
+}
+
+void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
+  byte *outBuf = &curFuzzItem.data[0];
+  byte inBuf[curFuzzItem.data.size()];
+  memcpy(inBuf, outBuf, curFuzzItem.data.size());
+  u32 extrasCount = dict.extras.size();
+  /*
+   * In solidity - dataBlock is 32 bytes then change to step = 32, not 1
+   */
+  for (u32 i = 0; i < (u32)dataSize; i += 32) {
+    u32 lastLen = 0;
+    for (u32 j = 0; j < extrasCount; j += 1) {
+      byte *extrasBuf = &dict.extras[j].data[0];
+      byte *effBuf = &eff[0];
+      /* Skip extras probabilistically if extras_cnt > MAX_DET_EXTRAS. Also
+       skip them if there's no room to insert the payload, if the token
+       is redundant, or if its entire span has no bytes set in the effector
+       map. */
+      if ((extrasCount > MAX_DET_EXTRAS
+          && UR(extrasCount) > MAX_DET_EXTRAS)
+          || !memcmp(extrasBuf, outBuf + i, 32)
+          || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, 32))
+          ) {
+        continue;
+      }
+      lastLen = 32;
+      memcpy(outBuf + i, extrasBuf, lastLen);
+      cb(curFuzzItem.data);
+    }
+    /* Restore all the clobbered memory. */
+    memcpy(outBuf + i, inBuf + i, lastLen);
   }
 }
 /*

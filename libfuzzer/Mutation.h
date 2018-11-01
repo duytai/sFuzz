@@ -10,6 +10,7 @@
 #include <libethereum/LastBlockHashesFace.h>
 #include "TargetContainer.h"
 #include "Fuzzer.h"
+#include "Dictionary.h"
 
 using namespace dev;
 using namespace eth;
@@ -19,9 +20,10 @@ namespace fuzzer {
   using OnMutateFunc = function<FuzzItem (bytes b)>;
   class Mutation {
     FuzzItem curFuzzItem;
+    Dictionary dict;
     int dataSize;
     int effCount;
-    /* update later */
+    /* TODO: update later */
     u32 spliceCycle;
     u8 doingDet;
     u32 perfScore;
@@ -29,7 +31,7 @@ namespace fuzzer {
     bytes eff;
     void flipbit(int pos);
     public:
-      Mutation(FuzzItem item);
+      Mutation(FuzzItem item, Dictionary dict);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);
@@ -42,6 +44,7 @@ namespace fuzzer {
       void singleInterest(OnMutateFunc cb);
       void twoInterest(OnMutateFunc cb);
       void fourInterest(OnMutateFunc cb);
+      void overwriteWithDictionary(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       void splice(OnMutateFunc cb);
       static int havocDiv;

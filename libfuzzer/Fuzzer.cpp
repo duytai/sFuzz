@@ -2,6 +2,7 @@
 #include "Mutation.h"
 #include "Util.h"
 #include "ContractABI.h"
+#include "Dictionary.h"
 
 using namespace dev;
 using namespace eth;
@@ -32,6 +33,7 @@ void Fuzzer::start() {
   int idx = 0;
   int totalFuzzed = 0;
   TargetContainer container(code, ca);
+  Dictionary dict(code);
   vector<FuzzItem> queues;
   /* Update virgin bits and save testcase */
   auto saveIfInterest = [&](FuzzItem item) {
@@ -54,8 +56,9 @@ void Fuzzer::start() {
   /* Jump to fuzz round */
   while (idx < 1) {
     FuzzItem curItem = queues[idx];
-    Mutation mutation(curItem);
+    Mutation mutation(curItem, dict);
     Timer timer;
+    /*
     mutation.singleWalkingBit(commomFuzzStuff);
     mutation.twoWalkingBit(commomFuzzStuff);
     mutation.fourWalkingBit(commomFuzzStuff);
@@ -68,7 +71,8 @@ void Fuzzer::start() {
     mutation.singleInterest(commomFuzzStuff);
     mutation.twoInterest(commomFuzzStuff);
     mutation.fourInterest(commomFuzzStuff);
-    // 16365
+    */
+    mutation.overwriteWithDictionary(commomFuzzStuff);
     cout << "EXEC  : " << timer.elapsed() << endl;
     cout << "TOTAl : " << totalFuzzed << endl;
     cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;

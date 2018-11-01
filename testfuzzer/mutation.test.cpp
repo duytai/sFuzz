@@ -3,6 +3,7 @@
 #include "gtest/gtest.h"
 #include <libfuzzer/Mutation.h>
 #include <libfuzzer/Fuzzer.h>
+#include <libfuzzer/Dictionary.h>
 
 using namespace fuzzer;
 using namespace std;
@@ -10,7 +11,8 @@ using namespace std;
 TEST(Mutation, DISABLED_bitFlip)
 {
   FuzzItem item(fromHex("0xffffffffaaaaaaaabbbbbbbbccccccccddddddddeeeeeeee"));
-  Mutation m = Mutation(item);
+  Dictionary dict(fromHex("0x00"));
+  Mutation m = Mutation(item, dict);
   auto emptyCallback = [](bytes d){
     FuzzItem item(d);
     return item;
