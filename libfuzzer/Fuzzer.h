@@ -9,6 +9,7 @@
 #include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
 #include "TargetContainer.h"
+#include "ContractABI.h"
 #include "Util.h"
 
 using namespace dev;
@@ -16,10 +17,6 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  static const unsigned int HIT_AGAIN = 1;
-  static const unsigned int NEW_BRANCH = 2;
-  static const unsigned int NOTHING = 0;
-  
   struct FuzzItem {
     FuzzItem() {}
     FuzzItem(bytes data) {
@@ -33,13 +30,12 @@ namespace fuzzer {
   
   class Fuzzer {
     private:
+      ContractABI ca;
       bytes code;
-      map<string, vector<string>> abi;
       bytes virginbits;
-      bytes createInitialInput();
     public:
       u8 hasNewBits(bytes tracebits);
-      Fuzzer(bytes c /* code */, map<string, vector<string>> a /* abi */);
+      Fuzzer(bytes code /* code */, ContractABI ca /* contract abi */);
       void start();
   };
 }

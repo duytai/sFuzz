@@ -1,24 +1,14 @@
 #include "Fuzzer.h"
-#include "Abi.h"
 #include "Mutation.h"
 #include "Util.h"
+#include "ContractABI.h"
 
 using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
 /* Setup virgin byte to 255 */
-Fuzzer::Fuzzer(bytes c, map<string, vector<string>> a): code(c), abi(a), virginbits(bytes(MAP_SIZE, 255)){}
-
-/* Create empty input */
-bytes Fuzzer::createInitialInput() {
-  bytes data;
-  for (auto e : abi) {
-    bytes b = createElem(e.second);
-    data.insert(data.end(), b.begin(), b.end());
-  }
-  return data;
-}
+Fuzzer::Fuzzer(bytes code, ContractABI ca): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)){}
 
 /* Detect new branch by comparing tracebits to virginbits */
 u8 Fuzzer::hasNewBits(bytes tracebits) {
@@ -41,7 +31,7 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
 void Fuzzer::start() {
   int idx = 0;
   int totalFuzzed = 0;
-  TargetContainer container(code, abi);
+  TargetContainer container(code, ca);
   vector<FuzzItem> queues;
   /* Update virgin bits and save testcase */
   auto saveIfInterest = [&](FuzzItem item) {
@@ -60,7 +50,7 @@ void Fuzzer::start() {
     return item;
   };
   /* Exec the sample testcase first */
-  commomFuzzStuff(createInitialInput());
+  commomFuzzStuff(ca.randomTestcase());
   /* Jump to fuzz round */
   while (idx < 1) {
     FuzzItem curItem = queues[idx];

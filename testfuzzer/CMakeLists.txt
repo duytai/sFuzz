@@ -10,7 +10,6 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 ################################
 # Add test cpp file
 add_executable(testfuzzer
-  abi.test.cpp
   targetProgram.test.cpp
   mutation.test.cpp
   util.test.cpp

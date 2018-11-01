@@ -1,6 +1,6 @@
 #include "TargetContainer.h"
-#include "Abi.h"
 #include "Util.h"
+#include "ContractABI.h"
 
 using namespace dev;
 using namespace eth;
@@ -8,7 +8,7 @@ using namespace std;
 using namespace fuzzer;
 
 namespace fuzzer {
-  TargetContainer::TargetContainer(bytes c, map<string, vector<string>> a): code(c), abi(a){
+  TargetContainer::TargetContainer(bytes code, ContractABI ca): code(code), ca(ca){
     program.deploy(code);
   }
   
@@ -25,19 +25,13 @@ namespace fuzzer {
       prevInst = inst;
     };
     /* Decode and call functions */
-    int startAt = 0;
     Timer timer;
-    for (auto it : abi) {
-      /* Break into function data */
-      auto elemSize = getElemSize(it.second);
-      bytes elemData;
-      copy(data.begin() + startAt, data.begin() + startAt + elemSize, back_inserter(elemData));
-      vector<bytes> values = decodeElem(it.second, elemData);
-      /* Try to decode and call function here */
-      bytes signature = encodeABI(it.first, it.second, values);
-      int type = it.first == "" ? CONTRACT_CONSTRUCTOR : CONTRACT_FUNCTION;
-      program.invoke(type, signature, onOp);
-      startAt += elemSize;
+    ca.updateTestData(data);
+    bytes con = ca.encodeConstructor();
+    vector<bytes> funcs = ca.encodeFunctions();
+    program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    for (auto func: funcs) {
+      program.invoke(CONTRACT_FUNCTION, func, onOp);
     }
     /*
      Reset program and deploy again becuase

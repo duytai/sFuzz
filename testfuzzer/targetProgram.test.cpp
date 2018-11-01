@@ -3,7 +3,6 @@
 
 #include "gtest/gtest.h"
 #include <libfuzzer/TargetProgram.h>
-#include <libfuzzer/Abi.h>
 
 using namespace fuzzer;
 
@@ -14,8 +13,8 @@ TEST(TargetProgram, DISABLED_deploy)
                      VMFace const*, ExtVMFace const*) {};
   TargetProgram p;
   p.deploy(fromHex(codeStr));
-  bytes data = encodeABI("", vector<string>{"int32"}, vector<bytes>{fromHex("4")});
-  bytes addData = encodeABI("add", vector<string> {"int32", "int32"}, vector<bytes> {fromHex("1"), fromHex("4")});
+  bytes data = fromHex("0000000000000000000000000000000000000000000000000000000000000004");
+  bytes addData = fromHex("e42a722b00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000004");
   p.invoke(CONTRACT_CONSTRUCTOR,data, onOp);
   auto r = p.invoke(CONTRACT_FUNCTION,addData, onOp);
   cout << r.output << endl;
