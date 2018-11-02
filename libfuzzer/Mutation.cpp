@@ -396,7 +396,6 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
  Has to update: doingDet, perfScore, havocDiv, extraCnt, aExtraCnt
  */
 void Mutation::havoc(OnMutateFunc) {
-  int tempLen = dataSize;
   byte *out_buf = &curFuzzItem.data[0];
   for (int stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
@@ -405,52 +404,52 @@ void Mutation::havoc(OnMutateFunc) {
       switch (val) {
         case 0: {
           /* Flip a single bit somewhere. Spooky! */
-          flipbit(UR(tempLen << 3));
+          flipbit(UR(dataSize << 3));
           break;
         }
         case 1: {
           /* Set byte to interesting value. */
-          curFuzzItem.data[UR(tempLen)] = INTERESTING_8[UR(INTERESTING_8.size())];
+          curFuzzItem.data[UR(dataSize)] = INTERESTING_8[UR(INTERESTING_8.size())];
           break;
         }
         case 2: {
           /* Set word to interesting value, randomly choosing endian. */
-          if (tempLen < 2) break;
+          if (dataSize < 2) break;
           if (UR(2)) {
-            *(u16*)(out_buf + UR(tempLen - 1)) = INTERESTING_16[UR(INTERESTING_16.size() >> 1)];
+            *(u16*)(out_buf + UR(dataSize - 1)) = INTERESTING_16[UR(INTERESTING_16.size() >> 1)];
           } else {
-            *(u16*)(out_buf + UR(tempLen - 1)) = swap16(INTERESTING_16[UR(INTERESTING_16.size() >> 1)]);
+            *(u16*)(out_buf + UR(dataSize - 1)) = swap16(INTERESTING_16[UR(INTERESTING_16.size() >> 1)]);
           }
           break;
         }
         case 3: {
           /* Set dword to interesting value, randomly choosing endian. */
-          if (tempLen < 4) break;
+          if (dataSize < 4) break;
           if (UR(2)) {
-            *(u32*)(out_buf + UR(tempLen - 3)) = INTERESTING_32[UR(INTERESTING_32.size() >> 2)];
+            *(u32*)(out_buf + UR(dataSize - 3)) = INTERESTING_32[UR(INTERESTING_32.size() >> 2)];
           } else {
-            *(u32*)(out_buf + UR(tempLen - 3)) = swap32(INTERESTING_32[UR(INTERESTING_32.size() >> 2)]);
+            *(u32*)(out_buf + UR(dataSize - 3)) = swap32(INTERESTING_32[UR(INTERESTING_32.size() >> 2)]);
           }
           break;
         }
         case 4: {
           /* Randomly subtract from byte. */
-          out_buf[UR(tempLen)] -= 1 + UR(ARITH_MAX);
+          out_buf[UR(dataSize)] -= 1 + UR(ARITH_MAX);
           break;
         }
         case 5: {
           /* Randomly add to byte. */
-          out_buf[UR(tempLen)] += 1 + UR(ARITH_MAX);
+          out_buf[UR(dataSize)] += 1 + UR(ARITH_MAX);
           break;
         }
         case 6: {
           /* Randomly subtract from word, random endian. */
-          if (tempLen < 2) break;
+          if (dataSize < 2) break;
           if (UR(2)) {
-            u32 pos = UR(tempLen - 1);
+            u32 pos = UR(dataSize - 1);
             *(u16*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
           } else {
-            u32 pos = UR(tempLen - 1);
+            u32 pos = UR(dataSize - 1);
             u16 num = 1 + UR(ARITH_MAX);
             *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) - num);
           }
@@ -458,12 +457,12 @@ void Mutation::havoc(OnMutateFunc) {
         }
         case 7: {
           /* Randomly add to word, random endian. */
-          if (tempLen < 2) break;
+          if (dataSize < 2) break;
           if (UR(2)) {
-            u32 pos = UR(tempLen - 1);
+            u32 pos = UR(dataSize - 1);
             *(u16*)(out_buf + pos) += 1 + UR(ARITH_MAX);
           } else {
-            u32 pos = UR(tempLen - 1);
+            u32 pos = UR(dataSize - 1);
             u16 num = 1 + UR(ARITH_MAX);
             *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) + num);
           }
@@ -471,12 +470,12 @@ void Mutation::havoc(OnMutateFunc) {
         }
         case 8: {
           /* Randomly subtract from dword, random endian. */
-          if (tempLen < 4) break;
+          if (dataSize < 4) break;
           if (UR(2)) {
-            u32 pos = UR(tempLen - 3);
+            u32 pos = UR(dataSize - 3);
             *(u32*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
           } else {
-            u32 pos = UR(tempLen - 3);
+            u32 pos = UR(dataSize - 3);
             u32 num = 1 + UR(ARITH_MAX);
             *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) - num);
           }
@@ -484,12 +483,12 @@ void Mutation::havoc(OnMutateFunc) {
         }
         case 9: {
           /* Randomly add to dword, random endian. */
-          if (tempLen < 4) break;
+          if (dataSize < 4) break;
           if (UR(2)) {
-            u32 pos = UR(tempLen - 3);
+            u32 pos = UR(dataSize - 3);
             *(u32*)(out_buf + pos) += 1 + UR(ARITH_MAX);
           } else {
-            u32 pos = UR(tempLen - 3);
+            u32 pos = UR(dataSize - 3);
             u32 num = 1 + UR(ARITH_MAX);
             *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) + num);
           }
@@ -499,10 +498,18 @@ void Mutation::havoc(OnMutateFunc) {
           /* Just set a random byte to a random value. Because,
            why not. We use XOR with 1-255 to eliminate the
            possibility of a no-op. */
-          out_buf[UR(tempLen)] ^= 1 + UR(255);
+          out_buf[UR(dataSize)] ^= 1 + UR(255);
           break;
         }
         case 11 ... 12: {
+          /* Delete bytes. We're making this a bit more likely
+           than insertion (the next option) in hopes of keeping
+           files reasonably small. */
+          if (dataSize < 2) break;
+          u32 delLen = chooseBlockLen(dataSize - 1);
+          u32 delFrom = UR(dataSize - delLen + 1);
+          curFuzzItem.data.erase(curFuzzItem.data.begin() + delFrom, curFuzzItem.data.begin() + delFrom + delLen);
+          dataSize -= delLen;
           break;
         }
         case 13: {

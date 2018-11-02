@@ -135,25 +135,10 @@ namespace fuzzer {
   }
   
   u32 chooseBlockLen(u32 limit) {
-    u32 minValue, maxValue;
-    auto MIN = [](u32 a, u32 b) {
-      if (a > b) return b;
-      return a;
-    };
-    switch (UR(1)) {
-      case 0: {
-        minValue = 1;
-        maxValue = HAVOC_BLK_SMALL;
-        break;
-      }
-      case 1: {
-        minValue = HAVOC_BLK_SMALL;
-        maxValue = HAVOC_BLK_MEDIUM;
-        break;
-      }
-    }
-    if (minValue >= limit) minValue = 1;
-    return minValue + UR(MIN(maxValue, limit) - minValue + 1);
+    /* Delete at most: 1/4 */
+    int maxFactor = limit / (4 * 32);
+    if (!maxFactor) return 0;
+    return (UR(maxFactor) + 1) * 32;
   }
 }
 

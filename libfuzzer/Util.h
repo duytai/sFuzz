@@ -20,7 +20,7 @@ namespace fuzzer {
   static u32 HAVOC_BLK_XL = 32768;
   static u32 HAVOC_BLK_SMALL = 32;
   static u32 HAVOC_BLK_MEDIUM = 128;
-  static u32 HAVOC_BLK_LARGE = 1500;
+  static u32 HAVOC_BLK_LARGE = 1024;
   static u32 MAX_FILE = (1024 * 100); // 100kb
   static u32 MIN_AUTO_EXTRA = 3;
   static u32 MAX_AUTO_EXTRA = 33;

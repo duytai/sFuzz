@@ -25,7 +25,6 @@ namespace fuzzer {
     AutoDictionary& autoDict;
     int dataSize;
     int effCount;
-    /* TODO: update later */
     bytes eff;
     void flipbit(int pos);
     public:
