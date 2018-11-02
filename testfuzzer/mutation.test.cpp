@@ -12,7 +12,8 @@ TEST(Mutation, DISABLED_bitFlip)
 {
   FuzzItem item(fromHex("0xffffffffaaaaaaaabbbbbbbbccccccccddddddddeeeeeeee"));
   Dictionary dict(fromHex("0x00"));
-  Mutation m = Mutation(item, dict);
+  AutoDictionary autoDict;
+  Mutation m = Mutation(item, dict, autoDict);
   auto emptyCallback = [](bytes d){
     FuzzItem item(d);
     return item;

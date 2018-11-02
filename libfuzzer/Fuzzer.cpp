@@ -3,6 +3,7 @@
 #include "Util.h"
 #include "ContractABI.h"
 #include "Dictionary.h"
+#include "AutoDictionary.h"
 
 using namespace dev;
 using namespace eth;
@@ -34,6 +35,7 @@ void Fuzzer::start() {
   int totalFuzzed = 0;
   TargetContainer container(code, ca);
   Dictionary dict(code);
+  AutoDictionary autoDict;
   vector<FuzzItem> queues;
   /* Update virgin bits and save testcase */
   auto saveIfInterest = [&](FuzzItem item) {
@@ -56,22 +58,28 @@ void Fuzzer::start() {
   /* Jump to fuzz round */
   while (idx < 1) {
     FuzzItem curItem = queues[idx];
-    Mutation mutation(curItem, dict);
+    Mutation mutation(curItem, dict, autoDict);
     Timer timer;
-    //mutation.singleWalkingBit(commomFuzzStuff);
-    //mutation.twoWalkingBit(commomFuzzStuff);
-    //mutation.fourWalkingBit(commomFuzzStuff);
-    //mutation.singleWalkingByte(commomFuzzStuff);
-    //mutation.twoWalkingByte(commomFuzzStuff);
-    //mutation.fourWalkingByte(commomFuzzStuff);
-    //mutation.singleArith(commomFuzzStuff);
-    //mutation.twoArith(commomFuzzStuff);
-    //mutation.fourArith(commomFuzzStuff);
-    //mutation.singleInterest(commomFuzzStuff);
-    //mutation.twoInterest(commomFuzzStuff);
-    //mutation.fourInterest(commomFuzzStuff);
-    //mutation.overwriteWithDictionary(commomFuzzStuff);
-    mutation.insertWithDictionary(commomFuzzStuff);
+//    mutation.singleWalkingBit(commomFuzzStuff);
+//    mutation.twoWalkingBit(commomFuzzStuff);
+//    mutation.fourWalkingBit(commomFuzzStuff);
+//    mutation.singleWalkingByte(commomFuzzStuff);
+//    mutation.twoWalkingByte(commomFuzzStuff);
+//    mutation.fourWalkingByte(commomFuzzStuff);
+//    mutation.singleArith(commomFuzzStuff);
+//    mutation.twoArith(commomFuzzStuff);
+//    mutation.fourArith(commomFuzzStuff);
+//    mutation.singleInterest(commomFuzzStuff);
+//    mutation.twoInterest(commomFuzzStuff);
+//    mutation.fourInterest(commomFuzzStuff);
+//    if (dict.extras.size()) {
+//      mutation.overwriteWithDictionary(commomFuzzStuff);
+//      mutation.insertWithDictionary(commomFuzzStuff);
+//    }
+//    if (autoDict.extras.size()) {
+//      mutation.overwriteWithAutoDictionary(commomFuzzStuff);
+//    }
+    mutation.havoc(commomFuzzStuff);
     cout << "EXEC  : " << timer.elapsed() << endl;
     cout << "TOTAl : " << totalFuzzed << endl;
     cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;

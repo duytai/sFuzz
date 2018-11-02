@@ -10,13 +10,13 @@ using namespace dev;
 
 namespace fuzzer {
   /*
-  * Read push data inside bytecode to from dictionary
-  * Pad left and right to enough 32 bytes
-  */
-  class Dictionary {
+   * Read push data inside bytecode to from dictionary
+   * Pad left and right to enough 32 bytes
+   */
+  class AutoDictionary {
     public:
       vector<ExtraData> extras;
-      Dictionary() {};
-      Dictionary(bytes code);
+      AutoDictionary() {};
+      void maybeAddAuto(bytes autoExtras);
   };
 }

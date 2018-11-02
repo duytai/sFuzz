@@ -11,6 +11,7 @@
 #include "TargetContainer.h"
 #include "Fuzzer.h"
 #include "Dictionary.h"
+#include "AutoDictionary.h"
 
 using namespace dev;
 using namespace eth;
@@ -21,17 +22,14 @@ namespace fuzzer {
   class Mutation {
     FuzzItem curFuzzItem;
     Dictionary dict;
+    AutoDictionary& autoDict;
     int dataSize;
     int effCount;
     /* TODO: update later */
-    u32 spliceCycle;
-    u8 doingDet;
-    u32 perfScore;
-    h256 prevCksum;
     bytes eff;
     void flipbit(int pos);
     public:
-      Mutation(FuzzItem item, Dictionary dict);
+      Mutation(FuzzItem item, Dictionary dict, AutoDictionary & autoDict);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);
@@ -46,6 +44,7 @@ namespace fuzzer {
       void fourInterest(OnMutateFunc cb);
       void overwriteWithDictionary(OnMutateFunc cb);
       void insertWithDictionary(OnMutateFunc cb);
+      void overwriteWithAutoDictionary(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       void splice(OnMutateFunc cb);
       static int havocDiv;

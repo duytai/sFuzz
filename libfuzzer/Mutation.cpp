@@ -1,18 +1,15 @@
 #include "Mutation.h"
 #include "Dictionary.h"
 #include "Util.h"
+#include "AutoDictionary.h"
 
 using namespace std;
 using namespace fuzzer;
 
 int Mutation::havocDiv = 1;
 
-Mutation::Mutation(FuzzItem item, Dictionary dict): curFuzzItem(item), dict(dict), dataSize(item.data.size()) {
+Mutation::Mutation(FuzzItem item, Dictionary dict, AutoDictionary& autoDict): curFuzzItem(item), dict(dict), autoDict(autoDict), dataSize(item.data.size()) {
   effCount = 0;
-  spliceCycle = 0;
-  doingDet = 1;
-  perfScore = 100;
-  prevCksum = curFuzzItem.res.cksum;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;
   if (effAPos(dataSize - 1) != 0) {
@@ -27,10 +24,36 @@ void Mutation::flipbit(int pos) {
 
 void Mutation::singleWalkingBit(OnMutateFunc cb) {
   int maxStage = dataSize << 3;
+  bytes autoExtras;
+  h256 prevCksum = curFuzzItem.res.cksum;
   for (int i = 0; i < maxStage ; i += 1) {
     flipbit(i);
     FuzzItem item = cb(curFuzzItem.data);
     flipbit(i);
+    /* Handle auto extra here */
+    if ((i & 7) == 7) {
+      /* End of each byte */
+      h256 cksum = item.res.cksum;
+      if (i == maxStage - 1 && prevCksum == cksum) {
+        if (autoExtras.size() < MAX_AUTO_EXTRA) {
+          autoExtras.push_back(curFuzzItem.data[i >> 3]);
+        }
+        if (autoExtras.size() > MIN_AUTO_EXTRA && autoExtras.size() < MAX_AUTO_EXTRA) {
+          autoDict.maybeAddAuto(autoExtras);
+        }
+      } else if (cksum != prevCksum) {
+        if (autoExtras.size() > MIN_AUTO_EXTRA && autoExtras.size() < MAX_AUTO_EXTRA) {
+          autoDict.maybeAddAuto(autoExtras);
+          autoExtras.clear();
+        }
+        prevCksum = cksum;
+      }
+      if (cksum != curFuzzItem.res.cksum) {
+        if (autoExtras.size() < MAX_AUTO_EXTRA) {
+          autoExtras.push_back(curFuzzItem.data[i >> 3]);
+        }
+      }
+    }
   }
 }
 
@@ -278,6 +301,40 @@ void Mutation::fourInterest(OnMutateFunc cb) {
   }
 }
 
+void Mutation::overwriteWithAutoDictionary(OnMutateFunc cb) {
+  byte *outBuf = &curFuzzItem.data[0];
+  byte inBuf[curFuzzItem.data.size()];
+  memcpy(inBuf, outBuf, curFuzzItem.data.size());
+  u32 extrasCount = autoDict.extras.size();
+  /*
+   * In solidity - data block is 32 bytes then change to step = 32, not 1
+   * Size of extras is alway 32
+   */
+  for (u32 i = 0; i < (u32)dataSize; i += 32) {
+    u32 lastLen = 0;
+    for (u32 j = 0; j < extrasCount; j += 1) {
+      byte *extrasBuf = &autoDict.extras[j].data[0];
+      byte *effBuf = &eff[0];
+      /* Skip extras probabilistically if extras_cnt > MAX_DET_EXTRAS. Also
+       skip them if there's no room to insert the payload, if the token
+       is redundant, or if its entire span has no bytes set in the effector
+       map. */
+      if ((extrasCount > MAX_DET_EXTRAS
+           && UR(extrasCount) > MAX_DET_EXTRAS)
+          || !memcmp(extrasBuf, outBuf + i, 32)
+          || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, 32))
+          ) {
+        continue;
+      }
+      lastLen = 32;
+      memcpy(outBuf + i, extrasBuf, lastLen);
+      cb(curFuzzItem.data);
+    }
+    /* Restore all the clobbered memory. */
+    memcpy(outBuf + i, inBuf + i, lastLen);
+  }
+}
+
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   byte *outBuf = &curFuzzItem.data[0];
   byte inBuf[curFuzzItem.data.size()];
@@ -339,22 +396,12 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
  Has to update: doingDet, perfScore, havocDiv, extraCnt, aExtraCnt
  */
 void Mutation::havoc(OnMutateFunc) {
-  int stageMax = 0;
-  int extrasCnt = 0;
-  int aExtrasCnt = 0;
   int tempLen = dataSize;
   byte *out_buf = &curFuzzItem.data[0];
-  if (!spliceCycle) {
-    stageMax = (doingDet ? HAVOC_CYCLES_INIT : HAVOC_CYCLES) * perfScore / havocDiv / 100;
-  } else {
-    stageMax = SPLICE_HAVOC * perfScore / havocDiv / 100;
-  }
-  if (stageMax < HAVOC_MIN) stageMax = HAVOC_MIN;
-  for (int stageCur = 0; stageCur < stageMax; stageCur += 1) {
+  for (int stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
     for (u32 i = 0; i < useStacking; i += 1) {
-      u32 val = UR(15 + ((extrasCnt + aExtrasCnt) ? 2 : 0));
-      val = 13;
+      u32 val = UR(15 + ((dict.extras.size() + autoDict.extras.size()) ? 2 : 0));
       switch (val) {
         case 0: {
           /* Flip a single bit somewhere. Spooky! */

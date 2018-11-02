@@ -1,8 +1,10 @@
 #pragma once
 #include <iostream>
 #include <vector>
+#include <libdevcore/FixedHash.h>
 
 using namespace std;
+using namespace dev;
 
 namespace fuzzer {
   typedef uint8_t u8;
@@ -21,7 +23,8 @@ namespace fuzzer {
   static u32 HAVOC_BLK_LARGE = 1500;
   static u32 MAX_FILE = (1024 * 100); // 100kb
   static u32 MIN_AUTO_EXTRA = 3;
-  static u32 MAX_AUTO_EXTRA = 32;
+  static u32 MAX_AUTO_EXTRA = 33;
+  static u32 MAX_AUTO_EXTRAS = 200;
   static int HAVOC_STACK_POW2 = 7;
   static int HAVOC_CYCLES_INIT = 1024;
   static int HAVOC_CYCLES = 256;
@@ -55,4 +58,9 @@ namespace fuzzer {
   u16 swap16(u16 x);
   /* Swap 4 bytes */
   u32 swap32(u32 x);
+  /* Data struct */
+  struct ExtraData {
+    bytes data;
+    u32 hitCount;
+  };
 }
