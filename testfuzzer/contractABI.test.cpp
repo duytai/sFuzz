@@ -10,15 +10,19 @@ TEST(ABIParser, parseJSON)
   string json = "[{\"constant\":false,\"inputs\":[{\"name\":\"a\",\"type\":\"string\"},{\"name\":\"b\",\"type\":\"bytes\"},{\"name\":\"c\",\"type\":\"bytes[]\"},{\"name\":\"d\",\"type\":\"bytes[][]\"},{\"name\":\"e\",\"type\":\"int256[]\"},{\"name\":\"f\",\"type\":\"int256[][]\"}],\"name\":\"add\",\"outputs\":[{\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]";
   ContractABI ca(json);
   bytes data = ca.randomTestcase();
-  bytes temp(1120, 0);
+  bytes temp(1984, 0);
   bytes randomResult(32, 5);
   randomResult.insert(randomResult.end(), temp.begin(), temp.end());
   bytes randomResult1(32, 10);
   randomResult1.insert(randomResult1.end(), temp.begin(), temp.end());
   EXPECT_EQ(data, randomResult);
+  EXPECT_TRUE(data.size() % 32 == 0);
   ca.updateTestData(randomResult1);
   EXPECT_EQ(ca.encodeConstructor(), bytes(0, 0));
-  ca.encodeFunctions();
+  //vector<bytes> vs = ca.encodeFunctions();
+  //for (auto v : vs) {
+  //  cout << data.size() << endl;
+  //}
 }
 
 

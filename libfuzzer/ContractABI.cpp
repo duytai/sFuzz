@@ -25,10 +25,15 @@ namespace fuzzer {
   void ContractABI::updateTestData(bytes data) {
     /* Detect dynamic len by consulting first 32 bytes */
     int lenOffset = 0;
-    auto consultLen = [&]() {
+    auto consultRealLen = [&]() {
       int len = data[lenOffset];
       lenOffset = (lenOffset + 1) % 32;
       return len;
+    };
+    /* Container of dynamic len */
+    auto consultContainerLen = [](int realLen) {
+      if (!(realLen % 32)) return realLen;
+      return (realLen / 32 + 1) * 32;
     };
     /* Pad to enough data before decoding */
     int offset = 32;
@@ -40,38 +45,44 @@ namespace fuzzer {
       for (auto &td : fd.tds) {
         switch (td.dimensions.size()) {
           case 0: {
-            int singleLen = td.isDynamic ? consultLen() : 32;
-            padLen(singleLen);
-            bytes d(data.begin() + offset, data.begin() + offset + singleLen);
+            int realLen = td.isDynamic ? consultRealLen() : 32;
+            int containerLen = consultContainerLen(realLen);
+            /* Pad to enough bytes to read */
+            padLen(containerLen);
+            /* Read from offset ... offset + realLen */
+            bytes d(data.begin() + offset, data.begin() + offset + realLen);
             td.addValue(d);
-            offset += singleLen;
+            /* Ignore (containerLen - realLen) bytes */
+            offset += containerLen;
             break;
           }
           case 1: {
             vector<bytes> ds;
-            int numElem = td.dimensions[0] ? td.dimensions[0] : consultLen();
+            int numElem = td.dimensions[0] ? td.dimensions[0] : consultRealLen();
             for (int i = 0; i < numElem; i += 1) {
-              int singleLen = td.isDynamic ? consultLen() : 32;
-              padLen(singleLen);
-              bytes d(data.begin() + offset, data.begin() + offset + singleLen);
+              int realLen = td.isDynamic ? consultRealLen() : 32;
+              int containerLen = consultContainerLen(realLen);
+              padLen(containerLen);
+              bytes d(data.begin() + offset, data.begin() + offset + realLen);
               ds.push_back(d);
-              offset += singleLen;
+              offset += containerLen;
             }
             td.addValue(ds);
             break;
           }
           case 2: {
             vector<vector<bytes>> dss;
-            int numElem = td.dimensions[0] ? td.dimensions[0] : consultLen();
-            int numSubElem = td.dimensions[1] ? td.dimensions[1] : consultLen();
+            int numElem = td.dimensions[0] ? td.dimensions[0] : consultRealLen();
+            int numSubElem = td.dimensions[1] ? td.dimensions[1] : consultRealLen();
             for (int i = 0; i < numElem; i += 1) {
               vector<bytes> ds;
               for (int j = 0; j < numSubElem; j += 1) {
-                int singleLen = td.isDynamic ? consultLen() : 32;
-                padLen(singleLen);
-                bytes d(data.begin() + offset, data.begin() + offset + singleLen);
+                int realLen = td.isDynamic ? consultRealLen() : 32;
+                int containerLen = consultContainerLen(realLen);
+                padLen(containerLen);
+                bytes d(data.begin() + offset, data.begin() + offset + realLen);
                 ds.push_back(d);
-                offset += singleLen;
+                offset += containerLen;
               }
               dss.push_back(ds);
             }
@@ -90,36 +101,43 @@ namespace fuzzer {
      */
     bytes ret(32, 5);
     int lenOffset = 0;
-    auto consultLen = [&]() {
+    auto consultRealLen = [&]() {
       int len = ret[lenOffset];
       lenOffset = (lenOffset + 1) % 32;
       return len;
+    };
+    auto consultContainerLen = [](int realLen) {
+      if (!(realLen % 32)) return realLen;
+      return (realLen / 32 + 1) * 32;
     };
     for (auto fd : this->fds) {
       for (auto td : fd.tds) {
         switch(td.dimensions.size()) {
           case 0: {
-            int singleLen = td.isDynamic ? consultLen() : 32;
-            bytes data(singleLen, 0);
+            int realLen = td.isDynamic ? consultRealLen() : 32;
+            int containerLen = consultContainerLen(realLen);
+            bytes data(containerLen, 0);
             ret.insert(ret.end(), data.begin(), data.end());
             break;
           }
           case 1: {
-            int numElem = td.dimensions[0] ? td.dimensions[0] : consultLen();
+            int numElem = td.dimensions[0] ? td.dimensions[0] : consultRealLen();
             for (int i = 0; i < numElem; i += 1) {
-              int singleLen = td.isDynamic ? consultLen() : 32;
-              bytes data = bytes(singleLen, 0);
+              int realLen = td.isDynamic ? consultRealLen() : 32;
+              int containerLen = consultContainerLen(realLen);
+              bytes data = bytes(containerLen, 0);
               ret.insert(ret.end(), data.begin(), data.end());
             }
             break;
           }
           case 2: {
-            int numElem = td.dimensions[0] ? td.dimensions[0] : consultLen();
-            int numSubElem = td.dimensions[1] ? td.dimensions[1] : consultLen();
+            int numElem = td.dimensions[0] ? td.dimensions[0] : consultRealLen();
+            int numSubElem = td.dimensions[1] ? td.dimensions[1] : consultRealLen();
             for (int i = 0; i < numElem; i += 1) {
               for (int j = 0; j < numSubElem; j += 1) {
-                int singleLen = td.isDynamic ? consultLen() : 32;
-                bytes data = bytes(singleLen, 0);
+                int realLen = td.isDynamic ? consultRealLen() : 32;
+                int containerLen = consultContainerLen(realLen);
+                bytes data = bytes(containerLen, 0);
                 ret.insert(ret.end(), data.begin(), data.end());
               }
             }
