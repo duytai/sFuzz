@@ -58,7 +58,6 @@ void Fuzzer::start() {
     FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict);
     Timer timer;
-    /*
     mutation.singleWalkingBit(commomFuzzStuff);
     mutation.twoWalkingBit(commomFuzzStuff);
     mutation.fourWalkingBit(commomFuzzStuff);
@@ -71,7 +70,6 @@ void Fuzzer::start() {
     mutation.singleInterest(commomFuzzStuff);
     mutation.twoInterest(commomFuzzStuff);
     mutation.fourInterest(commomFuzzStuff);
-    */
     mutation.overwriteWithDictionary(commomFuzzStuff);
     cout << "EXEC  : " << timer.elapsed() << endl;
     cout << "TOTAl : " << totalFuzzed << endl;
