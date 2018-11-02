@@ -284,7 +284,8 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   memcpy(inBuf, outBuf, curFuzzItem.data.size());
   u32 extrasCount = dict.extras.size();
   /*
-   * In solidity - dataBlock is 32 bytes then change to step = 32, not 1
+   * In solidity - data block is 32 bytes then change to step = 32, not 1
+   * Size of extras is alway 32
    */
   for (u32 i = 0; i < (u32)dataSize; i += 32) {
     u32 lastLen = 0;
@@ -310,6 +311,30 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
     memcpy(outBuf + i, inBuf + i, lastLen);
   }
 }
+
+void Mutation::insertWithDictionary(OnMutateFunc cb) {
+  u32 extrasCount = dict.extras.size();
+  bytes temp = bytes(curFuzzItem.data.size() + 32, 0);
+  byte * tempBuf = &temp[0];
+  byte * outBuf = &curFuzzItem.data[0];
+  for (int i = 0; i < dataSize; i += 32) {
+    for (u32 j = 0; j < extrasCount; j += 1) {
+      if (dataSize + dict.extras[j].data.size() > MAX_FILE) {
+        /* Larger than MAX_FILE */
+        continue;
+      }
+      byte * extraBuf = &dict.extras[j].data[0];
+      /* Insert token */
+      memcpy(tempBuf + i, extraBuf, 32);
+      /* Copy tail */
+      memcpy(tempBuf + i + 32, outBuf + i, dataSize - i);
+      cb(temp);
+    }
+    /* Copy head */
+    memcpy(tempBuf + i, outBuf + i, 32);
+  }
+}
+
 /*
  Has to update: doingDet, perfScore, havocDiv, extraCnt, aExtraCnt
  */

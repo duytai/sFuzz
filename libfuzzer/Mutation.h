@@ -45,6 +45,7 @@ namespace fuzzer {
       void twoInterest(OnMutateFunc cb);
       void fourInterest(OnMutateFunc cb);
       void overwriteWithDictionary(OnMutateFunc cb);
+      void insertWithDictionary(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       void splice(OnMutateFunc cb);
       static int havocDiv;

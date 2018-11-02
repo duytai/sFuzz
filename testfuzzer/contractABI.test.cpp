@@ -5,7 +5,7 @@
 
 using namespace fuzzer;
 
-TEST(ABIParser, parseJSON)
+TEST(ABIParser, DISABLED_parseJSON)
 {
   string json = "[{\"constant\":false,\"inputs\":[{\"name\":\"a\",\"type\":\"string\"},{\"name\":\"b\",\"type\":\"bytes\"},{\"name\":\"c\",\"type\":\"bytes[]\"},{\"name\":\"d\",\"type\":\"bytes[][]\"},{\"name\":\"e\",\"type\":\"int256[]\"},{\"name\":\"f\",\"type\":\"int256[][]\"}],\"name\":\"add\",\"outputs\":[{\"name\":\"\",\"type\":\"int256\"}],\"payable\":false,\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]";
   ContractABI ca(json);
