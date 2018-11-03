@@ -1,11 +1,13 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <thread>
 #include <libfuzzer/Fuzzer.h>
 #include <libfuzzer/ContractABI.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <unistd.h>
 
 using namespace std;
 using namespace fuzzer;

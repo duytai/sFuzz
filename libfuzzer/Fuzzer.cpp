@@ -1,3 +1,5 @@
+#include <thread>
+#include <unistd.h>
 #include "Fuzzer.h"
 #include "Mutation.h"
 #include "Util.h"
@@ -9,6 +11,7 @@ using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
+
 /* Setup virgin byte to 255 */
 Fuzzer::Fuzzer(bytes code, ContractABI ca): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)){}
 
@@ -31,8 +34,11 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
 
 /* Start fuzzing */
 void Fuzzer::start() {
+  /* Statistic information */
   int idx = 0;
   int totalFuzzed = 0;
+  bool stopped = false;
+  
   TargetContainer container(code, ca);
   Dictionary dict(code);
   AutoDictionary autoDict;
@@ -40,7 +46,7 @@ void Fuzzer::start() {
   /* Update virgin bits and save testcase */
   auto saveIfInterest = [&](FuzzItem item) {
     if (hasNewBits(item.res.tracebits)) {
-      cout << ">>> Saving ..... Done" << endl;
+      //cout << ">>> Saving ..... Done" << endl;
       queues.push_back(item);
     }
   };
@@ -53,14 +59,30 @@ void Fuzzer::start() {
     totalFuzzed ++;
     return item;
   };
+  /* Log in thread */
+  thread logThread([&]() {
+    int elapsed = 0;
+    int sleepFor = 100000; // 100ms
+    while (!stopped) {
+      usleep(sleepFor);
+      elapsed += sleepFor;
+      int speed = round(totalFuzzed * (1000000.0 / elapsed));
+      cout << "\rFuzzed: "
+        << totalFuzzed
+        << " t"
+        << " Speed: "
+        << speed
+        << " t/s"
+        << flush;
+    }
+  });
   /* Exec the sample testcase first */
   commomFuzzStuff(ca.randomTestcase());
   /* Jump to fuzz round */
   while (idx < 1) {
     FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict, autoDict);
-    Timer timer;
-//    mutation.singleWalkingBit(commomFuzzStuff);
+    mutation.singleWalkingBit(commomFuzzStuff);
 //    mutation.twoWalkingBit(commomFuzzStuff);
 //    mutation.fourWalkingBit(commomFuzzStuff);
 //    mutation.singleWalkingByte(commomFuzzStuff);
@@ -80,10 +102,13 @@ void Fuzzer::start() {
 //      mutation.overwriteWithAutoDictionary(commomFuzzStuff);
 //    }
     mutation.havoc(commomFuzzStuff);
-    cout << "EXEC  : " << timer.elapsed() << endl;
-    cout << "TOTAl : " << totalFuzzed << endl;
-    cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;
+    //cout << "EXEC  : " << timer.elapsed() << endl;
+    //cout << "TOTAl : " << totalFuzzed << endl;
+    //cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;
     idx ++;
     // TODO: update queue cycle
   }
+  stopped = true;
+  logThread.join();
+  cout << endl;
 }
