@@ -6,9 +6,8 @@
 using namespace std;
 using namespace fuzzer;
 
-int Mutation::havocDiv = 1;
 
-Mutation::Mutation(FuzzItem item, Dictionary dict, AutoDictionary& autoDict): curFuzzItem(item), dict(dict), autoDict(autoDict), dataSize(item.data.size()) {
+Mutation::Mutation(FuzzItem item, Dictionary dict, AutoDictionary& autoDict, Logger& logger): curFuzzItem(item), dict(dict), autoDict(autoDict), logger(logger), dataSize(item.data.size()) {
   effCount = 0;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;
@@ -30,6 +29,7 @@ void Mutation::singleWalkingBit(OnMutateFunc cb) {
     flipbit(i);
     FuzzItem item = cb(curFuzzItem.data);
     flipbit(i);
+    logger.entry.fuzzed += 1;
     /* Handle auto extra here */
     if ((i & 7) == 7) {
       /* End of each byte */

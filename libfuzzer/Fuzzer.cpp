@@ -36,52 +36,28 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
 void Fuzzer::start() {
   /* Statistic information */
   int idx = 0;
-  int totalFuzzed = 0;
-  bool stopped = false;
-  
   TargetContainer container(code, ca);
   Dictionary dict(code);
   AutoDictionary autoDict;
+  Logger logger;
   vector<FuzzItem> queues;
-  /* Update virgin bits and save testcase */
-  auto saveIfInterest = [&](FuzzItem item) {
-    if (hasNewBits(item.res.tracebits)) {
-      //cout << ">>> Saving ..... Done" << endl;
-      queues.push_back(item);
-    }
-  };
   /* Handle new created testcase */
   auto commomFuzzStuff = [&](bytes data) {
     FuzzItem item(data);
     item.res = container.exec(data);
     item.wasFuzzed = false;
-    saveIfInterest(item);
-    totalFuzzed ++;
+    if (hasNewBits(item.res.tracebits)) {
+      queues.push_back(item);
+    }
     return item;
   };
-  /* Log in thread */
-  thread logThread([&]() {
-    int elapsed = 0;
-    int sleepFor = 100000; // 100ms
-    while (!stopped) {
-      usleep(sleepFor);
-      elapsed += sleepFor;
-      int speed = round(totalFuzzed * (1000000.0 / elapsed));
-      cout << "\rFuzzed: "
-        << totalFuzzed
-        << " t"
-        << " Speed: "
-        << speed
-        << " t/s"
-        << flush;
-    }
-  });
   /* Exec the sample testcase first */
   commomFuzzStuff(ca.randomTestcase());
   /* Jump to fuzz round */
+  logger.startTimer();
   while (idx < 1) {
     FuzzItem curItem = queues[idx];
-    Mutation mutation(curItem, dict, autoDict);
+    Mutation mutation(curItem, dict, autoDict, logger);
     mutation.singleWalkingBit(commomFuzzStuff);
 //    mutation.twoWalkingBit(commomFuzzStuff);
 //    mutation.fourWalkingBit(commomFuzzStuff);
@@ -102,13 +78,7 @@ void Fuzzer::start() {
 //      mutation.overwriteWithAutoDictionary(commomFuzzStuff);
 //    }
     mutation.havoc(commomFuzzStuff);
-    //cout << "EXEC  : " << timer.elapsed() << endl;
-    //cout << "TOTAl : " << totalFuzzed << endl;
-    //cout << "SPEED : " << totalFuzzed / timer.elapsed() << endl;
     idx ++;
-    // TODO: update queue cycle
   }
-  stopped = true;
-  logThread.join();
-  cout << endl;
+  logger.endTimer();
 }
