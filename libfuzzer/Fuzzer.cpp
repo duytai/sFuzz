@@ -62,7 +62,7 @@ void Fuzzer::start() {
   while (idx < 1) {
     FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict, autoDict, logger);
-    //mutation.singleWalkingBit(commomFuzzStuff);
+    mutation.singleWalkingBit(commomFuzzStuff);
     //mutation.twoWalkingBit(commomFuzzStuff);
     //mutation.fourWalkingBit(commomFuzzStuff);
     //mutation.singleWalkingByte(commomFuzzStuff);
@@ -82,6 +82,9 @@ void Fuzzer::start() {
     //  mutation.overwriteWithAutoDictionary(commomFuzzStuff);
     //}
     mutation.havoc(commomFuzzStuff);
+    if (mutation.splice(commomFuzzStuff, queues)) {
+      mutation.havoc(commomFuzzStuff);
+    };
     idx ++;
   }
   //logger.endTimer();

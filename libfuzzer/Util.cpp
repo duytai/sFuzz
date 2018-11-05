@@ -140,5 +140,20 @@ namespace fuzzer {
     if (!maxFactor) return 0;
     return (UR(maxFactor) + 1) * 32;
   }
+    
+  void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last) {
+    s32 f_loc = -1;
+    s32 l_loc = -1;
+    u32 pos;
+    for (pos = 0; pos < len; pos++) {
+      if (*(ptr1++) != *(ptr2++)) {
+        if (f_loc == -1) f_loc = pos;
+        l_loc = pos;
+      }
+    }
+    *first = f_loc;
+    *last = l_loc;
+    return;
+  }
 }
 

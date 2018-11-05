@@ -16,6 +16,7 @@ namespace fuzzer {
   typedef int32_t  s32;
   typedef int64_t  s64;
   
+  static u32 SPLICE_CYCLES = 15;
   static u32 MAX_DET_EXTRAS = 200;
   static u32 HAVOC_BLK_XL = 640;
   static u32 HAVOC_BLK_SMALL = 32;
@@ -58,6 +59,8 @@ namespace fuzzer {
   u16 swap16(u16 x);
   /* Swap 4 bytes */
   u32 swap32(u32 x);
+  /* Locate differents */
+  void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last);
   /* Data struct */
   struct ExtraData {
     bytes data;

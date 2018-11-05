@@ -47,6 +47,6 @@ namespace fuzzer {
       void insertWithDictionary(OnMutateFunc cb);
       void overwriteWithAutoDictionary(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
-      void splice(OnMutateFunc cb);
+      bool splice(OnMutateFunc cb, vector<FuzzItem> items);
   };
 }

@@ -653,7 +653,7 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
 }
 
 /*
- Has to update: doingDet, perfScore, havocDiv, extraCnt, aExtraCnt
+ * TODO: If found more, do more havoc
  */
 void Mutation::havoc(OnMutateFunc cb) {
   bytes origin = curFuzzItem.data;
@@ -881,6 +881,36 @@ void Mutation::havoc(OnMutateFunc cb) {
   }
 }
 
-void Mutation::splice(OnMutateFunc) {
-  
+bool Mutation::splice(OnMutateFunc, vector<FuzzItem> queues) {
+  u32 spliceCycle = 0;
+  s32 firstDiff, lastDiff;
+  bytes origin = curFuzzItem.data;
+  while (spliceCycle++ < SPLICE_CYCLES && queues.size() > 1
+      && curFuzzItem.data.size() > 1) {
+    u32 tid, splitAt;
+    do {
+      tid = UR(queues.size());
+    } while (queues[tid].res.cksum == curFuzzItem.res.cksum);
+    FuzzItem target = queues[tid];
+    /* Fake */
+    target.data[10] = 189;
+    target.data[11] = 20;
+    target.data[50] = 90;
+    /* Find a suitable splicing location, somewhere between the first and
+     the last differing byte. Bail out if the difference is just a single
+     byte or so. */
+    byte *outBuf = &curFuzzItem.data[0];
+    byte *targetBuf = &target.data[0];
+    u32 minLen = curFuzzItem.data.size() > target.data.size()
+    ? target.data.size() : curFuzzItem.data.size();
+    locateDiffs(outBuf, targetBuf, minLen, &firstDiff, &lastDiff);
+    if (firstDiff < 0 || lastDiff < 2 || firstDiff == lastDiff) {
+      continue;
+    }
+    splitAt = firstDiff + UR(lastDiff - firstDiff);
+    /* Do the thing. */
+    memcpy(outBuf, targetBuf, splitAt);
+    return true;
+  }
+  return false;
 }
