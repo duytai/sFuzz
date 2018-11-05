@@ -18,25 +18,21 @@ namespace fuzzer {
     int testLen;
     /* Constructer */
     double duration;
+    /* number of new test case */
+    int numTest;
     LogStage() {
       name = "";
       fuzzed = 0;
       skip = 0;
       maxFuzzed = 0;
       duration = 0;
-    }
-  };
-  struct LogInfo {
-    int queueSize;
-    LogInfo() {
-      queueSize = 0;
+      numTest = 0;
     }
   };
   class Logger {
     thread th;
     public:
       vector<LogStage*> stages;
-      LogInfo info;
       void startTimer();
       void endTimer();
   };

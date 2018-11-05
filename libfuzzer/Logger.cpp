@@ -24,6 +24,7 @@ namespace fuzzer {
         auto stageDuration = to_string(lastStage->duration);
         auto stageSpeed = to_string((lastStage->skip + lastStage->fuzzed) / (float)lastStage->duration);
         auto stageTestLen = to_string(lastStage->testLen);
+        auto numTest = to_string(lastStage->numTest);
         printf("+-------------------------------------+\n");
         printf("+             CURRENT STAGE           +\n");
         printf("+---------------+---------------------+\n");
@@ -32,22 +33,29 @@ namespace fuzzer {
         printf("| Skip          | %s|\n", pad(stageSkip).c_str());
         printf("| Duration      | %s|\n", pad(stageDuration).c_str());
         printf("| Speed         | %s|\n", pad(stageSpeed).c_str());
+        printf("| Queues        | %s|\n", pad(numTest).c_str());
         printf("| Size (bytes)  | %s|\n", pad(stageTestLen).c_str());
         printf("+---------------+---------------------+\n");
         /* Total */
+        auto getNumTest = [](int r, LogStage* n) { return r + n->numTest; };
         auto getFuzzed = [](int r, LogStage* n) { return r + n->fuzzed; };
         auto getDuration = [](double r, LogStage* n) { return r + n->duration; };
+        auto getSkip = [](int r, LogStage* n) { return r + n->skip; };
         auto totalFuzzed = accumulate(stages.begin(), stages.end(), 0, getFuzzed);
         auto totalDuration = accumulate(stages.begin(), stages.end(), 0.0, getDuration);
-        auto avgSpeed = (float) totalFuzzed / (float) totalDuration;
+        auto totalSkip = accumulate(stages.begin(), stages.end(), 0, getSkip);
+        auto totalNumTest = accumulate(stages.begin(), stages.end(), 1, getNumTest);
+        auto avgSpeed = (float) (totalFuzzed + totalSkip) / (float) totalDuration;
         printf("+             ALL STAGES              +\n");
         printf("+---------------+---------------------+\n");
         printf("| Total Fuzzed  | %s|\n", pad(to_string(totalFuzzed)).c_str());
+        printf("| Total Skip    | %s|\n", pad(to_string(totalSkip)).c_str());
         printf("| Total Duration| %s|\n", pad(to_string(totalDuration)).c_str());
         printf("| Avg Speed     | %s|\n", pad(to_string(avgSpeed)).c_str());
+        printf("| Total Queues  | %s|\n", pad(to_string(totalNumTest)).c_str());
         printf("+---------------+---------------------+\n");
-        
-        for (int i = 0; i < 16; i += 1) {
+
+        for (int i = 0; i < 19; i += 1) {
            cout << "\x1b[A";
         }
         usleep(100000);
@@ -57,7 +65,7 @@ namespace fuzzer {
   
   void Logger::endTimer() {
     usleep(100000);
-    for (int i = 0; i < 16; i += 1) {
+    for (int i = 0; i < 19; i += 1) {
       cout << endl;
     }
     th.detach();

@@ -48,37 +48,41 @@ void Fuzzer::start() {
     item.wasFuzzed = false;
     if (hasNewBits(item.res.tracebits)) {
       queues.push_back(item);
+      if (logger.stages.size()) {
+        auto stage = logger.stages.back();
+        stage->numTest ++;
+      }
     }
     return item;
   };
   /* Exec the sample testcase first */
   commomFuzzStuff(ca.randomTestcase());
   /* Jump to fuzz round */
-  logger.startTimer();
+  //logger.startTimer();
   while (idx < 1) {
     FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict, autoDict, logger);
-    mutation.singleWalkingBit(commomFuzzStuff);
-    mutation.twoWalkingBit(commomFuzzStuff);
-    mutation.fourWalkingBit(commomFuzzStuff);
-//    mutation.singleWalkingByte(commomFuzzStuff);
-//    mutation.twoWalkingByte(commomFuzzStuff);
-//    mutation.fourWalkingByte(commomFuzzStuff);
-//    mutation.singleArith(commomFuzzStuff);
-//    mutation.twoArith(commomFuzzStuff);
-//    mutation.fourArith(commomFuzzStuff);
-//    mutation.singleInterest(commomFuzzStuff);
-//    mutation.twoInterest(commomFuzzStuff);
-//    mutation.fourInterest(commomFuzzStuff);
-//    if (dict.extras.size()) {
-//      mutation.overwriteWithDictionary(commomFuzzStuff);
-//      mutation.insertWithDictionary(commomFuzzStuff);
-//    }
-//    if (autoDict.extras.size()) {
-//      mutation.overwriteWithAutoDictionary(commomFuzzStuff);
-//    }
+    //mutation.singleWalkingBit(commomFuzzStuff);
+    //mutation.twoWalkingBit(commomFuzzStuff);
+    //mutation.fourWalkingBit(commomFuzzStuff);
+    //mutation.singleWalkingByte(commomFuzzStuff);
+    //mutation.twoWalkingByte(commomFuzzStuff);
+    //mutation.fourWalkingByte(commomFuzzStuff);
+    //mutation.singleArith(commomFuzzStuff);
+    //mutation.twoArith(commomFuzzStuff);
+    //mutation.fourArith(commomFuzzStuff);
+    //mutation.singleInterest(commomFuzzStuff);
+    //mutation.twoInterest(commomFuzzStuff);
+    //mutation.fourInterest(commomFuzzStuff);
+    //if (dict.extras.size()) {
+    //  mutation.overwriteWithDictionary(commomFuzzStuff);
+    //  mutation.insertWithDictionary(commomFuzzStuff);
+    //}
+    //if (autoDict.extras.size()) {
+    //  mutation.overwriteWithAutoDictionary(commomFuzzStuff);
+    //}
     mutation.havoc(commomFuzzStuff);
     idx ++;
   }
-  logger.endTimer();
+  //logger.endTimer();
 }

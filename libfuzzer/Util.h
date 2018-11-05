@@ -17,10 +17,10 @@ namespace fuzzer {
   typedef int64_t  s64;
   
   static u32 MAX_DET_EXTRAS = 200;
-  static u32 HAVOC_BLK_XL = 32768;
+  static u32 HAVOC_BLK_XL = 640;
   static u32 HAVOC_BLK_SMALL = 32;
   static u32 HAVOC_BLK_MEDIUM = 128;
-  static u32 HAVOC_BLK_LARGE = 1024;
+  static u32 HAVOC_BLK_LARGE = 320;
   static u32 MAX_FILE = (1024 * 100); // 100kb
   static u32 MIN_AUTO_EXTRA = 3;
   static u32 MAX_AUTO_EXTRA = 33;

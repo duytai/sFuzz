@@ -30,7 +30,7 @@ namespace fuzzer {
     bytes eff;
     void flipbit(int pos);
     public:
-      Mutation(FuzzItem item, Dictionary dict, AutoDictionary & autoDict, Logger& logger);
+      Mutation(FuzzItem& item, Dictionary dict, AutoDictionary & autoDict, Logger& logger);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);
