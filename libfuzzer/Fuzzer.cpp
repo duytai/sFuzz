@@ -59,8 +59,8 @@ void Fuzzer::start() {
     FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict, autoDict, logger);
     mutation.singleWalkingBit(commomFuzzStuff);
-//    mutation.twoWalkingBit(commomFuzzStuff);
-//    mutation.fourWalkingBit(commomFuzzStuff);
+    mutation.twoWalkingBit(commomFuzzStuff);
+    mutation.fourWalkingBit(commomFuzzStuff);
 //    mutation.singleWalkingByte(commomFuzzStuff);
 //    mutation.twoWalkingByte(commomFuzzStuff);
 //    mutation.fourWalkingByte(commomFuzzStuff);

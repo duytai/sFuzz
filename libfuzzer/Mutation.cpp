@@ -2,6 +2,7 @@
 #include "Dictionary.h"
 #include "Util.h"
 #include "AutoDictionary.h"
+#include <ctime>
 
 using namespace std;
 using namespace fuzzer;
@@ -22,6 +23,14 @@ void Mutation::flipbit(int pos) {
 }
 
 void Mutation::singleWalkingBit(OnMutateFunc cb) {
+  /* Create log item */
+  Timer timer;
+  LogStage *logStage = new LogStage;
+  logStage->maxFuzzed = (dataSize << 3);
+  logStage->name = "Single-Walking-Bit";
+  logStage->testLen = dataSize;
+  logger.stages.push_back(logStage);
+  /* Start fuzzing */
   int maxStage = dataSize << 3;
   bytes autoExtras;
   h256 prevCksum = curFuzzItem.res.cksum;
@@ -29,7 +38,8 @@ void Mutation::singleWalkingBit(OnMutateFunc cb) {
     flipbit(i);
     FuzzItem item = cb(curFuzzItem.data);
     flipbit(i);
-    logger.entry.fuzzed += 1;
+    logStage->fuzzed ++;
+    logStage->duration = timer.elapsed();
     /* Handle auto extra here */
     if ((i & 7) == 7) {
       /* End of each byte */
@@ -58,6 +68,14 @@ void Mutation::singleWalkingBit(OnMutateFunc cb) {
 }
 
 void Mutation::twoWalkingBit(OnMutateFunc cb) {
+  /* Create log item */
+  Timer timer;
+  LogStage *logStage = new LogStage;
+  logStage->maxFuzzed = (dataSize << 3) - 1;
+  logStage->name = "Two-Walking-Bit";
+  logStage->testLen = dataSize;
+  logger.stages.push_back(logStage);
+  /* Start fuzzing */
   int maxStage = (dataSize << 3) - 1;
   for (int i = 0; i < maxStage; i += 1) {
     flipbit(i);
@@ -65,10 +83,20 @@ void Mutation::twoWalkingBit(OnMutateFunc cb) {
     cb(curFuzzItem.data);
     flipbit(i);
     flipbit(i + 1);
+    logStage->fuzzed ++;
+    logStage->duration = timer.elapsed();
   }
 }
 
 void Mutation::fourWalkingBit(OnMutateFunc cb) {
+  /* Create log item */
+  Timer timer;
+  LogStage *logStage = new LogStage;
+  logStage->maxFuzzed = (dataSize << 3) - 3;
+  logStage->name = "Four-Walking-Bit";
+  logStage->testLen = dataSize;
+  logger.stages.push_back(logStage);
+  /* Start fuzzing */
   int maxStage = (dataSize << 3) - 3;
   for (int i = 0; i < maxStage; i += 1) {
     flipbit(i);
@@ -80,6 +108,8 @@ void Mutation::fourWalkingBit(OnMutateFunc cb) {
     flipbit(i + 1);
     flipbit(i + 2);
     flipbit(i + 3);
+    logStage->fuzzed ++;
+    logStage->duration = timer.elapsed();
   }
 }
 
