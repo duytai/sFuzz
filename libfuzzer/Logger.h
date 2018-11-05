@@ -20,6 +20,7 @@ namespace fuzzer {
     double duration;
     /* number of new test case */
     int numTest;
+    /* current item */
     LogStage() {
       name = "";
       fuzzed = 0;
@@ -33,6 +34,7 @@ namespace fuzzer {
     thread th;
     public:
       vector<LogStage*> stages;
+      int idx;
       void startTimer();
       void endTimer();
   };

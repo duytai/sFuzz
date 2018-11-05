@@ -656,6 +656,14 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
  * TODO: If found more, do more havoc
  */
 void Mutation::havoc(OnMutateFunc cb) {
+  /* Create log item */
+  Timer timer;
+  LogStage *logStage = new LogStage;
+  logStage->maxFuzzed = HAVOC_MIN;
+  logStage->name = "Havoc";
+  logStage->testLen = dataSize;
+  logger.stages.push_back(logStage);
+  /* Start fuzzing */
   bytes origin = curFuzzItem.data;
   for (int stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
@@ -876,6 +884,8 @@ void Mutation::havoc(OnMutateFunc cb) {
       }
     }
     cb(curFuzzItem.data);
+    logStage->fuzzed ++;
+    logStage->duration = timer.elapsed();
     /* Restore to original state */
     curFuzzItem.data = origin;
   }
@@ -892,10 +902,6 @@ bool Mutation::splice(OnMutateFunc, vector<FuzzItem> queues) {
       tid = UR(queues.size());
     } while (queues[tid].res.cksum == curFuzzItem.res.cksum);
     FuzzItem target = queues[tid];
-    /* Fake */
-    target.data[10] = 189;
-    target.data[11] = 20;
-    target.data[50] = 90;
     /* Find a suitable splicing location, somewhere between the first and
      the last differing byte. Bail out if the difference is just a single
      byte or so. */

@@ -53,9 +53,10 @@ namespace fuzzer {
         printf("| Total Duration| %s|\n", pad(to_string(totalDuration)).c_str());
         printf("| Avg Speed     | %s|\n", pad(to_string(avgSpeed)).c_str());
         printf("| Total Queues  | %s|\n", pad(to_string(totalNumTest)).c_str());
+        printf("| IDX           | %s|\n", pad(to_string(idx)).c_str());
         printf("+---------------+---------------------+\n");
 
-        for (int i = 0; i < 19; i += 1) {
+        for (int i = 0; i < 20; i += 1) {
            cout << "\x1b[A";
         }
         usleep(100000);
@@ -65,7 +66,7 @@ namespace fuzzer {
   
   void Logger::endTimer() {
     usleep(100000);
-    for (int i = 0; i < 19; i += 1) {
+    for (int i = 0; i < 20; i += 1) {
       cout << endl;
     }
     th.detach();

@@ -35,7 +35,6 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
 /* Start fuzzing */
 void Fuzzer::start() {
   /* Statistic information */
-  int idx = 0;
   TargetContainer container(code, ca);
   Dictionary dict(code);
   AutoDictionary autoDict;
@@ -58,34 +57,40 @@ void Fuzzer::start() {
   /* Exec the sample testcase first */
   commomFuzzStuff(ca.randomTestcase());
   /* Jump to fuzz round */
-  //logger.startTimer();
-  while (idx < 1) {
-    FuzzItem curItem = queues[idx];
+  logger.startTimer();
+  int idx = 0;
+  logger.idx = idx;
+  while (true) {
+    FuzzItem & curItem = queues[idx];
     Mutation mutation(curItem, dict, autoDict, logger);
-    mutation.singleWalkingBit(commomFuzzStuff);
-    //mutation.twoWalkingBit(commomFuzzStuff);
-    //mutation.fourWalkingBit(commomFuzzStuff);
-    //mutation.singleWalkingByte(commomFuzzStuff);
-    //mutation.twoWalkingByte(commomFuzzStuff);
-    //mutation.fourWalkingByte(commomFuzzStuff);
-    //mutation.singleArith(commomFuzzStuff);
-    //mutation.twoArith(commomFuzzStuff);
-    //mutation.fourArith(commomFuzzStuff);
-    //mutation.singleInterest(commomFuzzStuff);
-    //mutation.twoInterest(commomFuzzStuff);
-    //mutation.fourInterest(commomFuzzStuff);
-    //if (dict.extras.size()) {
-    //  mutation.overwriteWithDictionary(commomFuzzStuff);
-    //  mutation.insertWithDictionary(commomFuzzStuff);
-    //}
-    //if (autoDict.extras.size()) {
-    //  mutation.overwriteWithAutoDictionary(commomFuzzStuff);
-    //}
+    if (!curItem.wasFuzzed) {
+      mutation.singleWalkingBit(commomFuzzStuff);
+      mutation.twoWalkingBit(commomFuzzStuff);
+      mutation.fourWalkingBit(commomFuzzStuff);
+      mutation.singleWalkingByte(commomFuzzStuff);
+      mutation.twoWalkingByte(commomFuzzStuff);
+      mutation.fourWalkingByte(commomFuzzStuff);
+      mutation.singleArith(commomFuzzStuff);
+      mutation.twoArith(commomFuzzStuff);
+      mutation.fourArith(commomFuzzStuff);
+      mutation.singleInterest(commomFuzzStuff);
+      mutation.twoInterest(commomFuzzStuff);
+      mutation.fourInterest(commomFuzzStuff);
+      if (dict.extras.size()) {
+        mutation.overwriteWithDictionary(commomFuzzStuff);
+        mutation.insertWithDictionary(commomFuzzStuff);
+      }
+      if (autoDict.extras.size()) {
+        mutation.overwriteWithAutoDictionary(commomFuzzStuff);
+      }
+      curItem.wasFuzzed = true;
+    }
     mutation.havoc(commomFuzzStuff);
     if (mutation.splice(commomFuzzStuff, queues)) {
       mutation.havoc(commomFuzzStuff);
     };
-    idx ++;
+    idx = (idx + 1) % queues.size();
+    logger.idx = idx;
   }
-  //logger.endTimer();
+  logger.endTimer();
 }
