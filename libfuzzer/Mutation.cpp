@@ -656,11 +656,13 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
  Has to update: doingDet, perfScore, havocDiv, extraCnt, aExtraCnt
  */
 void Mutation::havoc(OnMutateFunc cb) {
+  bytes origin = curFuzzItem.data;
   for (int stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
     for (u32 i = 0; i < useStacking; i += 1) {
       u32 val = UR(15 + ((dict.extras.size() + autoDict.extras.size()) ? 2 : 0));
       byte *out_buf = &curFuzzItem.data[0];
+      dataSize = curFuzzItem.data.size();
       switch (val) {
         case 0: {
           /* Flip a single bit somewhere. Spooky! */
@@ -769,7 +771,6 @@ void Mutation::havoc(OnMutateFunc cb) {
           u32 delLen = chooseBlockLen(dataSize - 1);
           u32 delFrom = UR(dataSize - delLen + 1);
           curFuzzItem.data.erase(curFuzzItem.data.begin() + delFrom, curFuzzItem.data.begin() + delFrom + delLen);
-          dataSize -= delLen;
           break;
         }
         case 13: {
@@ -796,7 +797,6 @@ void Mutation::havoc(OnMutateFunc cb) {
               memset(new_buf + cloneTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], cloneLen);
             /* Tail */
             memcpy(new_buf + cloneTo + cloneLen, out_buf + cloneTo, dataSize - cloneTo);
-            dataSize += cloneLen;
             curFuzzItem.data = newData;
           }
           break;
@@ -871,13 +871,13 @@ void Mutation::havoc(OnMutateFunc cb) {
             memcpy(new_buf + insertAt + extraLen, out_buf + insertAt, dataSize - insertAt);
             curFuzzItem.data = newData;
           }
-          dataSize += extraLen;
           break;
         }
       }
     }
     cb(curFuzzItem.data);
-    //cout << curFuzzItem.data << endl;
+    /* Restore to original state */
+    curFuzzItem.data = origin;
   }
 }
 
