@@ -21,6 +21,7 @@ namespace fuzzer {
     /* number of new test case */
     int numTest;
     /* current item */
+    int errorCount;
     LogStage() {
       name = "";
       fuzzed = 0;
@@ -28,6 +29,7 @@ namespace fuzzer {
       maxFuzzed = 0;
       duration = 0;
       numTest = 0;
+      errorCount = 0;
     }
   };
   class Logger {

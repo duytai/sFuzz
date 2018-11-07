@@ -52,6 +52,10 @@ void Fuzzer::start() {
         stage->numTest ++;
       }
     }
+    if (logger.stages.size()) {
+      auto stage = logger.stages.back();
+      for (auto tup : item.res.exceptions) stage->errorCount += tup.second;
+    }
     return item;
   };
   /* Exec the sample testcase first */

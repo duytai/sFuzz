@@ -15,6 +15,7 @@ namespace fuzzer {
   TargetContainerResult TargetContainer::exec(bytes data) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
+    unordered_map<TransactionException, int, EnumClassHash> exceptions;
     u64 prevLocation = 0;
     bytes tracebits(MAP_SIZE, 0);
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {
@@ -29,9 +30,13 @@ namespace fuzzer {
     ca.updateTestData(data);
     bytes con = ca.encodeConstructor();
     vector<bytes> funcs = ca.encodeFunctions();
-    program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    auto res = program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    if (res.excepted != TransactionException::None)
+      exceptions[res.excepted] += exceptions.count(res.excepted) > 0 ? 1 : 0;
     for (auto func: funcs) {
-      program.invoke(CONTRACT_FUNCTION, func, onOp);
+      res = program.invoke(CONTRACT_FUNCTION, func, onOp);
+      if (res.excepted != TransactionException::None)
+        exceptions[res.excepted] += exceptions.count(res.excepted) > 0 ? 1 : 0;
     }
     /*
      Reset program and deploy again becuase
@@ -42,6 +47,6 @@ namespace fuzzer {
     /*
      Calculate checksum and return response
      */
-    return TargetContainerResult(tracebits, sha3(tracebits), timer.elapsed());
+    return TargetContainerResult(tracebits, sha3(tracebits), timer.elapsed(), exceptions);
   }
 }
