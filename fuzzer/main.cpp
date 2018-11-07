@@ -14,6 +14,10 @@ using namespace fuzzer;
 namespace pt = boost::property_tree;
 
 int main(int argc, char* argv[]) {
+  /* Run EVM silently */
+  dev::LoggingOptions logOptions;
+  logOptions.verbosity = VerbositySilent;
+  dev::setupLogging(logOptions);
   if (argc > 1) {
     /* Accept the first one as file name */
     string filename(argv[1]);
