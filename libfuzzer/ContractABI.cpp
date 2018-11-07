@@ -155,15 +155,17 @@ namespace fuzzer {
     pt::ptree root;
     pt::read_json(ss, root);
     for (auto node : root) {
-      auto inputNodes = node.second.get_child("inputs");
       vector<TypeDef> tds;
       string type = node.second.get<string>("type");
-      string name = type == "constructor" ? "" : node.second.get<string>("name");
-      for (auto inputNode : inputNodes) {
-        string type = inputNode.second.get<string>("type");
-        tds.push_back(TypeDef(type));
+      if (type == "constructor" || type == "function") {
+        auto inputNodes = node.second.get_child("inputs");
+        string name = type == "constructor" ? "" : node.second.get<string>("name");
+        for (auto inputNode : inputNodes) {
+          string type = inputNode.second.get<string>("type");
+          tds.push_back(TypeDef(type));
+        }
+        this->fds.push_back(FuncDef(name, tds));
       }
-      this->fds.push_back(FuncDef(name, tds));
     };
   }
   
