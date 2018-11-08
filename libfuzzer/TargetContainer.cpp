@@ -35,7 +35,6 @@ namespace fuzzer {
       exceptions[res.excepted] += exceptions.count(res.excepted) > 0 ? 1 : 0;
     for (auto func: funcs) {
       res = program.invoke(CONTRACT_FUNCTION, func, onOp);
-      cout << res.output << endl;
       if (res.excepted != TransactionException::None)
         exceptions[res.excepted] += exceptions.count(res.excepted) > 0 ? 1 : 0;
     }
