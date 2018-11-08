@@ -63,8 +63,8 @@ void Fuzzer::start() {
   /* Jump to fuzz round */
   logger.startTimer();
   int idx = 0;
-  logger.idx = idx;
   while (true) {
+    logger.effCount = 0;
     FuzzItem & curItem = queues[idx];
     Mutation mutation(curItem, dict, autoDict, logger);
     if (!curItem.wasFuzzed) {

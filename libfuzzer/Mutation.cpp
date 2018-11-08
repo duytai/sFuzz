@@ -133,7 +133,7 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
       if (item.res.cksum != curFuzzItem.res.cksum) {
         eff[effAPos(i)] = 1;
         effCount += 1;
-        logStage->effCount = effCount;
+        logger.effCount = effCount;
       }
     }
     curFuzzItem.data[i] ^= 0xFF;
@@ -145,7 +145,7 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
    anyway. */
   if (effCount != effALen(dataSize) && effCount * 100 / effALen(dataSize) > EFF_MAX_PERC) {
     eff = bytes(effALen(dataSize), 1);
-    logStage->effCount = effALen(dataSize);
+    logger.effCount = effALen(dataSize);
   }
 }
 
@@ -645,6 +645,7 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
       memcpy(tempBuf + i, extraBuf, 32);
       /* Copy tail */
       memcpy(tempBuf + i + 32, outBuf + i, dataSize - i);
+      logStage->testLen = temp.size();
       cb(temp);
       logStage->fuzzed ++;
       logStage->duration = timer.elapsed();
@@ -673,6 +674,7 @@ void Mutation::havoc(OnMutateFunc cb) {
       u32 val = UR(15 + ((dict.extras.size() + autoDict.extras.size()) ? 2 : 0));
       byte *out_buf = &curFuzzItem.data[0];
       dataSize = curFuzzItem.data.size();
+      logStage->testLen = dataSize;
       switch (val) {
         case 0: {
           /* Flip a single bit somewhere. Spooky! */

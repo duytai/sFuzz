@@ -23,8 +23,6 @@ namespace fuzzer {
     int numTest;
     /* current item */
     int errorCount;
-    /* Effector map count*/
-    int effCount;
     LogStage() {
       name = "";
       fuzzed = 0;
@@ -33,14 +31,18 @@ namespace fuzzer {
       duration = 0;
       numTest = 0;
       errorCount = 0;
-      effCount = 0;
     }
   };
   class Logger {
     thread th;
     public:
+      Logger() {
+        idx = 0;
+        effCount = 0;
+      }
       vector<LogStage*> stages;
       int idx;
+      int effCount;
       void startTimer();
       void endTimer();
   };

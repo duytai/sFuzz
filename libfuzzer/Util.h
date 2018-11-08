@@ -36,7 +36,7 @@ namespace fuzzer {
   static int SPLICE_HAVOC = 32;
   static int HAVOC_MIN = 16;
   static int EFF_MIN_LEN = 1;
-  static int EFF_MAP_SCALE2 = 5; // 32 bytes block
+  static int EFF_MAP_SCALE2 = 4; // 32 bytes block
   static int MAP_SIZE_POW2 = 16;
   static int MAP_SIZE = (1 << MAP_SIZE_POW2);
   static int HASH_CONST = 0xa5b35705;

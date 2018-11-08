@@ -26,7 +26,7 @@ namespace fuzzer {
         TextTable t( '-', '|', '+' );
         t.add("  CURRENT STAGE  ");
         t.add("                     ");
-        t.add("   TOTAL STAGE   ");
+        t.add("    ALL STAGES   ");
         t.add("                     ");
         t.endOfRow();
         t.add("Stage");
@@ -64,6 +64,8 @@ namespace fuzzer {
         t.endOfRow();
         t.add("Size (bytes)");
         t.add(to_string(lastStage->testLen));
+        t.add("Index");
+        t.add(to_string(idx));
         t.endOfRow();
         t.add("Errors");
         t.add(to_string(lastStage->errorCount));
@@ -71,10 +73,8 @@ namespace fuzzer {
         auto totalErrors = accumulate(stages.begin(), stages.end(), 0, [](int r, LogStage* n) { return r + n->errorCount; });
         t.add(to_string(totalErrors));
         t.endOfRow();
-        t.add("Effector map");
-        t.add(to_string(lastStage->effCount));
-        t.add("Index");
-        t.add(to_string(idx));
+        t.add("Effector");
+        t.add(to_string(effCount));
         t.endOfRow();
         cout << t;
         usleep(100000);
