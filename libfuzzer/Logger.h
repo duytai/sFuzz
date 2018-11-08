@@ -1,3 +1,4 @@
+#pragma once
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -22,6 +23,8 @@ namespace fuzzer {
     int numTest;
     /* current item */
     int errorCount;
+    /* Effector map count*/
+    int effCount;
     LogStage() {
       name = "";
       fuzzed = 0;
@@ -30,6 +33,7 @@ namespace fuzzer {
       duration = 0;
       numTest = 0;
       errorCount = 0;
+      effCount = 0;
     }
   };
   class Logger {

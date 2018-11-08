@@ -133,6 +133,7 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
       if (item.res.cksum != curFuzzItem.res.cksum) {
         eff[effAPos(i)] = 1;
         effCount += 1;
+        logStage->effCount = effCount;
       }
     }
     curFuzzItem.data[i] ^= 0xFF;
@@ -144,6 +145,7 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
    anyway. */
   if (effCount != effALen(dataSize) && effCount * 100 / effALen(dataSize) > EFF_MAX_PERC) {
     eff = bytes(effALen(dataSize), 1);
+    logStage->effCount = effALen(dataSize);
   }
 }
 

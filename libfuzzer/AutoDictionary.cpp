@@ -20,7 +20,9 @@ namespace fuzzer {
     if (len == 2) {
       i = INTERESTING_16.size() >> 1;
       while (i--)
-        if (*((u16*)autoExtraBuf) == INTERESTING_16[i] || *((u16*)autoExtraBuf) == swap16(INTERESTING_16[i])) return;
+        if (*((u16*)autoExtraBuf) == INTERESTING_16[i] || *((u16*)autoExtraBuf) == swap16(INTERESTING_16[i])) {
+          return;
+        };
       
     }
     if (len == 4) {

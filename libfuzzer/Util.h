@@ -2,6 +2,10 @@
 #include <iostream>
 #include <vector>
 #include <libdevcore/FixedHash.h>
+#include <fstream>
+
+#define IS_ASSERTED true
+#define ASSERT(condition, message) { assert(condition && message); }
 
 using namespace std;
 using namespace dev;

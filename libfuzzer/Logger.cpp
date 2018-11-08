@@ -3,6 +3,7 @@
 #include <ctime>
 #include <libdevcore/CommonIO.h>
 #include <numeric>
+#include "TextTable.h"
 
 using namespace std;
 using namespace dev;
@@ -10,62 +11,72 @@ using namespace dev;
 namespace fuzzer {
   void Logger::startTimer() {
     th = thread([this] () {
-      auto pad = [](string str) {
-        while (str.length() < 20) str += " ";
-        return str;
-      };
+      int numLines = 21;
+      for (int i = 0; i < numLines; i += 1) {
+        cout << endl;
+      }
       while (true) {
         /* Each Stage */
         if (stages.size() == 0) continue;
-        auto lastStage = stages.back();
-        auto stageName = lastStage->name;
-        auto stageFuzzed = to_string(lastStage->fuzzed) + "/" + to_string(lastStage->maxFuzzed);
-        auto stageSkip = to_string(lastStage->skip);
-        auto stageDuration = to_string(lastStage->duration);
-        auto stageSpeed = to_string((lastStage->skip + lastStage->fuzzed) / (float)lastStage->duration);
-        auto stageTestLen = to_string(lastStage->testLen);
-        auto numTest = to_string(lastStage->numTest);
-        auto errorCount = to_string(lastStage->errorCount);
-        printf("+-------------------------------------+\n");
-        printf("+             CURRENT STAGE           +\n");
-        printf("+---------------+---------------------+\n");
-        printf("| Stage         | %s|\n", pad(stageName).c_str());
-        printf("| Fuzzed        | %s|\n", pad(stageFuzzed).c_str());
-        printf("| Skip          | %s|\n", pad(stageSkip).c_str());
-        printf("| Duration      | %s|\n", pad(stageDuration).c_str());
-        printf("| Speed         | %s|\n", pad(stageSpeed).c_str());
-        printf("| Queues        | %s|\n", pad(numTest).c_str());
-        printf("| Size (bytes)  | %s|\n", pad(stageTestLen).c_str());
-        printf("| Errors        | %s|\n", pad(errorCount).c_str());
-        printf("+---------------+---------------------+\n");
-        /* Total */
-        auto getNumTest = [](int r, LogStage* n) { return r + n->numTest; };
-        auto getErrorCount = [](int r, LogStage* n) { return r + n->errorCount; };
-        auto getFuzzed = [](int r, LogStage* n) { return r + n->fuzzed; };
-        auto getDuration = [](double r, LogStage* n) { return r + n->duration; };
-        auto getSkip = [](int r, LogStage* n) { return r + n->skip; };
-        auto totalFuzzed = accumulate(stages.begin(), stages.end(), 0, getFuzzed);
-        auto totalDuration = accumulate(stages.begin(), stages.end(), 0.0, getDuration);
-        auto totalSkip = accumulate(stages.begin(), stages.end(), 0, getSkip);
-        auto totalNumTest = accumulate(stages.begin(), stages.end(), 1, getNumTest);
-        auto totalErrors = accumulate(stages.begin(), stages.end(), 0, getErrorCount);
-        auto avgSpeed = (float) (totalFuzzed + totalSkip) / (float) totalDuration;
-        printf("+             ALL STAGES              +\n");
-        printf("+---------------+---------------------+\n");
-        printf("| Total Fuzzed  | %s|\n", pad(to_string(totalFuzzed)).c_str());
-        printf("| Total Skip    | %s|\n", pad(to_string(totalSkip)).c_str());
-        printf("| Total Duration| %s|\n", pad(to_string(totalDuration)).c_str());
-        printf("| Avg Speed     | %s|\n", pad(to_string(avgSpeed)).c_str());
-        printf("| Total Queues  | %s|\n", pad(to_string(totalNumTest)).c_str());
-        printf("| IDX           | %s|\n", pad(to_string(idx)).c_str());
-        printf("+---------------+---------------------+\n");
-        printf("+               ERRORS                +\n");
-        printf("+---------------+---------------------+\n");
-        printf("| Total Errors  | %s|\n", pad(to_string(totalErrors)).c_str());
-        printf("+---------------+---------------------+\n");
-        for (int i = 0; i < 22; i += 1) {
-           cout << "\x1b[A";
+        for (int i = 0; i < numLines; i += 1) {
+          cout << "\x1b[A";
         }
+        /* Table */
+        auto lastStage = stages.back();
+        TextTable t( '-', '|', '+' );
+        t.add("  CURRENT STAGE  ");
+        t.add("                     ");
+        t.add("   TOTAL STAGE   ");
+        t.add("                     ");
+        t.endOfRow();
+        t.add("Stage");
+        t.add(lastStage->name);
+        t.endOfRow();
+        t.add("Fuzzed");
+        t.add(to_string(lastStage->fuzzed) + "/" + to_string(lastStage->maxFuzzed));
+        t.add("Total Fuzzed");
+        auto totalFuzzed = accumulate(stages.begin(), stages.end(), 0, [](int r, LogStage* n) { return r + n->fuzzed; });
+        t.add(to_string(totalFuzzed));
+        t.endOfRow();
+        t.add("Skip");
+        t.add(to_string(lastStage->skip));
+        t.add("Total Skip");
+        auto totalSkip = accumulate(stages.begin(), stages.end(), 0, [](int r, LogStage* n) { return r + n->skip; });
+        t.add(to_string(totalSkip));
+        t.endOfRow();
+        t.add("Duration");
+        t.add(to_string(lastStage->duration));
+        t.add("Total Duration");
+        auto totalDuration = accumulate(stages.begin(), stages.end(), 0.0, [](double r, LogStage* n) { return r + n->duration; });
+        t.add(to_string(totalDuration));
+        t.endOfRow();
+        t.add("Speed");
+        t.add(to_string((lastStage->skip + lastStage->fuzzed) / (float)lastStage->duration));
+        t.add("Avg Speed");
+        auto avgSpeed = (totalFuzzed + totalSkip) / (float) totalDuration;
+        t.add(to_string(avgSpeed));
+        t.endOfRow();
+        t.add("Queues");
+        t.add(to_string(lastStage->numTest));
+        t.add("Total Queues");
+        auto totalNumTest = accumulate(stages.begin(), stages.end(), 1, [](int r, LogStage* n) { return r + n->numTest; });
+        t.add(to_string(totalNumTest));
+        t.endOfRow();
+        t.add("Size (bytes)");
+        t.add(to_string(lastStage->testLen));
+        t.endOfRow();
+        t.add("Errors");
+        t.add(to_string(lastStage->errorCount));
+        t.add("Total Errors");
+        auto totalErrors = accumulate(stages.begin(), stages.end(), 0, [](int r, LogStage* n) { return r + n->errorCount; });
+        t.add(to_string(totalErrors));
+        t.endOfRow();
+        t.add("Effector map");
+        t.add(to_string(lastStage->effCount));
+        t.add("Index");
+        t.add(to_string(idx));
+        t.endOfRow();
+        cout << t;
         usleep(100000);
       }
     });
@@ -73,9 +84,6 @@ namespace fuzzer {
   
   void Logger::endTimer() {
     usleep(100000);
-    for (int i = 0; i < 22; i += 1) {
-      cout << endl;
-    }
     th.detach();
   }
 }
