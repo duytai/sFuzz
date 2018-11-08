@@ -39,10 +39,12 @@ namespace fuzzer {
       Logger() {
         idx = 0;
         effCount = 0;
+        branchCount = 0;
       }
       vector<LogStage*> stages;
       int idx;
       int effCount;
+      int branchCount;
       void startTimer();
       void endTimer();
   };

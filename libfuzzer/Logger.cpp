@@ -75,6 +75,8 @@ namespace fuzzer {
         t.endOfRow();
         t.add("Effector");
         t.add(to_string(effCount));
+        t.add("Branches");
+        t.add(to_string(branchCount));
         t.endOfRow();
         cout << t;
         usleep(100000);

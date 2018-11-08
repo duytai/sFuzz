@@ -4,8 +4,8 @@
 #include <libdevcore/FixedHash.h>
 #include <fstream>
 
-#define IS_ASSERTED true
-#define ASSERT(condition, message) { assert(condition && message); }
+#define unlikely(_x)  __builtin_expect(!!(_x), 0)
+#define likely(_x)   __builtin_expect(!!(_x), 1)
 
 using namespace std;
 using namespace dev;
@@ -65,6 +65,8 @@ namespace fuzzer {
   u32 swap32(u32 x);
   /* Locate differents */
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last);
+  /* count bits */
+  u32 coutBits(u8 *mem);
   /* Data struct */
   struct ExtraData {
     bytes data;

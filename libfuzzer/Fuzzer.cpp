@@ -18,16 +18,22 @@ Fuzzer::Fuzzer(bytes code, ContractABI ca): ca(ca), code(code), virginbits(bytes
 /* Detect new branch by comparing tracebits to virginbits */
 u8 Fuzzer::hasNewBits(bytes tracebits) {
   u8 ret = 0;
-  for (vector<int>::size_type i = 0; i < tracebits.size(); i += 1) {
-    byte cur = tracebits[i];
-    byte virgin = virginbits[i];
-    if (cur && (cur & virgin)) {
-      if (ret < 2) {
-        if (cur && virgin == 0xFF) ret = 2;
+  u32 i = (MAP_SIZE >> 2);
+  u32* current = (u32*) tracebits.data();
+  u32* virgin = (u32*) virginbits.data();
+  while (i--) {
+    if (unlikely(*current) && unlikely(*current & *virgin)) {
+      if (likely(ret < 2)) {
+        u8* cur = (u8*)current;
+        u8* vir = (u8*)virgin;
+        if ((cur[0] && vir[0] == 0xff) || (cur[1] && vir[1] == 0xff) ||
+            (cur[2] && vir[2] == 0xff) || (cur[3] && vir[3] == 0xff)) ret = 2;
         else ret = 1;
       }
-      virginbits[i] &= ~cur;
+      *virgin &= ~*current;
     }
+    current++;
+    virgin++;
   }
   return ret;
 }
@@ -56,6 +62,7 @@ void Fuzzer::start() {
       auto stage = logger.stages.back();
       for (auto tup : item.res.exceptions) stage->errorCount += tup.second;
     }
+    logger.branchCount = (MAP_SIZE << 3) - coutBits(virginbits.data());
     return item;
   };
   /* Exec the sample testcase first */
