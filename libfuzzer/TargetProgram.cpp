@@ -72,6 +72,16 @@ namespace fuzzer {
     return res;
   }
   
+  void TargetProgram::setupAccounts(vector<bytes> accounts) {
+    for (auto account : accounts) {
+      /* 8 bytes - 4 bytes (balance) - 20 bytes (address) */
+      bytes balance(account.begin() + 8, account.begin() + 8 + 4);
+      bytes addr(account.begin() + 8 + 4, account.end());
+      int balanceValue = int((balance[0]) << 24 | (balance[1]) << 16 | (balance[2]) << 8 | (balance[3]));
+      state.setBalance(Address(addr), balanceValue);
+    }
+  }
+  
   void TargetProgram::reset() {
     state.clearStorage(contractAddress);
   }

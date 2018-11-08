@@ -21,7 +21,6 @@ namespace fuzzer {
    * - array_size: 5
    * - sub_array_size: 5
    */
-  
   void ContractABI::updateTestData(bytes data) {
     /* Detect dynamic len by consulting first 32 bytes */
     int lenOffset = 0;
@@ -41,6 +40,7 @@ namespace fuzzer {
       int fitLen = offset + singleLen;
       while ((int)data.size() < fitLen) data.push_back(0);
     };
+    this->accounts.clear();
     for (auto &fd : this->fds) {
       for (auto &td : fd.tds) {
         switch (td.dimensions.size()) {
@@ -51,6 +51,10 @@ namespace fuzzer {
             padLen(containerLen);
             /* Read from offset ... offset + realLen */
             bytes d(data.begin() + offset, data.begin() + offset + realLen);
+            /* If address, extract account */
+            if (boost::starts_with(td.name, "address")) {
+              accounts.push_back(d);
+            }
             td.addValue(d);
             /* Ignore (containerLen - realLen) bytes */
             offset += containerLen;
@@ -66,6 +70,10 @@ namespace fuzzer {
               bytes d(data.begin() + offset, data.begin() + offset + realLen);
               ds.push_back(d);
               offset += containerLen;
+            }
+            /* If address, extract account */
+            if (boost::starts_with(td.name, "address")) {
+              accounts.insert(accounts.end(), ds.begin(), ds.end());
             }
             td.addValue(ds);
             break;
@@ -85,6 +93,10 @@ namespace fuzzer {
                 offset += containerLen;
               }
               dss.push_back(ds);
+              /* If address, extract account */
+              if (boost::starts_with(td.name, "address")) {
+                accounts.insert(accounts.end(), ds.begin(), ds.end());
+              }
             }
             td.addValue(dss);
             break;

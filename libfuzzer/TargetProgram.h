@@ -31,6 +31,7 @@ namespace fuzzer {
       ~TargetProgram();
       void deploy(bytes code);
       void reset();
+      void setupAccounts(vector<bytes> accounts);
       ExecutionResult invoke(int type, bytes data, OnOpFunc onOp);
   };
 }

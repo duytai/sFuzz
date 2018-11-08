@@ -9,7 +9,7 @@
 using namespace fuzzer;
 using namespace std;
 
-TEST(AutoDict, maybeAddAuto) {
+TEST(AutoDict, DISABLED_maybeAddAuto) {
   AutoDictionary autoDict;
   bytes data = bytes(20, 0);
   /* Same bytes */

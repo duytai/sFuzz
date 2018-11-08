@@ -49,6 +49,7 @@ namespace fuzzer {
   class ContractABI {
     public:
       vector<FuncDef> fds;
+      vector<bytes> accounts;
       ContractABI(){};
       ContractABI(string abiJson);
       /* encoded ABI of contract constructor */
