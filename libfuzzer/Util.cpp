@@ -155,7 +155,25 @@ namespace fuzzer {
     *last = l_loc;
     return;
   }
-    
+  
+  string formatDuration(int duration) {
+    stringstream ret;
+    int days = duration / (1000 * 60 * 60 * 24);
+    int hours = duration / (1000 * 60 * 60) % 24;
+    int minutes = duration / (1000 * 60) % 60;
+    int seconds = duration % 60;
+    ret << days
+      << " days, "
+      << hours
+      << " hrs, "
+      << minutes
+      << " min, "
+      << seconds
+      << " sec";
+    string padStr(40 - ret.str().size(), ' ');
+    return ret.str() + padStr;
+  }
+  
   u32 coutBits(u8 *mem) {
     u32* ptr = (u32*)mem;
     u32  i   = (MAP_SIZE >> 2);

@@ -2,11 +2,11 @@
 #include "Dictionary.h"
 #include "Util.h"
 #include "AutoDictionary.h"
+#include "FuzzItem.h"
 #include <ctime>
 
 using namespace std;
 using namespace fuzzer;
-
 
 Mutation::Mutation(FuzzItem& item, Dictionary dict, AutoDictionary& autoDict): curFuzzItem(item), dict(dict), autoDict(autoDict), dataSize(item.data.size()) {
   effCount = 0;

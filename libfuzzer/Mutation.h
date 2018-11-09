@@ -9,16 +9,15 @@
 #include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
 #include "TargetContainer.h"
-#include "Fuzzer.h"
 #include "Dictionary.h"
 #include "AutoDictionary.h"
+#include "FuzzItem.h"
 
 using namespace dev;
 using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  using OnMutateFunc = function<FuzzItem (bytes b)>;
   class Mutation {
     FuzzItem curFuzzItem;
     Dictionary dict;

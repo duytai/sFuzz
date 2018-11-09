@@ -7,6 +7,31 @@
 #define unlikely(_x)  __builtin_expect(!!(_x), 0)
 #define likely(_x)   __builtin_expect(!!(_x), 1)
 
+#define bV "━"
+#define bV2 bV bV
+#define bV5 bV2 bV2
+#define bV10 bV5 bV5
+#define bV20 bV10 bV10
+#define bV30 bV20 bV10
+#define bV50 bV30 bV20
+
+#define bH "┃"
+#define bBL "┗"
+#define bBR "┛"
+#define bTL "┏"
+#define bTR "┓"
+#define bLTR "┣"
+#define bRTR "┫"
+#define bBTR "┻"
+#define bTTR "┳"
+#define bCR "╋"
+
+#define cGRN "\x1b[0;32m"
+#define cRST "\x1b[0m"
+#define Bold "\e[1m"
+#define CURSOR_HIDE "\x1b[?25l"
+
+
 using namespace std;
 using namespace dev;
 
@@ -67,6 +92,7 @@ namespace fuzzer {
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last);
   /* count bits */
   u32 coutBits(u8 *mem);
+  string formatDuration(int duration);
   /* Data struct */
   struct ExtraData {
     bytes data;
