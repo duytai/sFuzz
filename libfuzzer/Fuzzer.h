@@ -29,13 +29,16 @@ namespace fuzzer {
   };
   
   class Fuzzer {
-    private:
-      ContractABI ca;
-      bytes code;
-      bytes virginbits;
+    ContractABI ca;
+    bytes code;
+    bytes virginbits;
+    TargetContainer container;
+    vector<FuzzItem> queues;
+    int idx;
     public:
-      u8 hasNewBits(bytes tracebits);
       Fuzzer(bytes code /* code */, ContractABI ca /* contract abi */);
+      u8 hasNewBits(bytes tracebits);
+      FuzzItem saveIfInterest(bytes data);
       void start();
   };
 }

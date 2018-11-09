@@ -13,7 +13,9 @@ using namespace std;
 using namespace fuzzer;
 
 /* Setup virgin byte to 255 */
-Fuzzer::Fuzzer(bytes code, ContractABI ca): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)){}
+Fuzzer::Fuzzer(bytes code, ContractABI ca): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)), container(code, ca) {
+  idx = 0;
+}
 
 /* Detect new branch by comparing tracebits to virginbits */
 u8 Fuzzer::hasNewBits(bytes tracebits) {
@@ -37,56 +39,52 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
   }
   return ret;
 }
+/* Save data if interest */
+FuzzItem Fuzzer::saveIfInterest(bytes data) {
+  FuzzItem item(data);
+  item.res = container.exec(data);
+  item.wasFuzzed = false;
+  if (hasNewBits(item.res.tracebits)) {
+    queues.push_back(item);
+  }
+  return item;
+}
 
 /* Start fuzzing */
 void Fuzzer::start() {
-  /* Statistic information */
-  TargetContainer container(code, ca);
   Dictionary dict(code);
   AutoDictionary autoDict;
-  vector<FuzzItem> queues;
-  /* Handle new created testcase */
-  auto commomFuzzStuff = [&](bytes data) {
-    FuzzItem item(data);
-    item.res = container.exec(data);
-    item.wasFuzzed = false;
-    if (hasNewBits(item.res.tracebits)) {
-      queues.push_back(item);
-    }
-    return item;
-  };
-  /* Exec the sample testcase first */
-  commomFuzzStuff(ca.randomTestcase());
-  /* Jump to fuzz round */
-  int idx = 0;
+  /* First test case */
+  saveIfInterest(ca.randomTestcase());
   while (true) {
     FuzzItem & curItem = queues[idx];
     Mutation mutation(curItem, dict, autoDict);
+    auto save = [&](bytes data){ return saveIfInterest(data);};
     if (!curItem.wasFuzzed) {
-      mutation.singleWalkingBit(commomFuzzStuff);
-      mutation.twoWalkingBit(commomFuzzStuff);
-      mutation.fourWalkingBit(commomFuzzStuff);
-      mutation.singleWalkingByte(commomFuzzStuff);
-      mutation.twoWalkingByte(commomFuzzStuff);
-      mutation.fourWalkingByte(commomFuzzStuff);
-      mutation.singleArith(commomFuzzStuff);
-      mutation.twoArith(commomFuzzStuff);
-      mutation.fourArith(commomFuzzStuff);
-      mutation.singleInterest(commomFuzzStuff);
-      mutation.twoInterest(commomFuzzStuff);
-      mutation.fourInterest(commomFuzzStuff);
+      mutation.singleWalkingBit(save);
+      mutation.twoWalkingBit(save);
+      mutation.fourWalkingBit(save);
+      mutation.singleWalkingByte(save);
+      mutation.twoWalkingByte(save);
+      mutation.fourWalkingByte(save);
+      mutation.singleArith(save);
+      mutation.twoArith(save);
+      mutation.fourArith(save);
+      mutation.singleInterest(save);
+      mutation.twoInterest(save);
+      mutation.fourInterest(save);
       if (dict.extras.size()) {
-        mutation.overwriteWithDictionary(commomFuzzStuff);
-        mutation.insertWithDictionary(commomFuzzStuff);
+        mutation.overwriteWithDictionary(save);
+        mutation.insertWithDictionary(save);
       }
       if (autoDict.extras.size()) {
-        mutation.overwriteWithAutoDictionary(commomFuzzStuff);
+        mutation.overwriteWithAutoDictionary(save);
       }
       curItem.wasFuzzed = true;
     }
-    mutation.havoc(commomFuzzStuff);
-    if (mutation.splice(commomFuzzStuff, queues)) {
-      mutation.havoc(commomFuzzStuff);
+    mutation.havoc(save);
+    if (mutation.splice(save, queues)) {
+      mutation.havoc(save);
     };
     idx = (idx + 1) % queues.size();
   }
