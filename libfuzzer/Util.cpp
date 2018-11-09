@@ -170,8 +170,12 @@ namespace fuzzer {
       << " min, "
       << seconds
       << " sec";
-    string padStr(40 - ret.str().size(), ' ');
-    return ret.str() + padStr;
+    return padStr(ret.str(), 44);
+  }
+  
+  string padStr(string str, int len) {
+    while ((int)str.size() < len) str += " ";
+    return str;
   }
   
   u32 coutBits(u8 *mem) {

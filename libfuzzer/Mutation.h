@@ -45,5 +45,9 @@ namespace fuzzer {
       void overwriteWithAutoDictionary(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       bool splice(OnMutateFunc cb, vector<FuzzItem> items);
+      int stageMax;
+      int stageCur;
+      string stageName;
+      string stageShort;
   };
 }

@@ -93,6 +93,7 @@ namespace fuzzer {
   /* count bits */
   u32 coutBits(u8 *mem);
   string formatDuration(int duration);
+  string padStr(string str, int len);
   /* Data struct */
   struct ExtraData {
     bytes data;

@@ -16,6 +16,8 @@ Mutation::Mutation(FuzzItem& item, Dictionary dict, AutoDictionary& autoDict): c
     eff[effAPos(dataSize - 1)] = 1;
     effCount ++;
   }
+  stageName = stageShort = "init";
+  stageMax = 1;
 }
 
 void Mutation::flipbit(int pos) {
@@ -23,85 +25,68 @@ void Mutation::flipbit(int pos) {
 }
 
 void Mutation::singleWalkingBit(OnMutateFunc cb) {
+  stageShort = "flip1";
+  stageName = "bitflip 1/1";
+  stageMax = dataSize << 3;
   /* Start fuzzing */
-  int maxStage = dataSize << 3;
-  bytes autoExtras;
-  h256 prevCksum = curFuzzItem.res.cksum;
-  for (int i = 0; i < maxStage ; i += 1) {
-    flipbit(i);
+  for (stageCur = 0; stageCur < stageMax ; stageCur += 1) {
+    flipbit(stageCur);
     FuzzItem item = cb(curFuzzItem.data);
-    flipbit(i);
-    /* Handle auto extra here */
-    if ((i & 7) == 7) {
-      /* End of each byte */
-      h256 cksum = item.res.cksum;
-      if (i == maxStage - 1 && prevCksum == cksum) {
-        if (autoExtras.size() < MAX_AUTO_EXTRA) {
-          autoExtras.push_back(curFuzzItem.data[i >> 3]);
-        }
-        if (autoExtras.size() > MIN_AUTO_EXTRA && autoExtras.size() < MAX_AUTO_EXTRA) {
-          autoDict.maybeAddAuto(autoExtras);
-        }
-      } else if (cksum != prevCksum) {
-        if (autoExtras.size() > MIN_AUTO_EXTRA && autoExtras.size() < MAX_AUTO_EXTRA) {
-          autoDict.maybeAddAuto(autoExtras);
-          autoExtras.clear();
-        }
-        prevCksum = cksum;
-      }
-      if (cksum != curFuzzItem.res.cksum) {
-        if (autoExtras.size() < MAX_AUTO_EXTRA) {
-          autoExtras.push_back(curFuzzItem.data[i >> 3]);
-        }
-      }
-    }
+    flipbit(stageCur);
   }
 }
 
 void Mutation::twoWalkingBit(OnMutateFunc cb) {
+  stageShort = "flip2";
+  stageName = "bitflip 2/1";
+  stageMax = (dataSize << 3) - 1;
   /* Start fuzzing */
-  int maxStage = (dataSize << 3) - 1;
-  for (int i = 0; i < maxStage; i += 1) {
-    flipbit(i);
-    flipbit(i + 1);
+  for (stageCur = 0; stageCur < stageMax; stageCur += 1) {
+    flipbit(stageCur);
+    flipbit(stageCur + 1);
     cb(curFuzzItem.data);
-    flipbit(i);
-    flipbit(i + 1);
+    flipbit(stageCur);
+    flipbit(stageCur + 1);
   }
 }
 
 void Mutation::fourWalkingBit(OnMutateFunc cb) {
+  stageShort = "flip4";
+  stageName = "bitflip 4/1";
+  stageMax = (dataSize << 3) - 3;
   /* Start fuzzing */
-  int maxStage = (dataSize << 3) - 3;
-  for (int i = 0; i < maxStage; i += 1) {
-    flipbit(i);
-    flipbit(i + 1);
-    flipbit(i + 2);
-    flipbit(i + 3);
+  for (stageCur = 0; stageCur < stageMax; stageCur += 1) {
+    flipbit(stageCur);
+    flipbit(stageCur + 1);
+    flipbit(stageCur + 2);
+    flipbit(stageCur + 3);
     cb(curFuzzItem.data);
-    flipbit(i);
-    flipbit(i + 1);
-    flipbit(i + 2);
-    flipbit(i + 3);
+    flipbit(stageCur);
+    flipbit(stageCur + 1);
+    flipbit(stageCur + 2);
+    flipbit(stageCur + 3);
   }
 }
 
 void Mutation::singleWalkingByte(OnMutateFunc cb) {
+  stageShort = "flip8";
+  stageName = "bitflip 8/8";
+  stageMax = dataSize;
   /* Start fuzzing */
-  for (int i = 0; i < dataSize; i += 1) {
-    curFuzzItem.data[i] ^= 0xFF;
+  for (stageCur = 0; stageCur < dataSize; stageCur += 1) {
+    curFuzzItem.data[stageCur] ^= 0xFF;
     FuzzItem item = cb(curFuzzItem.data);
     /* We also use this stage to pull off a simple trick: we identify
      bytes that seem to have no effect on the current execution path
      even when fully flipped - and we skip them during more expensive
      deterministic stages, such as arithmetics or known ints. */
-    if (!eff[effAPos(i)]) {
+    if (!eff[effAPos(stageCur)]) {
       if (item.res.cksum != curFuzzItem.res.cksum) {
-        eff[effAPos(i)] = 1;
+        eff[effAPos(stageCur)] = 1;
         effCount += 1;
       }
     }
-    curFuzzItem.data[i] ^= 0xFF;
+    curFuzzItem.data[stageCur] ^= 0xFF;
   }
   /* If the effector map is more than EFF_MAX_PERC dense, just flag the
    whole thing as worth fuzzing, since we wouldn't be saving much time
@@ -112,41 +97,54 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
 }
 
 void Mutation::twoWalkingByte(OnMutateFunc cb) {
+  stageShort = "flip16";
+  stageName = "bitflip 16/8";
+  stageMax = dataSize - 1;
   /* Start fuzzing */
   int maxStage = dataSize - 1;
-  u8 *buf = &curFuzzItem.data[0];
-  for (int i = 0; i < maxStage; i += 1) {
+  u8 *buf = curFuzzItem.data.data();
+  cout << "MAX: " << maxStage << endl;
+  for (stageCur = 0; stageCur < maxStage; stageCur += 1) {
     /* Let's consult the effector map... */
-    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
+    if (!eff[effAPos(stageCur)] && !eff[effAPos(stageCur + 1)]) {
+      stageMax--;
       continue;
     }
-    *(u16*)(buf + i) ^= 0xFFFF;
+    *(u16*)(buf + stageCur) ^= 0xFFFF;
     cb(curFuzzItem.data);
-    *(u16*)(buf + i) ^= 0xFFFF;
+    *(u16*)(buf + stageCur) ^= 0xFFFF;
   }
 }
 
 void Mutation::fourWalkingByte(OnMutateFunc cb) {
+  stageShort = "flip32";
+  stageName = "bitflip 32/8";
+  stageMax = dataSize - 3;
   /* Start fuzzing */
-  int maxStage = dataSize - 3;
-  u8 *buf = &curFuzzItem.data[0];
-  for (int i = 0; i < maxStage; i += 1) {
+  u8 *buf = curFuzzItem.data.data();
+  for (stageCur = 0; stageCur < stageMax; stageCur += 1) {
     /* Let's consult the effector map... */
-    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] &&
-        !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
+    if (!eff[effAPos(stageCur)] && !eff[effAPos(stageCur + 1)] &&
+        !eff[effAPos(stageCur + 2)] && !eff[effAPos(stageCur + 3)]) {
+      stageMax --;
       continue;
     }
-    *(u32*)(buf + i) ^= 0xFFFFFFFF;
+    *(u32*)(buf + stageCur) ^= 0xFFFFFFFF;
     cb(curFuzzItem.data);
-    *(u32*)(buf + i) ^= 0xFFFFFFFF;
+    *(u32*)(buf + stageCur) ^= 0xFFFFFFFF;
   }
 }
 
 void Mutation::singleArith(OnMutateFunc cb) {
+  stageShort = "arith8";
+  stageName = "arith 8/8";
+  stageMax = 2 * dataSize * ARITH_MAX;
+
   /* Start fuzzing */
   for (int i = 0; i < dataSize; i += 1) {
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)]) {
+      stageMax -= (2 * ARITH_MAX);
       continue;
     }
     byte orig = curFuzzItem.data[i];
@@ -155,12 +153,14 @@ void Mutation::singleArith(OnMutateFunc cb) {
       if (!couldBeBitflip(r)) {
         curFuzzItem.data[i] = orig + j;
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       r = orig ^ (orig - j);
       if (!couldBeBitflip(r)) {
         curFuzzItem.data[i] = orig - j;
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       curFuzzItem.data[i] = orig;
     }
   }
