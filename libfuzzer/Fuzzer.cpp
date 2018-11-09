@@ -44,7 +44,6 @@ void Fuzzer::start() {
   TargetContainer container(code, ca);
   Dictionary dict(code);
   AutoDictionary autoDict;
-  Logger logger;
   vector<FuzzItem> queues;
   /* Handle new created testcase */
   auto commomFuzzStuff = [&](bytes data) {
@@ -53,27 +52,16 @@ void Fuzzer::start() {
     item.wasFuzzed = false;
     if (hasNewBits(item.res.tracebits)) {
       queues.push_back(item);
-      if (logger.stages.size()) {
-        auto stage = logger.stages.back();
-        stage->numTest ++;
-      }
     }
-    if (logger.stages.size()) {
-      auto stage = logger.stages.back();
-      for (auto tup : item.res.exceptions) stage->errorCount += tup.second;
-    }
-    logger.branchCount = (MAP_SIZE << 3) - coutBits(virginbits.data());
     return item;
   };
   /* Exec the sample testcase first */
   commomFuzzStuff(ca.randomTestcase());
   /* Jump to fuzz round */
-  logger.startTimer();
   int idx = 0;
   while (true) {
-    logger.effCount = 0;
     FuzzItem & curItem = queues[idx];
-    Mutation mutation(curItem, dict, autoDict, logger);
+    Mutation mutation(curItem, dict, autoDict);
     if (!curItem.wasFuzzed) {
       mutation.singleWalkingBit(commomFuzzStuff);
       mutation.twoWalkingBit(commomFuzzStuff);
@@ -101,7 +89,5 @@ void Fuzzer::start() {
       mutation.havoc(commomFuzzStuff);
     };
     idx = (idx + 1) % queues.size();
-    logger.idx = idx;
   }
-  logger.endTimer();
 }

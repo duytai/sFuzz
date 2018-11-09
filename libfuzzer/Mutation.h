@@ -12,7 +12,6 @@
 #include "Fuzzer.h"
 #include "Dictionary.h"
 #include "AutoDictionary.h"
-#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -24,13 +23,12 @@ namespace fuzzer {
     FuzzItem curFuzzItem;
     Dictionary dict;
     AutoDictionary& autoDict;
-    Logger& logger;
     int dataSize;
     int effCount;
     bytes eff;
     void flipbit(int pos);
     public:
-      Mutation(FuzzItem& item, Dictionary dict, AutoDictionary & autoDict, Logger& logger);
+      Mutation(FuzzItem& item, Dictionary dict, AutoDictionary & autoDict);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);

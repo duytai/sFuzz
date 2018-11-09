@@ -8,7 +8,7 @@ using namespace std;
 using namespace fuzzer;
 
 
-Mutation::Mutation(FuzzItem& item, Dictionary dict, AutoDictionary& autoDict, Logger& logger): curFuzzItem(item), dict(dict), autoDict(autoDict), logger(logger), dataSize(item.data.size()) {
+Mutation::Mutation(FuzzItem& item, Dictionary dict, AutoDictionary& autoDict): curFuzzItem(item), dict(dict), autoDict(autoDict), dataSize(item.data.size()) {
   effCount = 0;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;
@@ -23,13 +23,6 @@ void Mutation::flipbit(int pos) {
 }
 
 void Mutation::singleWalkingBit(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = (dataSize << 3);
-  logStage->name = "Single-Walking-Bit";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   int maxStage = dataSize << 3;
   bytes autoExtras;
@@ -38,8 +31,6 @@ void Mutation::singleWalkingBit(OnMutateFunc cb) {
     flipbit(i);
     FuzzItem item = cb(curFuzzItem.data);
     flipbit(i);
-    logStage->fuzzed ++;
-    logStage->duration = timer.elapsed();
     /* Handle auto extra here */
     if ((i & 7) == 7) {
       /* End of each byte */
@@ -68,13 +59,6 @@ void Mutation::singleWalkingBit(OnMutateFunc cb) {
 }
 
 void Mutation::twoWalkingBit(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = (dataSize << 3) - 1;
-  logStage->name = "Two-Walking-Bit";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   int maxStage = (dataSize << 3) - 1;
   for (int i = 0; i < maxStage; i += 1) {
@@ -83,19 +67,10 @@ void Mutation::twoWalkingBit(OnMutateFunc cb) {
     cb(curFuzzItem.data);
     flipbit(i);
     flipbit(i + 1);
-    logStage->fuzzed ++;
-    logStage->duration = timer.elapsed();
   }
 }
 
 void Mutation::fourWalkingBit(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = (dataSize << 3) - 3;
-  logStage->name = "Four-Walking-Bit";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   int maxStage = (dataSize << 3) - 3;
   for (int i = 0; i < maxStage; i += 1) {
@@ -108,19 +83,10 @@ void Mutation::fourWalkingBit(OnMutateFunc cb) {
     flipbit(i + 1);
     flipbit(i + 2);
     flipbit(i + 3);
-    logStage->fuzzed ++;
-    logStage->duration = timer.elapsed();
   }
 }
 
 void Mutation::singleWalkingByte(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = dataSize;
-  logStage->name = "Single-Walking-Byte";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   for (int i = 0; i < dataSize; i += 1) {
     curFuzzItem.data[i] ^= 0xFF;
@@ -133,57 +99,34 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
       if (item.res.cksum != curFuzzItem.res.cksum) {
         eff[effAPos(i)] = 1;
         effCount += 1;
-        logger.effCount = effCount;
       }
     }
     curFuzzItem.data[i] ^= 0xFF;
-    logStage->fuzzed ++;
-    logStage->duration = timer.elapsed();
   }
   /* If the effector map is more than EFF_MAX_PERC dense, just flag the
    whole thing as worth fuzzing, since we wouldn't be saving much time
    anyway. */
   if (effCount != effALen(dataSize) && effCount * 100 / effALen(dataSize) > EFF_MAX_PERC) {
     eff = bytes(effALen(dataSize), 1);
-    logger.effCount = effALen(dataSize);
   }
 }
 
 void Mutation::twoWalkingByte(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = dataSize - 1;
-  logStage->name = "Two-Walking-Byte";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   int maxStage = dataSize - 1;
   u8 *buf = &curFuzzItem.data[0];
   for (int i = 0; i < maxStage; i += 1) {
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
-      logStage->skip ++;
-      logStage->maxFuzzed --;
-      logStage->duration = timer.elapsed();
       continue;
     }
     *(u16*)(buf + i) ^= 0xFFFF;
     cb(curFuzzItem.data);
     *(u16*)(buf + i) ^= 0xFFFF;
-    logStage->fuzzed ++;
-    logStage->duration = timer.elapsed();
   }
 }
 
 void Mutation::fourWalkingByte(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = dataSize - 3;
-  logStage->name = "Four-Walking-Byte";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   int maxStage = dataSize - 3;
   u8 *buf = &curFuzzItem.data[0];
@@ -191,34 +134,19 @@ void Mutation::fourWalkingByte(OnMutateFunc cb) {
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] &&
         !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
-      logStage->skip ++;
-      logStage->maxFuzzed --;
-      logStage->duration = timer.elapsed();
       continue;
     }
     *(u32*)(buf + i) ^= 0xFFFFFFFF;
     cb(curFuzzItem.data);
     *(u32*)(buf + i) ^= 0xFFFFFFFF;
-    logStage->fuzzed ++;
-    logStage->duration = timer.elapsed();
   }
 }
 
 void Mutation::singleArith(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = 2 * dataSize * ARITH_MAX;
-  logStage->name = "Single-Arith";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   for (int i = 0; i < dataSize; i += 1) {
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)]) {
-      logStage->skip ++;
-      logStage->duration = timer.elapsed();
-      logStage->maxFuzzed --;
       continue;
     }
     byte orig = curFuzzItem.data[i];
@@ -227,23 +155,11 @@ void Mutation::singleArith(OnMutateFunc cb) {
       if (!couldBeBitflip(r)) {
         curFuzzItem.data[i] = orig + j;
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       r = orig ^ (orig - j);
       if (!couldBeBitflip(r)) {
         curFuzzItem.data[i] = orig - j;
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       curFuzzItem.data[i] = orig;
     }
@@ -251,21 +167,11 @@ void Mutation::singleArith(OnMutateFunc cb) {
 }
 
 void Mutation::twoArith(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = 4 * (dataSize - 1) * ARITH_MAX;
-  logStage->name = "Two-Arith";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   byte *buf = &curFuzzItem.data[0];
   for (int i = 0; i < dataSize - 1; i += 1) {
     u16 orig = *(u16*)(buf + i);
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
-      logStage->skip ++;
-      logStage->duration = timer.elapsed();
-      logStage->maxFuzzed --;
       continue;
     }
     for (int j = 0; j < ARITH_MAX; j += 1) {
@@ -276,42 +182,18 @@ void Mutation::twoArith(OnMutateFunc cb) {
       if ((orig & 0xFF) + j > 0xFF && !couldBeBitflip(r1)) {
         *(u16*)(buf + i) = orig + j;
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       if ((orig & 0xFF) < j && !couldBeBitflip(r2)) {
         *(u16*)(buf + i) = orig - j;
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       if ((orig >> 8) + j > 0xFF && !couldBeBitflip(r3)) {
         *(u16*)(buf + i) = swap16(swap16(orig) + j);
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       if ((orig >> 8) < j && !couldBeBitflip(r4)) {
         *(u16*)(buf + i) = swap16(swap16(orig) - j);
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       *(u16*)(buf + i) = orig;
     }
@@ -319,22 +201,12 @@ void Mutation::twoArith(OnMutateFunc cb) {
 }
 
 void Mutation::fourArith(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = 4 * (dataSize - 3) * ARITH_MAX;
-  logStage->name = "Four-Arith";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   byte *buf = &curFuzzItem.data[0];
   for (int i = 0; i < dataSize - 3; i += 1) {
     u32 orig = *(u32*)(buf + i);
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] && !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
-      logStage->skip ++;
-      logStage->duration = timer.elapsed();
-      logStage->maxFuzzed --;
       continue;
     }
     for (int j = 0; j < ARITH_MAX; j += 1) {
@@ -345,42 +217,18 @@ void Mutation::fourArith(OnMutateFunc cb) {
       if ((orig & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r1)) {
         *(u32*)(buf + i) = orig + j;
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       if ((orig & 0xFFFF) < (u32)j && !couldBeBitflip(r2)) {
         *(u32*)(buf + i) = orig - j;
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       if ((swap32(orig) & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r3)) {
         *(u32*)(buf + i) = swap32(swap32(orig) + j);
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       if ((swap32(orig) & 0xFFFF) < (u32) j && !couldBeBitflip(r4)) {
         *(u32*)(buf + i) = swap32(swap32(orig) - j);
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       *(u32*)(buf + i) = orig;
     }
@@ -388,55 +236,30 @@ void Mutation::fourArith(OnMutateFunc cb) {
 }
 
 void Mutation::singleInterest(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = dataSize * INTERESTING_8.size();
-  logStage->name = "Single-Interest";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   for (int i = 0; i < dataSize; i += 1) {
     u8 orig = curFuzzItem.data[i];
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)]) {
-      logStage->skip ++;
-      logStage->duration = timer.elapsed();
-      logStage->maxFuzzed --;
       continue;
     }
     for (int j = 0; j < (int) INTERESTING_8.size(); j += 1) {
       if (couldBeBitflip(orig ^ (u8)INTERESTING_8[j]) || couldBeArith(orig, (u8)INTERESTING_8[j], 1)) {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
         continue;
       }
       curFuzzItem.data[i] = INTERESTING_8[j];
       cb(curFuzzItem.data);
       curFuzzItem.data[i] = orig;
-      logStage->fuzzed ++;
-      logStage->duration = timer.elapsed();
     }
   }
 }
 
 void Mutation::twoInterest(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = 2 * (dataSize - 1) * (INTERESTING_16.size() >> 1);
-  logStage->name = "Two-Interest";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   byte *out_buf = &curFuzzItem.data[0];
   for (int i = 0; i < dataSize - 1; i += 1) {
     u16 orig = *(u16*)(out_buf + i);
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
-      logStage->skip ++;
-      logStage->duration = timer.elapsed();
-      logStage->maxFuzzed --;
       continue;
     }
     for (int j = 0; j < (int) INTERESTING_16.size() / 2; j += 1) {
@@ -445,12 +268,6 @@ void Mutation::twoInterest(OnMutateFunc cb) {
           !couldBeInterest(orig, (u16)INTERESTING_16[j], 2, 0)) {
         *(u16*)(out_buf + i) = INTERESTING_16[j];
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       
       if ((u16)INTERESTING_16[j] != swap16(INTERESTING_16[j]) &&
@@ -459,12 +276,6 @@ void Mutation::twoInterest(OnMutateFunc cb) {
           !couldBeInterest(orig, swap16(INTERESTING_16[j]), 2, 1)) {
         *(u16*)(out_buf + i) = swap16(INTERESTING_16[j]);
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
     }
     *(u16*)(out_buf + i) = orig;
@@ -472,13 +283,6 @@ void Mutation::twoInterest(OnMutateFunc cb) {
 }
 
 void Mutation::fourInterest(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = 2 * (dataSize - 3) * (INTERESTING_32.size() >> 2);
-  logStage->name = "Four-Interest";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   byte *out_buf = &curFuzzItem.data[0];
   for (int i = 0; i < dataSize - 3; i++) {
@@ -486,9 +290,6 @@ void Mutation::fourInterest(OnMutateFunc cb) {
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] &&
         !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
-      logStage->skip ++;
-      logStage->duration = timer.elapsed();
-      logStage->maxFuzzed --;
       continue;
     }
     for (int j = 0; j < (int) INTERESTING_32.size() / 4; j++) {
@@ -499,12 +300,6 @@ void Mutation::fourInterest(OnMutateFunc cb) {
           !couldBeInterest(orig, INTERESTING_32[j], 4, 0)) {
         *(u32*)(out_buf + i) = INTERESTING_32[j];
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
       if ((u32)INTERESTING_32[j] != swap32(INTERESTING_32[j]) &&
           !couldBeBitflip(orig ^ swap32(INTERESTING_32[j])) &&
@@ -512,12 +307,6 @@ void Mutation::fourInterest(OnMutateFunc cb) {
           !couldBeInterest(orig, swap32(INTERESTING_32[j]), 4, 1)) {
         *(u32*)(out_buf + i) = swap32(INTERESTING_32[j]);
         cb(curFuzzItem.data);
-        logStage->fuzzed ++;
-        logStage->duration = timer.elapsed();
-      } else {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
       }
     }
     *(u32*)(out_buf + i) = orig;
@@ -525,14 +314,6 @@ void Mutation::fourInterest(OnMutateFunc cb) {
 }
 
 void Mutation::overwriteWithAutoDictionary(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = (dataSize >> 5) * autoDict.extras.size();
-  logStage->name = "Auto-Dict-Interest";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
-  /* Start fuzzing */
   byte *outBuf = &curFuzzItem.data[0];
   byte inBuf[curFuzzItem.data.size()];
   memcpy(inBuf, outBuf, curFuzzItem.data.size());
@@ -555,16 +336,11 @@ void Mutation::overwriteWithAutoDictionary(OnMutateFunc cb) {
           || !memcmp(extrasBuf, outBuf + i, 32)
           || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, 32))
           ) {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
         continue;
       }
       lastLen = 32;
       memcpy(outBuf + i, extrasBuf, lastLen);
       cb(curFuzzItem.data);
-      logStage->fuzzed ++;
-      logStage->duration = timer.elapsed();
     }
     /* Restore all the clobbered memory. */
     memcpy(outBuf + i, inBuf + i, lastLen);
@@ -572,13 +348,6 @@ void Mutation::overwriteWithAutoDictionary(OnMutateFunc cb) {
 }
 
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = (dataSize >> 5) * dict.extras.size();
-  logStage->name = "Overwrite-Dictionary";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   byte *outBuf = &curFuzzItem.data[0];
   byte inBuf[curFuzzItem.data.size()];
@@ -602,16 +371,11 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
           || !memcmp(extrasBuf, outBuf + i, 32)
           || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, 32))
           ) {
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
         continue;
       }
       lastLen = 32;
       memcpy(outBuf + i, extrasBuf, lastLen);
       cb(curFuzzItem.data);
-      logStage->fuzzed ++;
-      logStage->duration = timer.elapsed();
     }
     /* Restore all the clobbered memory. */
     memcpy(outBuf + i, inBuf + i, lastLen);
@@ -619,13 +383,6 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
 }
 
 void Mutation::insertWithDictionary(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = (dataSize >> 5) * dict.extras.size();
-  logStage->name = "Insert-Dictionary";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   u32 extrasCount = dict.extras.size();
   bytes temp = bytes(curFuzzItem.data.size() + 32, 0);
@@ -635,9 +392,6 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
     for (u32 j = 0; j < extrasCount; j += 1) {
       if (dataSize + dict.extras[j].data.size() > MAX_FILE) {
         /* Larger than MAX_FILE */
-        logStage->skip ++;
-        logStage->duration = timer.elapsed();
-        logStage->maxFuzzed --;
         continue;
       }
       byte * extraBuf = &dict.extras[j].data[0];
@@ -645,10 +399,7 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
       memcpy(tempBuf + i, extraBuf, 32);
       /* Copy tail */
       memcpy(tempBuf + i + 32, outBuf + i, dataSize - i);
-      logStage->testLen = temp.size();
       cb(temp);
-      logStage->fuzzed ++;
-      logStage->duration = timer.elapsed();
     }
     /* Copy head */
     memcpy(tempBuf + i, outBuf + i, 32);
@@ -659,13 +410,6 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
  * TODO: If found more, do more havoc
  */
 void Mutation::havoc(OnMutateFunc cb) {
-  /* Create log item */
-  Timer timer;
-  LogStage *logStage = new LogStage;
-  logStage->maxFuzzed = HAVOC_MIN;
-  logStage->name = "Havoc";
-  logStage->testLen = dataSize;
-  logger.stages.push_back(logStage);
   /* Start fuzzing */
   bytes origin = curFuzzItem.data;
   for (int stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
@@ -674,7 +418,6 @@ void Mutation::havoc(OnMutateFunc cb) {
       u32 val = UR(15 + ((dict.extras.size() + autoDict.extras.size()) ? 2 : 0));
       byte *out_buf = &curFuzzItem.data[0];
       dataSize = curFuzzItem.data.size();
-      logStage->testLen = dataSize;
       switch (val) {
         case 0: {
           /* Flip a single bit somewhere. Spooky! */
@@ -888,8 +631,6 @@ void Mutation::havoc(OnMutateFunc cb) {
       }
     }
     cb(curFuzzItem.data);
-    logStage->fuzzed ++;
-    logStage->duration = timer.elapsed();
     /* Restore to original state */
     curFuzzItem.data = origin;
   }
