@@ -10,7 +10,6 @@
 #include <libethereum/LastBlockHashesFace.h>
 #include "TargetContainer.h"
 #include "Dictionary.h"
-#include "AutoDictionary.h"
 #include "FuzzItem.h"
 
 using namespace dev;
@@ -21,13 +20,12 @@ namespace fuzzer {
   class Mutation {
     FuzzItem curFuzzItem;
     Dictionary dict;
-    AutoDictionary& autoDict;
     int dataSize;
     int effCount;
     bytes eff;
     void flipbit(int pos);
     public:
-      Mutation(FuzzItem& item, Dictionary dict, AutoDictionary & autoDict);
+      Mutation(FuzzItem& item, Dictionary dict);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);

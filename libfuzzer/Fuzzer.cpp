@@ -5,7 +5,6 @@
 #include "Util.h"
 #include "ContractABI.h"
 #include "Dictionary.h"
-#include "AutoDictionary.h"
 
 using namespace dev;
 using namespace eth;
@@ -50,8 +49,8 @@ void Fuzzer::showStats(Mutation mutation, Timer timer) {
   }
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
   auto nowTrying = padStr(mutation.stageName, 17);
-  auto stageExecProgress = to_string(mutation.stageCur + 1) + "/" + to_string(mutation.stageMax);
-  auto stageExecPercentage = to_string((int)((float) (mutation.stageCur + 1) / mutation.stageMax * 100));
+  auto stageExecProgress = to_string(mutation.stageCur) + "/" + to_string(mutation.stageMax);
+  auto stageExecPercentage = to_string((int)((float) (mutation.stageCur) / mutation.stageMax * 100));
   auto stageExec = padStr(stageExecProgress + " (" + stageExecPercentage + "%)", 17);
   auto totalExecs = padStr("", 17);
   auto execSpeed = padStr("", 17);
@@ -64,7 +63,6 @@ void Fuzzer::showStats(Mutation mutation, Timer timer) {
   auto arith = padStr("", 30);
   auto knownInts = padStr("", 30);
   auto havoc = padStr("", 30);
-  
   printf(cGRN Bold "%sAFL Solidity v0.0.1" cRST "\n", padStr("", 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(timer.elapsed()).data());
@@ -98,12 +96,11 @@ FuzzItem Fuzzer::saveIfInterest(bytes data) {
 void Fuzzer::start() {
   Timer timer;
   Dictionary dict(code);
-  AutoDictionary autoDict;
   /* First test case */
   saveIfInterest(ca.randomTestcase());
   while (true) {
     FuzzItem & curItem = queues[idx];
-    Mutation mutation(curItem, dict, autoDict);
+    Mutation mutation(curItem, dict);
     auto save = [&](bytes data) {
       FuzzItem item = saveIfInterest(data);
       showStats(mutation, timer);
@@ -111,24 +108,19 @@ void Fuzzer::start() {
     };
     if (!curItem.wasFuzzed) {
       mutation.singleWalkingBit(save);
-//      mutation.twoWalkingBit(save);
-//      mutation.fourWalkingBit(save);
-//      mutation.singleWalkingByte(save);
-//      mutation.twoWalkingByte(save);
-//      mutation.fourWalkingByte(save);
-//      mutation.singleArith(save);
-//      mutation.twoArith(save);
-//      mutation.fourArith(save);
-//      mutation.singleInterest(save);
-//      mutation.twoInterest(save);
-//      mutation.fourInterest(save);
-//      if (dict.extras.size()) {
-//        mutation.overwriteWithDictionary(save);
-//        mutation.insertWithDictionary(save);
-//      }
-//      if (autoDict.extras.size()) {
-//        mutation.overwriteWithAutoDictionary(save);
-//      }
+      mutation.twoWalkingBit(save);
+      mutation.fourWalkingBit(save);
+      mutation.singleWalkingByte(save);
+      mutation.twoWalkingByte(save);
+      mutation.fourWalkingByte(save);
+      mutation.singleArith(save);
+      mutation.twoArith(save);
+      mutation.fourArith(save);
+      mutation.singleInterest(save);
+      mutation.twoInterest(save);
+      mutation.fourInterest(save);
+      mutation.overwriteWithDictionary(save);
+      mutation.insertWithDictionary(save);
       curItem.wasFuzzed = true;
     }
 //    mutation.havoc(save);

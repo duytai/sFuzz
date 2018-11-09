@@ -1,14 +1,13 @@
 #include "Mutation.h"
 #include "Dictionary.h"
 #include "Util.h"
-#include "AutoDictionary.h"
 #include "FuzzItem.h"
 #include <ctime>
 
 using namespace std;
 using namespace fuzzer;
 
-Mutation::Mutation(FuzzItem& item, Dictionary dict, AutoDictionary& autoDict): curFuzzItem(item), dict(dict), autoDict(autoDict), dataSize(item.data.size()) {
+Mutation::Mutation(FuzzItem& item, Dictionary dict): curFuzzItem(item), dict(dict), dataSize(item.data.size()) {
   effCount = 0;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;
@@ -73,7 +72,7 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
   stageName = "bitflip 8/8";
   stageMax = dataSize;
   /* Start fuzzing */
-  for (stageCur = 0; stageCur < dataSize; stageCur += 1) {
+  for (stageCur = 0; stageCur < stageMax; stageCur += 1) {
     curFuzzItem.data[stageCur] ^= 0xFF;
     FuzzItem item = cb(curFuzzItem.data);
     /* We also use this stage to pull off a simple trick: we identify
@@ -100,19 +99,19 @@ void Mutation::twoWalkingByte(OnMutateFunc cb) {
   stageShort = "flip16";
   stageName = "bitflip 16/8";
   stageMax = dataSize - 1;
+  stageCur = 0;
   /* Start fuzzing */
-  int maxStage = dataSize - 1;
   u8 *buf = curFuzzItem.data.data();
-  cout << "MAX: " << maxStage << endl;
-  for (stageCur = 0; stageCur < maxStage; stageCur += 1) {
+  for (int i = 0; i < dataSize - 1; i += 1) {
     /* Let's consult the effector map... */
-    if (!eff[effAPos(stageCur)] && !eff[effAPos(stageCur + 1)]) {
+    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
       stageMax--;
       continue;
     }
-    *(u16*)(buf + stageCur) ^= 0xFFFF;
+    *(u16*)(buf + i) ^= 0xFFFF;
     cb(curFuzzItem.data);
-    *(u16*)(buf + stageCur) ^= 0xFFFF;
+    stageCur ++;
+    *(u16*)(buf + i) ^= 0xFFFF;
   }
 }
 
@@ -120,18 +119,20 @@ void Mutation::fourWalkingByte(OnMutateFunc cb) {
   stageShort = "flip32";
   stageName = "bitflip 32/8";
   stageMax = dataSize - 3;
+  stageCur = 0;
   /* Start fuzzing */
   u8 *buf = curFuzzItem.data.data();
-  for (stageCur = 0; stageCur < stageMax; stageCur += 1) {
+  for (int i = 0; i < dataSize - 3; i += 1) {
     /* Let's consult the effector map... */
-    if (!eff[effAPos(stageCur)] && !eff[effAPos(stageCur + 1)] &&
-        !eff[effAPos(stageCur + 2)] && !eff[effAPos(stageCur + 3)]) {
+    if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] &&
+        !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
       stageMax --;
       continue;
     }
-    *(u32*)(buf + stageCur) ^= 0xFFFFFFFF;
+    *(u32*)(buf + i) ^= 0xFFFFFFFF;
     cb(curFuzzItem.data);
-    *(u32*)(buf + stageCur) ^= 0xFFFFFFFF;
+    stageCur ++;
+    *(u32*)(buf + i) ^= 0xFFFFFFFF;
   }
 }
 
@@ -139,7 +140,7 @@ void Mutation::singleArith(OnMutateFunc cb) {
   stageShort = "arith8";
   stageName = "arith 8/8";
   stageMax = 2 * dataSize * ARITH_MAX;
-
+  stageCur = 0;
   /* Start fuzzing */
   for (int i = 0; i < dataSize; i += 1) {
     /* Let's consult the effector map... */
@@ -167,14 +168,19 @@ void Mutation::singleArith(OnMutateFunc cb) {
 }
 
 void Mutation::twoArith(OnMutateFunc cb) {
+  stageShort = "arith16";
+  stageName = "arith 16/8";
+  stageMax = 4 * (dataSize - 1) * ARITH_MAX;
+  stageCur = 0;
   /* Start fuzzing */
-  byte *buf = &curFuzzItem.data[0];
+  byte *buf = curFuzzItem.data.data();
   for (int i = 0; i < dataSize - 1; i += 1) {
     u16 orig = *(u16*)(buf + i);
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
+      stageMax -= 4 * ARITH_MAX;
       continue;
     }
-    for (int j = 0; j < ARITH_MAX; j += 1) {
+    for (int j = 1; j <= ARITH_MAX; j += 1) {
       u16 r1 = orig ^ (orig + j);
       u16 r2 = orig ^ (orig - j);
       u16 r3 = orig ^ swap16(swap16(orig) + j);
@@ -182,34 +188,43 @@ void Mutation::twoArith(OnMutateFunc cb) {
       if ((orig & 0xFF) + j > 0xFF && !couldBeBitflip(r1)) {
         *(u16*)(buf + i) = orig + j;
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       if ((orig & 0xFF) < j && !couldBeBitflip(r2)) {
         *(u16*)(buf + i) = orig - j;
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       if ((orig >> 8) + j > 0xFF && !couldBeBitflip(r3)) {
         *(u16*)(buf + i) = swap16(swap16(orig) + j);
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       if ((orig >> 8) < j && !couldBeBitflip(r4)) {
         *(u16*)(buf + i) = swap16(swap16(orig) - j);
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       *(u16*)(buf + i) = orig;
     }
   }
 }
 
 void Mutation::fourArith(OnMutateFunc cb) {
+  stageShort = "arith32";
+  stageName = "arith 32/8";
+  stageMax = 4 * (dataSize - 3) * ARITH_MAX;
+  stageCur = 0;
   /* Start fuzzing */
-  byte *buf = &curFuzzItem.data[0];
+  byte *buf = curFuzzItem.data.data();
   for (int i = 0; i < dataSize - 3; i += 1) {
     u32 orig = *(u32*)(buf + i);
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] && !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
+      stageMax -= 4 * ARITH_MAX;
       continue;
     }
-    for (int j = 0; j < ARITH_MAX; j += 1) {
+    for (int j = 1; j <= ARITH_MAX; j += 1) {
       u32 r1 = orig ^ (orig + j);
       u32 r2 = orig ^ (orig - j);
       u32 r3 = orig ^ swap32(swap32(orig) + j);
@@ -217,58 +232,75 @@ void Mutation::fourArith(OnMutateFunc cb) {
       if ((orig & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r1)) {
         *(u32*)(buf + i) = orig + j;
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       if ((orig & 0xFFFF) < (u32)j && !couldBeBitflip(r2)) {
         *(u32*)(buf + i) = orig - j;
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       if ((swap32(orig) & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r3)) {
         *(u32*)(buf + i) = swap32(swap32(orig) + j);
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       if ((swap32(orig) & 0xFFFF) < (u32) j && !couldBeBitflip(r4)) {
         *(u32*)(buf + i) = swap32(swap32(orig) - j);
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       *(u32*)(buf + i) = orig;
     }
   }
 }
 
 void Mutation::singleInterest(OnMutateFunc cb) {
+  stageShort = "int8";
+  stageName = "interest 8/8";
+  stageMax = dataSize * sizeof(INTERESTING_8);
+  stageCur = 0;
   /* Start fuzzing */
   for (int i = 0; i < dataSize; i += 1) {
     u8 orig = curFuzzItem.data[i];
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)]) {
+      stageMax -= sizeof(INTERESTING_8);
       continue;
     }
-    for (int j = 0; j < (int) INTERESTING_8.size(); j += 1) {
+    for (int j = 0; j < (int) sizeof(INTERESTING_8); j += 1) {
       if (couldBeBitflip(orig ^ (u8)INTERESTING_8[j]) || couldBeArith(orig, (u8)INTERESTING_8[j], 1)) {
+        stageMax --;
         continue;
       }
       curFuzzItem.data[i] = INTERESTING_8[j];
       cb(curFuzzItem.data);
+      stageCur ++;
       curFuzzItem.data[i] = orig;
     }
   }
 }
 
 void Mutation::twoInterest(OnMutateFunc cb) {
+  stageShort = "int16";
+  stageName = "interest 16/8";
+  stageMax = 2 * (dataSize - 1) * (sizeof(INTERESTING_16) >> 1);
+  stageCur = 0;
   /* Start fuzzing */
-  byte *out_buf = &curFuzzItem.data[0];
+  byte *out_buf = curFuzzItem.data.data();
   for (int i = 0; i < dataSize - 1; i += 1) {
     u16 orig = *(u16*)(out_buf + i);
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)]) {
+      stageMax -= sizeof(INTERESTING_16);
       continue;
     }
-    for (int j = 0; j < (int) INTERESTING_16.size() / 2; j += 1) {
+    for (int j = 0; j < (int) sizeof(INTERESTING_16) / 2; j += 1) {
       if (!couldBeBitflip(orig ^ (u16)INTERESTING_16[j]) &&
           !couldBeArith(orig, (u16)INTERESTING_16[j], 2) &&
           !couldBeInterest(orig, (u16)INTERESTING_16[j], 2, 0)) {
         *(u16*)(out_buf + i) = INTERESTING_16[j];
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       
       if ((u16)INTERESTING_16[j] != swap16(INTERESTING_16[j]) &&
           !couldBeBitflip(orig ^ swap16(INTERESTING_16[j])) &&
@@ -276,23 +308,29 @@ void Mutation::twoInterest(OnMutateFunc cb) {
           !couldBeInterest(orig, swap16(INTERESTING_16[j]), 2, 1)) {
         *(u16*)(out_buf + i) = swap16(INTERESTING_16[j]);
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
     }
     *(u16*)(out_buf + i) = orig;
   }
 }
 
 void Mutation::fourInterest(OnMutateFunc cb) {
+  stageShort = "int32";
+  stageName = "interest 32/8";
+  stageMax = 2 * (dataSize - 3) * (sizeof(INTERESTING_32) >> 2);
+  stageCur = 0;
   /* Start fuzzing */
-  byte *out_buf = &curFuzzItem.data[0];
+  byte *out_buf = curFuzzItem.data.data();
   for (int i = 0; i < dataSize - 3; i++) {
     u32 orig = *(u32*)(out_buf + i);
     /* Let's consult the effector map... */
     if (!eff[effAPos(i)] && !eff[effAPos(i + 1)] &&
         !eff[effAPos(i + 2)] && !eff[effAPos(i + 3)]) {
+      stageMax -= sizeof(INTERESTING_32) >> 1;
       continue;
     }
-    for (int j = 0; j < (int) INTERESTING_32.size() / 4; j++) {
+    for (int j = 0; j < (int) sizeof(INTERESTING_32) / 4; j++) {
       /* Skip if this could be a product of a bitflip, arithmetics,
        or word interesting value insertion. */
       if (!couldBeBitflip(orig ^ (u32)INTERESTING_32[j]) &&
@@ -300,56 +338,28 @@ void Mutation::fourInterest(OnMutateFunc cb) {
           !couldBeInterest(orig, INTERESTING_32[j], 4, 0)) {
         *(u32*)(out_buf + i) = INTERESTING_32[j];
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
       if ((u32)INTERESTING_32[j] != swap32(INTERESTING_32[j]) &&
           !couldBeBitflip(orig ^ swap32(INTERESTING_32[j])) &&
           !couldBeArith(orig, swap32(INTERESTING_32[j]), 4) &&
           !couldBeInterest(orig, swap32(INTERESTING_32[j]), 4, 1)) {
         *(u32*)(out_buf + i) = swap32(INTERESTING_32[j]);
         cb(curFuzzItem.data);
-      }
+        stageCur ++;
+      } else stageMax --;
     }
     *(u32*)(out_buf + i) = orig;
   }
 }
 
-void Mutation::overwriteWithAutoDictionary(OnMutateFunc cb) {
-  byte *outBuf = &curFuzzItem.data[0];
-  byte inBuf[curFuzzItem.data.size()];
-  memcpy(inBuf, outBuf, curFuzzItem.data.size());
-  u32 extrasCount = autoDict.extras.size();
-  /*
-   * In solidity - data block is 32 bytes then change to step = 32, not 1
-   * Size of extras is alway 32
-   */
-  for (u32 i = 0; i < (u32)dataSize; i += 32) {
-    u32 lastLen = 0;
-    for (u32 j = 0; j < extrasCount; j += 1) {
-      byte *extrasBuf = &autoDict.extras[j].data[0];
-      byte *effBuf = &eff[0];
-      /* Skip extras probabilistically if extras_cnt > MAX_DET_EXTRAS. Also
-       skip them if there's no room to insert the payload, if the token
-       is redundant, or if its entire span has no bytes set in the effector
-       map. */
-      if ((extrasCount > MAX_DET_EXTRAS
-           && UR(extrasCount) > MAX_DET_EXTRAS)
-          || !memcmp(extrasBuf, outBuf + i, 32)
-          || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, 32))
-          ) {
-        continue;
-      }
-      lastLen = 32;
-      memcpy(outBuf + i, extrasBuf, lastLen);
-      cb(curFuzzItem.data);
-    }
-    /* Restore all the clobbered memory. */
-    memcpy(outBuf + i, inBuf + i, lastLen);
-  }
-}
-
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
+  stageShort = "ext_UO";
+  stageName = "dict (over)";
+  stageMax = dataSize * dict.extras.size() / 32;
+  stageCur = 0;
   /* Start fuzzing */
-  byte *outBuf = &curFuzzItem.data[0];
+  byte *outBuf = curFuzzItem.data.data();
   byte inBuf[curFuzzItem.data.size()];
   memcpy(inBuf, outBuf, curFuzzItem.data.size());
   u32 extrasCount = dict.extras.size();
@@ -360,8 +370,8 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   for (u32 i = 0; i < (u32)dataSize; i += 32) {
     u32 lastLen = 0;
     for (u32 j = 0; j < extrasCount; j += 1) {
-      byte *extrasBuf = &dict.extras[j].data[0];
-      byte *effBuf = &eff[0];
+      byte *extrasBuf = dict.extras[j].data.data();
+      byte *effBuf = eff.data();
       /* Skip extras probabilistically if extras_cnt > MAX_DET_EXTRAS. Also
        skip them if there's no room to insert the payload, if the token
        is redundant, or if its entire span has no bytes set in the effector
@@ -371,11 +381,13 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
           || !memcmp(extrasBuf, outBuf + i, 32)
           || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, 32))
           ) {
+        stageMax --;
         continue;
       }
       lastLen = 32;
       memcpy(outBuf + i, extrasBuf, lastLen);
       cb(curFuzzItem.data);
+      stageCur ++;
     }
     /* Restore all the clobbered memory. */
     memcpy(outBuf + i, inBuf + i, lastLen);
@@ -383,23 +395,29 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
 }
 
 void Mutation::insertWithDictionary(OnMutateFunc cb) {
+  stageShort = "ext_UI";
+  stageName = "dict (insert)";
+  stageMax = dataSize * dict.extras.size() / 32;
+  stageCur = 0;
   /* Start fuzzing */
   u32 extrasCount = dict.extras.size();
   bytes temp = bytes(curFuzzItem.data.size() + 32, 0);
-  byte * tempBuf = &temp[0];
-  byte * outBuf = &curFuzzItem.data[0];
+  byte * tempBuf = temp.data();
+  byte * outBuf = curFuzzItem.data.data();
   for (int i = 0; i < dataSize; i += 32) {
     for (u32 j = 0; j < extrasCount; j += 1) {
       if (dataSize + dict.extras[j].data.size() > MAX_FILE) {
         /* Larger than MAX_FILE */
+        stageMax --;
         continue;
       }
-      byte * extraBuf = &dict.extras[j].data[0];
+      byte * extraBuf = dict.extras[j].data.data();
       /* Insert token */
       memcpy(tempBuf + i, extraBuf, 32);
       /* Copy tail */
       memcpy(tempBuf + i + 32, outBuf + i, dataSize - i);
       cb(temp);
+      stageCur ++;
     }
     /* Copy head */
     memcpy(tempBuf + i, outBuf + i, 32);
@@ -415,7 +433,7 @@ void Mutation::havoc(OnMutateFunc cb) {
   for (int stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
     for (u32 i = 0; i < useStacking; i += 1) {
-      u32 val = UR(15 + ((dict.extras.size() + autoDict.extras.size()) ? 2 : 0));
+      u32 val = UR(15 + ((dict.extras.size() + 0) ? 2 : 0));
       byte *out_buf = &curFuzzItem.data[0];
       dataSize = curFuzzItem.data.size();
       switch (val) {
@@ -426,16 +444,16 @@ void Mutation::havoc(OnMutateFunc cb) {
         }
         case 1: {
           /* Set byte to interesting value. */
-          curFuzzItem.data[UR(dataSize)] = INTERESTING_8[UR(INTERESTING_8.size())];
+          curFuzzItem.data[UR(dataSize)] = INTERESTING_8[UR(sizeof(INTERESTING_8))];
           break;
         }
         case 2: {
           /* Set word to interesting value, randomly choosing endian. */
           if (dataSize < 2) break;
           if (UR(2)) {
-            *(u16*)(out_buf + UR(dataSize - 1)) = INTERESTING_16[UR(INTERESTING_16.size() >> 1)];
+            *(u16*)(out_buf + UR(dataSize - 1)) = INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)];
           } else {
-            *(u16*)(out_buf + UR(dataSize - 1)) = swap16(INTERESTING_16[UR(INTERESTING_16.size() >> 1)]);
+            *(u16*)(out_buf + UR(dataSize - 1)) = swap16(INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)]);
           }
           break;
         }
@@ -443,9 +461,9 @@ void Mutation::havoc(OnMutateFunc cb) {
           /* Set dword to interesting value, randomly choosing endian. */
           if (dataSize < 4) break;
           if (UR(2)) {
-            *(u32*)(out_buf + UR(dataSize - 3)) = INTERESTING_32[UR(INTERESTING_32.size() >> 2)];
+            *(u32*)(out_buf + UR(dataSize - 3)) = INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)];
           } else {
-            *(u32*)(out_buf + UR(dataSize - 3)) = swap32(INTERESTING_32[UR(INTERESTING_32.size() >> 2)]);
+            *(u32*)(out_buf + UR(dataSize - 3)) = swap32(INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)]);
           }
           break;
         }
@@ -573,59 +591,31 @@ void Mutation::havoc(OnMutateFunc cb) {
           break;
         }
         case 15: {
-          if (!dict.extras.size() || (autoDict.extras.size() && UR(2))) {
-            /* No user-specified extras or odds in our favor. Let's use an
-             auto-detected one. */
-            u32 useExtra = UR(autoDict.extras.size());
-            u32 extraLen = autoDict.extras[useExtra].data.size();
-            byte *extraBuf = &autoDict.extras[useExtra].data[0];
-            u32 insertAt;
-            if (extraLen > (u32)dataSize) break;
-            insertAt = UR(dataSize - extraLen + 1);
-            memcpy(out_buf + insertAt, extraBuf, extraLen);
-          } else {
-            /* No auto extras or odds in our favor. Use the dictionary. */
-            u32 useExtra = UR(dict.extras.size());
-            u32 extraLen = dict.extras[useExtra].data.size();
-            byte *extraBuf = &dict.extras[useExtra].data[0];
-            u32 insertAt;
-            if (extraLen > (u32)dataSize) break;
-            insertAt = UR(dataSize - extraLen + 1);
-            memcpy(out_buf + insertAt, extraBuf, extraLen);
-          }
+          /* No auto extras or odds in our favor. Use the dictionary. */
+          u32 useExtra = UR(dict.extras.size());
+          u32 extraLen = dict.extras[useExtra].data.size();
+          byte *extraBuf = &dict.extras[useExtra].data[0];
+          u32 insertAt;
+          if (extraLen > (u32)dataSize) break;
+          insertAt = UR(dataSize - extraLen + 1);
+          memcpy(out_buf + insertAt, extraBuf, extraLen);
           break;
         }
         case 16: {
           u32 useExtra, extraLen, insertAt = UR(dataSize + 1);
-          if (!dict.extras.size() || (autoDict.extras.size() && UR(2))) {
-            useExtra = UR(autoDict.extras.size());
-            extraLen = autoDict.extras[useExtra].data.size();
-            byte *extraBuf = &autoDict.extras[useExtra].data[0];
-            if (dataSize + extraLen >= MAX_FILE) break;
-            bytes newData = bytes(dataSize + extraLen, 0);
-            byte* new_buf = &newData[0];
-            /* Head */
-            memcpy(new_buf, out_buf, insertAt);
-            /* Inserted part */
-            memcpy(new_buf + insertAt, extraBuf, extraLen);
-            /* Tail */
-            memcpy(new_buf + insertAt + extraLen, out_buf + insertAt, dataSize - insertAt);
-            curFuzzItem.data = newData;
-          } else {
-            useExtra = UR(dict.extras.size());
-            extraLen = dict.extras[useExtra].data.size();
-            byte *extraBuf = &dict.extras[useExtra].data[0];
-            if (dataSize + extraLen >= MAX_FILE) break;
-            bytes newData = bytes(dataSize + extraLen, 0);
-            byte* new_buf = &newData[0];
-            /* Head */
-            memcpy(new_buf, out_buf, insertAt);
-            /* Inserted part */
-            memcpy(new_buf + insertAt, extraBuf, extraLen);
-            /* Tail */
-            memcpy(new_buf + insertAt + extraLen, out_buf + insertAt, dataSize - insertAt);
-            curFuzzItem.data = newData;
-          }
+          useExtra = UR(dict.extras.size());
+          extraLen = dict.extras[useExtra].data.size();
+          byte *extraBuf = &dict.extras[useExtra].data[0];
+          if (dataSize + extraLen >= MAX_FILE) break;
+          bytes newData = bytes(dataSize + extraLen, 0);
+          byte* new_buf = &newData[0];
+          /* Head */
+          memcpy(new_buf, out_buf, insertAt);
+          /* Inserted part */
+          memcpy(new_buf + insertAt, extraBuf, extraLen);
+          /* Tail */
+          memcpy(new_buf + insertAt + extraLen, out_buf + insertAt, dataSize - insertAt);
+          curFuzzItem.data = newData;
           break;
         }
       }
