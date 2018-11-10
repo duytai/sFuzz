@@ -198,5 +198,26 @@ namespace fuzzer {
     return ret;
   }
 
+  u32 countBytes(u8* mem) {
+
+    u32* ptr = (u32*)mem;
+    u32  i   = (MAP_SIZE >> 2);
+    u32  ret = 0;
+    
+    while (i--) {
+      
+      u32 v = *(ptr++);
+      
+      if (!v) continue;
+      if (v & FF(0)) ret++;
+      if (v & FF(1)) ret++;
+      if (v & FF(2)) ret++;
+      if (v & FF(3)) ret++;
+      
+    }
+    
+    return ret;
+    
+  }
 }
 

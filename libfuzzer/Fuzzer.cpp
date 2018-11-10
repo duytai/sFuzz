@@ -42,7 +42,7 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
   return ret;
 }
 
-void Fuzzer::showStats(Mutation mutation) {
+void Fuzzer::showStats(Mutation mutation, FuzzItem item) {
   int numLines = 18, i = 0;
   if (!clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -63,7 +63,9 @@ void Fuzzer::showStats(Mutation mutation) {
   auto cycleDone = padStr(to_string(queueCycle), 11);
   auto allBranches = (MAP_SIZE << 3) - coutBits(virginbits.data());
   auto totalBranches = padStr(to_string(allBranches), 11);
-  auto mapDensitive = padStr("", 11);
+  auto numBytes = countBytes(item.res.tracebits.data());
+  auto bytePercentage = (int)(numBytes * 100 / MAP_SIZE);
+  auto mapDensitive = padStr(to_string(numBytes) + " (" + to_string(bytePercentage) + "%)", 11);
   auto tupleSpeed = allBranches ? mutation.dataSize * 8 / allBranches : mutation.dataSize * 8;
   auto countCoverage = padStr(to_string(tupleSpeed) + " bits", 11);
   auto flip1 = to_string(stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
@@ -130,7 +132,7 @@ void Fuzzer::start() {
     Mutation mutation(curItem, dict);
     auto save = [&](bytes data) {
       auto item = saveIfInterest(data);
-      showStats(mutation);
+      showStats(mutation, item);
       return item;
     };
     if (!curItem.wasFuzzed) {

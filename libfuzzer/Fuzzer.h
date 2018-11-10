@@ -36,6 +36,6 @@ namespace fuzzer {
       u8 hasNewBits(bytes tracebits);
       FuzzItem saveIfInterest(bytes data);
       void start();
-      void showStats(Mutation mutation);
+      void showStats(Mutation mutation, FuzzItem item);
   };
 }
