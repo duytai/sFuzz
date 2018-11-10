@@ -7,6 +7,8 @@
 using namespace std;
 using namespace fuzzer;
 
+int Mutation::stageCycles[32] = {};
+
 Mutation::Mutation(FuzzItem& item, Dictionary dict): curFuzzItem(item), dict(dict), dataSize(item.data.size()) {
   effCount = 0;
   eff = bytes(effALen(dataSize), 0);
@@ -33,6 +35,7 @@ void Mutation::singleWalkingBit(OnMutateFunc cb) {
     FuzzItem item = cb(curFuzzItem.data);
     flipbit(stageCur);
   }
+  stageCycles[STAGE_FLIP1] += stageMax;
 }
 
 void Mutation::twoWalkingBit(OnMutateFunc cb) {
@@ -47,6 +50,7 @@ void Mutation::twoWalkingBit(OnMutateFunc cb) {
     flipbit(stageCur);
     flipbit(stageCur + 1);
   }
+  stageCycles[STAGE_FLIP2] += stageMax;
 }
 
 void Mutation::fourWalkingBit(OnMutateFunc cb) {
@@ -65,6 +69,7 @@ void Mutation::fourWalkingBit(OnMutateFunc cb) {
     flipbit(stageCur + 2);
     flipbit(stageCur + 3);
   }
+  stageCycles[STAGE_FLIP4] += stageMax;
 }
 
 void Mutation::singleWalkingByte(OnMutateFunc cb) {
@@ -93,6 +98,7 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
   if (effCount != effALen(dataSize) && effCount * 100 / effALen(dataSize) > EFF_MAX_PERC) {
     eff = bytes(effALen(dataSize), 1);
   }
+  stageCycles[STAGE_FLIP8] += stageMax;
 }
 
 void Mutation::twoWalkingByte(OnMutateFunc cb) {
@@ -113,6 +119,7 @@ void Mutation::twoWalkingByte(OnMutateFunc cb) {
     stageCur ++;
     *(u16*)(buf + i) ^= 0xFFFF;
   }
+  stageCycles[STAGE_FLIP16] += stageMax;
 }
 
 void Mutation::fourWalkingByte(OnMutateFunc cb) {
@@ -134,6 +141,7 @@ void Mutation::fourWalkingByte(OnMutateFunc cb) {
     stageCur ++;
     *(u32*)(buf + i) ^= 0xFFFFFFFF;
   }
+  stageCycles[STAGE_FLIP32] += stageMax;
 }
 
 void Mutation::singleArith(OnMutateFunc cb) {
@@ -165,6 +173,7 @@ void Mutation::singleArith(OnMutateFunc cb) {
       curFuzzItem.data[i] = orig;
     }
   }
+  stageCycles[STAGE_ARITH8] += stageMax;
 }
 
 void Mutation::twoArith(OnMutateFunc cb) {
@@ -208,6 +217,7 @@ void Mutation::twoArith(OnMutateFunc cb) {
       *(u16*)(buf + i) = orig;
     }
   }
+  stageCycles[STAGE_ARITH16] += stageMax;
 }
 
 void Mutation::fourArith(OnMutateFunc cb) {
@@ -252,6 +262,7 @@ void Mutation::fourArith(OnMutateFunc cb) {
       *(u32*)(buf + i) = orig;
     }
   }
+  stageCycles[STAGE_ARITH32] += stageMax;
 }
 
 void Mutation::singleInterest(OnMutateFunc cb) {
@@ -278,6 +289,7 @@ void Mutation::singleInterest(OnMutateFunc cb) {
       curFuzzItem.data[i] = orig;
     }
   }
+  stageCycles[STAGE_INTEREST8] += stageMax;
 }
 
 void Mutation::twoInterest(OnMutateFunc cb) {
@@ -313,6 +325,7 @@ void Mutation::twoInterest(OnMutateFunc cb) {
     }
     *(u16*)(out_buf + i) = orig;
   }
+  stageCycles[STAGE_INTEREST16] += stageMax;
 }
 
 void Mutation::fourInterest(OnMutateFunc cb) {
@@ -351,6 +364,7 @@ void Mutation::fourInterest(OnMutateFunc cb) {
     }
     *(u32*)(out_buf + i) = orig;
   }
+  stageCycles[STAGE_INTEREST32] += stageMax;
 }
 
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
@@ -392,6 +406,8 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
     /* Restore all the clobbered memory. */
     memcpy(outBuf + i, inBuf + i, lastLen);
   }
+  cout << stageMax << endl;
+  stageCycles[STAGE_EXTRAS_UO] += stageMax;
 }
 
 void Mutation::insertWithDictionary(OnMutateFunc cb) {
@@ -422,6 +438,7 @@ void Mutation::insertWithDictionary(OnMutateFunc cb) {
     /* Copy head */
     memcpy(tempBuf + i, outBuf + i, 32);
   }
+  stageCycles[STAGE_EXTRAS_UI] += stageMax;
 }
 
 /*

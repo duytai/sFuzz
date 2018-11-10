@@ -26,6 +26,8 @@ namespace fuzzer {
     vector<FuzzItem> queues;
     int idx;
     bool clearScreen;
+    int totalExecs;
+    int stageFinds[32];
     public:
       Fuzzer(bytes code /* code */, ContractABI ca /* contract abi */);
       u8 hasNewBits(bytes tracebits);

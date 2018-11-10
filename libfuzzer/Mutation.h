@@ -47,5 +47,6 @@ namespace fuzzer {
       int stageCur;
       string stageName;
       string stageShort;
+      static int stageCycles[32];
   };
 }
