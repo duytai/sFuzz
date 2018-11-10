@@ -20,7 +20,6 @@ namespace fuzzer {
   class Mutation {
     FuzzItem curFuzzItem;
     Dictionary dict;
-    int dataSize;
     int effCount;
     bytes eff;
     void flipbit(int pos);
@@ -43,6 +42,7 @@ namespace fuzzer {
       void overwriteWithAutoDictionary(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       bool splice(OnMutateFunc cb, vector<FuzzItem> items);
+      int dataSize;
       int stageMax;
       int stageCur;
       string stageName;

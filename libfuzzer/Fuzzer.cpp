@@ -61,9 +61,11 @@ void Fuzzer::showStats(Mutation mutation) {
   auto cyclePercentage = (int)((float)(idx + 1) / queues.size() * 100);
   auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 17);
   auto cycleDone = padStr(to_string(queueCycle), 11);
-  auto totalBranches = padStr("", 11);
+  auto allBranches = (MAP_SIZE << 3) - coutBits(virginbits.data());
+  auto totalBranches = padStr(to_string(allBranches), 11);
   auto mapDensitive = padStr("", 11);
-  auto countCoverage = padStr("", 11);
+  auto tupleSpeed = allBranches ? mutation.dataSize * 8 / allBranches : mutation.dataSize * 8;
+  auto countCoverage = padStr(to_string(tupleSpeed) + " bits", 11);
   auto flip1 = to_string(stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -92,7 +94,7 @@ void Fuzzer::showStats(Mutation mutation) {
   printf(bH " stage execs : %s" bH " total branches : %s" bH "\n", stageExec.c_str(), totalBranches.c_str());
   printf(bH " total execs : %s" bH "    map density : %s" bH "\n", allExecs.c_str(), mapDensitive.c_str());
   printf(bH "  exec speed : %s" bH " count coverage : %s" bH "\n", execSpeed.c_str(), countCoverage.c_str());
-  printf(bH "  cycle prog : %s" bH "                  %s" bH "\n", cycleProgress.c_str(), countCoverage.c_str());
+  printf(bH "  cycle prog : %s" bH "                  %s" bH "\n", cycleProgress.c_str(), padStr("", 11).c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bBTR bV10 bV5 bTTR bV cGRN " path geometry " cRST bRTR "\n");
   printf(bH "   bit flips : %s" bH "                " bH "\n", bitflip.c_str());
   printf(bH "  byte flips : %s" bH "                " bH "\n", byteflip.c_str());

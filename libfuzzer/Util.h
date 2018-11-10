@@ -30,6 +30,7 @@
 #define cRST "\x1b[0m"
 #define Bold "\e[1m"
 #define CURSOR_HIDE "\x1b[?25l"
+#define FF(_b)  (0xff << ((_b) << 3))
 
 
 using namespace std;
