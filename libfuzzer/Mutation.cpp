@@ -406,7 +406,6 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
     /* Restore all the clobbered memory. */
     memcpy(outBuf + i, inBuf + i, lastLen);
   }
-  cout << stageMax << endl;
   stageCycles[STAGE_EXTRAS_UO] += stageMax;
 }
 

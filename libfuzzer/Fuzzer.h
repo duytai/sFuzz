@@ -27,12 +27,15 @@ namespace fuzzer {
     int idx;
     bool clearScreen;
     int totalExecs;
+    int queueCycle;
     int stageFinds[32];
+    double lastNewPath;
+    Timer timer;
     public:
       Fuzzer(bytes code /* code */, ContractABI ca /* contract abi */);
       u8 hasNewBits(bytes tracebits);
       FuzzItem saveIfInterest(bytes data);
       void start();
-      void showStats(Mutation mutation, Timer timer);
+      void showStats(Mutation mutation);
   };
 }

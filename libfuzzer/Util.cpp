@@ -158,9 +158,9 @@ namespace fuzzer {
   
   string formatDuration(int duration) {
     stringstream ret;
-    int days = duration / (1000 * 60 * 60 * 24);
-    int hours = duration / (1000 * 60 * 60) % 24;
-    int minutes = duration / (1000 * 60) % 60;
+    int days = duration / (60 * 60 * 24);
+    int hours = duration / (60 * 60) % 24;
+    int minutes = duration / 60 % 60;
     int seconds = duration % 60;
     ret << days
       << " days, "
