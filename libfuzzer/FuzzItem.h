@@ -9,7 +9,6 @@ using namespace eth;
 
 namespace fuzzer {
   struct FuzzItem {
-    FuzzItem() {}
     FuzzItem(bytes data) {
       this->data = data;
       this->wasFuzzed = false;

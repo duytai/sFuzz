@@ -9,7 +9,7 @@ using namespace fuzzer;
 
 int Mutation::stageCycles[32] = {};
 
-Mutation::Mutation(FuzzItem& item, Dictionary dict): curFuzzItem(item), dict(dict), dataSize(item.data.size()) {
+Mutation::Mutation(FuzzItem item, Dictionary dict): curFuzzItem(item), dict(dict), dataSize(item.data.size()) {
   effCount = 0;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;

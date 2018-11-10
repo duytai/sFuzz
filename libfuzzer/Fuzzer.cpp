@@ -124,10 +124,10 @@ void Fuzzer::start() {
   saveIfInterest(ca.randomTestcase());
   int origHitCount = queues.size();
   while (true) {
-    FuzzItem & curItem = queues[idx];
+    FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict);
     auto save = [&](bytes data) {
-      FuzzItem item = saveIfInterest(data);
+      auto item = saveIfInterest(data);
       showStats(mutation);
       return item;
     };
@@ -171,7 +171,7 @@ void Fuzzer::start() {
       mutation.overwriteWithDictionary(save);
       stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
       origHitCount = queues.size();
-      curItem.wasFuzzed = true;
+      queues[idx].wasFuzzed = true;
     }
 //    mutation.havoc(save);
 //    if (mutation.splice(save, queues)) {
