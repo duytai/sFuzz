@@ -370,7 +370,7 @@ void Mutation::fourInterest(OnMutateFunc cb) {
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   stageShort = "ext_UO";
   stageName = "dict (over)";
-  stageMax = dataSize * dict.extras.size() / 32;
+  stageMax = dataSize * dict.extras.size();
   stageCur = 0;
   /* Start fuzzing */
   byte *outBuf = curFuzzItem.data.data();
@@ -381,24 +381,26 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
    * In solidity - data block is 32 bytes then change to step = 32, not 1
    * Size of extras is alway 32
    */
-  for (u32 i = 0; i < (u32)dataSize; i += 32) {
+  for (u32 i = 0; i < (u32)dataSize; i += 1) {
     u32 lastLen = 0;
     for (u32 j = 0; j < extrasCount; j += 1) {
       byte *extrasBuf = dict.extras[j].data.data();
       byte *effBuf = eff.data();
+      u32 extrasLen = dict.extras[j].data.size();
       /* Skip extras probabilistically if extras_cnt > MAX_DET_EXTRAS. Also
        skip them if there's no room to insert the payload, if the token
        is redundant, or if its entire span has no bytes set in the effector
        map. */
       if ((extrasCount > MAX_DET_EXTRAS
           && UR(extrasCount) > MAX_DET_EXTRAS)
-          || !memcmp(extrasBuf, outBuf + i, 32)
-          || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, 32))
+          || extrasLen > (dataSize - i)
+          || !memcmp(extrasBuf, outBuf + i, extrasLen)
+          || !memchr(effBuf + effAPos(i), 1, effSpanALen(i, extrasLen))
           ) {
         stageMax --;
         continue;
       }
-      lastLen = 32;
+      lastLen = extrasLen;
       memcpy(outBuf + i, extrasBuf, lastLen);
       cb(curFuzzItem.data);
       stageCur ++;
@@ -408,38 +410,6 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   }
   stageCycles[STAGE_EXTRAS_UO] += stageMax;
 }
-
-void Mutation::insertWithDictionary(OnMutateFunc cb) {
-  stageShort = "ext_UI";
-  stageName = "dict (insert)";
-  stageMax = dataSize * dict.extras.size() / 32;
-  stageCur = 0;
-  /* Start fuzzing */
-  u32 extrasCount = dict.extras.size();
-  bytes temp = bytes(curFuzzItem.data.size() + 32, 0);
-  byte * tempBuf = temp.data();
-  byte * outBuf = curFuzzItem.data.data();
-  for (int i = 0; i < dataSize; i += 32) {
-    for (u32 j = 0; j < extrasCount; j += 1) {
-      if (dataSize + dict.extras[j].data.size() > MAX_FILE) {
-        /* Larger than MAX_FILE */
-        stageMax --;
-        continue;
-      }
-      byte * extraBuf = dict.extras[j].data.data();
-      /* Insert token */
-      memcpy(tempBuf + i, extraBuf, 32);
-      /* Copy tail */
-      memcpy(tempBuf + i + 32, outBuf + i, dataSize - i);
-      cb(temp);
-      stageCur ++;
-    }
-    /* Copy head */
-    memcpy(tempBuf + i, outBuf + i, 32);
-  }
-  stageCycles[STAGE_EXTRAS_UI] += stageMax;
-}
-
 /*
  * TODO: If found more, do more havoc
  */
