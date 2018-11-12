@@ -16,19 +16,13 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  struct EnumClassHash {
-    template <typename T>
-    std::size_t operator()(T t) const {
-      return static_cast<std::size_t>(t);
-    }
-  };
   struct TargetContainerResult {
     TargetContainerResult() {}
-    TargetContainerResult(bytes tracebits, h256 cksum, double exTime, unordered_map<TransactionException, int, EnumClassHash> exceptions) {
+    TargetContainerResult(bytes tracebits, h256 cksum, double exTime, unordered_map<uint64_t, double> predicates) {
       this->tracebits = tracebits;
       this->cksum = cksum;
       this->exTime = exTime;
-      this->exceptions = exceptions;
+      this->predicates = predicates;
     }
     /* Contains execution paths */
     bytes tracebits;
@@ -36,8 +30,8 @@ namespace fuzzer {
     h256 cksum;
     /* Execution time */
     double exTime;
-    /* Exceptions */
-    unordered_map<TransactionException, int, EnumClassHash> exceptions;
+    /* Save predicates */
+    unordered_map<uint64_t, double> predicates;
   };
   
   class TargetContainer {

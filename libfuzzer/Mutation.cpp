@@ -413,10 +413,13 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
 /*
  * TODO: If found more, do more havoc
  */
-void Mutation::havoc(OnMutateFunc cb) {
+void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
+  stageShort = "havoc";
+  stageName = "havoc";
+  stageMax = HAVOC_MIN;
   /* Start fuzzing */
   bytes origin = curFuzzItem.data;
-  for (int stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
+  for (stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
     for (u32 i = 0; i < useStacking; i += 1) {
       u32 val = UR(15 + ((dict.extras.size() + 0) ? 2 : 0));
@@ -606,10 +609,18 @@ void Mutation::havoc(OnMutateFunc cb) {
         }
       }
     }
-    cb(curFuzzItem.data);
+    auto item = cb(curFuzzItem.data);
+    /* Calculate score */
+    double score = 0;
+    for (auto it : item.res.predicates) {
+      if (virginbits[it.first] == 0xff) {
+        score += 1/ it.second;
+      }
+    }
     /* Restore to original state */
     curFuzzItem.data = origin;
   }
+  stageCycles[STAGE_HAVOC] += stageMax;
 }
 
 bool Mutation::splice(OnMutateFunc, vector<FuzzItem> queues) {

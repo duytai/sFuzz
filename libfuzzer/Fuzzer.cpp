@@ -86,7 +86,8 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem item) {
   auto knownInts = padStr(int1 + ", " + int2 + ", " + int4, 30);
   auto dict1 = to_string(stageFinds[STAGE_EXTRAS_UO]) + "/" + to_string(mutation.stageCycles[STAGE_EXTRAS_UO]);
   auto dictionary = padStr(dict1, 30);
-  auto havoc = padStr("", 30);
+  auto hav1 = to_string(stageFinds[STAGE_HAVOC]) + "/" + to_string(mutation.stageCycles[STAGE_HAVOC]);
+  auto havoc = padStr(hav1, 30);
   printf(cGRN Bold "%sAFL Solidity v0.0.1" cRST "\n", padStr("", 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
@@ -135,52 +136,57 @@ void Fuzzer::start() {
       showStats(mutation, item);
       return item;
     };
-    if (!curItem.wasFuzzed) {
-      mutation.singleWalkingBit(save);
-      stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.twoWalkingBit(save);
-      stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.fourWalkingBit(save);
-      stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.singleWalkingByte(save);
-      stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.twoWalkingByte(save);
-      stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.fourWalkingByte(save);
-      stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.singleArith(save);
-      stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.twoArith(save);
-      stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.fourArith(save);
-      stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.singleInterest(save);
-      stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.twoInterest(save);
-      stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.fourInterest(save);
-      stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      mutation.overwriteWithDictionary(save);
-      stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
-      origHitCount = queues.size();
-      queues[idx].wasFuzzed = true;
+    if (false) {
+      if (!curItem.wasFuzzed) {
+        mutation.singleWalkingBit(save);
+        stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.twoWalkingBit(save);
+        stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.fourWalkingBit(save);
+        stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.singleWalkingByte(save);
+        stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.twoWalkingByte(save);
+        stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.fourWalkingByte(save);
+        stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.singleArith(save);
+        stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.twoArith(save);
+        stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.fourArith(save);
+        stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.singleInterest(save);
+        stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.twoInterest(save);
+        stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.fourInterest(save);
+        stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        mutation.overwriteWithDictionary(save);
+        stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
+        origHitCount = queues.size();
+        queues[idx].wasFuzzed = true;
+      }
     }
-//    mutation.havoc(save);
-//    if (mutation.splice(save, queues)) {
-//      mutation.havoc(save);
-//    };
+    mutation.havoc(virginbits, save);
+    if (queues.size() > 1) {
+      cout << "FOUND" << endl;
+      exit(0);
+    }
     idx = (idx + 1) % queues.size();
     if (idx == 0) queueCycle ++;
   }
