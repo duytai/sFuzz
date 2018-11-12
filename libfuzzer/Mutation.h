@@ -42,6 +42,7 @@ namespace fuzzer {
       void overwriteWithAutoDictionary(OnMutateFunc cb);
       void havoc(const bytes& virginbits, OnMutateFunc cb);
       bool splice(OnMutateFunc cb, vector<FuzzItem> items);
+      double calculateScore(const FuzzItem& item, const bytes& bitmaps);
       int dataSize;
       int stageMax;
       int stageCur;

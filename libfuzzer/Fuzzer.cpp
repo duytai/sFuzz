@@ -133,7 +133,7 @@ void Fuzzer::start() {
     Mutation mutation(curItem, dict);
     auto save = [&](bytes data) {
       auto item = saveIfInterest(data);
-      showStats(mutation, item);
+      //showStats(mutation, item);
       return item;
     };
     if (false) {
@@ -183,10 +183,7 @@ void Fuzzer::start() {
       }
     }
     mutation.havoc(virginbits, save);
-    if (queues.size() > 1) {
-      cout << "FOUND" << endl;
-      exit(0);
-    }
+    break;
     idx = (idx + 1) % queues.size();
     if (idx == 0) queueCycle ++;
   }
