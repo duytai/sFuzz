@@ -46,7 +46,7 @@ namespace fuzzer {
             auto jumpTo = (int) stack.back();
             stack.pop_back();
             if ((Instruction) code[jumpTo] == Instruction::JUMPDEST) {
-              simulate(code, stack, pc, prevLocation, prevLocations);
+              simulate(code, stack, jumpTo, prevLocation, prevLocations);
             }
           }
           return;
@@ -60,17 +60,17 @@ namespace fuzzer {
               /* Bit is not set */
               if (!tracebits[jumpTo ^ prevLocation]) {
                 tracebits[jumpTo ^ prevLocation] = 1;
-                prevLocation = jumpTo >> 1;
-                prevLocations[prevLocation] = 1;
-                simulate(code, stack, jumpTo, prevLocation, prevLocations);
+                int newPrevLocation = jumpTo >> 1;
+                prevLocations[newPrevLocation] = 1;
+                simulate(code, stack, jumpTo, newPrevLocation, prevLocations);
               }
             }
             jumpTo = pc + 1;
             if (!tracebits[jumpTo ^ prevLocation]) {
               tracebits[jumpTo ^ prevLocation] = 1;
-              prevLocation = jumpTo >> 1;
-              prevLocations[prevLocation] = 1;
-              simulate(code, stack, jumpTo, prevLocation, prevLocations);
+              int newPrevLocation = jumpTo >> 1;
+              prevLocations[newPrevLocation] = 1;
+              simulate(code, stack, jumpTo, newPrevLocation, prevLocations);
             }
           }
           return;
@@ -101,9 +101,8 @@ namespace fuzzer {
   CFG::CFG(string code, string codeRuntime) {
     u256s stack;
     int pc = 0;
-    int prevLocation = 0;
     unordered_map<int, int> prevLocations;
-    simulate(fromHex(code), stack, pc, prevLocation, prevLocations);
+    simulate(fromHex(code), stack, pc, 0, prevLocations);
     for (auto it : prevLocations) {
       unordered_map<int, int> temp;
       simulate(fromHex(codeRuntime), stack, pc, it.first, temp);
