@@ -17,6 +17,7 @@ Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg): ca(ca), code(code), virginb
   totalExecs = 0;
   clearScreen = false;
   queueCycle = 0;
+  coveredBranches = 0;
 }
 
 /* Detect new branch by comparing tracebits to virginbits */
@@ -62,7 +63,6 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem item) {
   auto cyclePercentage = (int)((float)(idx + 1) / queues.size() * 100);
   auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 17);
   auto cycleDone = padStr(to_string(queueCycle), 11);
-  auto coveredBranches = (MAP_SIZE << 3) - coutBits(virginbits.data());
   auto coveredBranchesStr = padStr(to_string(coveredBranches) + " (" + to_string((int)((float)coveredBranches/ totalBranches * 100)) + "%)", 11);
   auto numBytes = countBytes(item.res.tracebits.data());
   auto bytePercentage = (int)(numBytes * 100 / MAP_SIZE);
@@ -118,6 +118,7 @@ FuzzItem Fuzzer::saveIfInterest(bytes data) {
   if (hasNewBits(item.res.tracebits)) {
     queues.push_back(item);
     lastNewPath = timer.elapsed();
+    coveredBranches = (MAP_SIZE << 3) - coutBits(virginbits.data());
   }
   return item;
 }
@@ -129,12 +130,20 @@ void Fuzzer::start() {
   timer.restart();
   saveIfInterest(ca.randomTestcase());
   int origHitCount = queues.size();
+  double lastSpeed = 0;
+  int refreshRate = 100;
   while (true) {
     FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict);
     auto save = [&](bytes data) {
       auto item = saveIfInterest(data);
-      showStats(mutation, item);
+      double speed = totalExecs / (double) timer.elapsed();
+      if (speed > lastSpeed) {
+        refreshRate += 10;
+        lastSpeed = speed;
+      }
+      if (refreshRate > speed) refreshRate = speed;
+      if (totalExecs % refreshRate == 0) showStats(mutation, item);
       return item;
     };
     if (!curItem.wasFuzzed) {

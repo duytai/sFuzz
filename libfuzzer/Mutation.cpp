@@ -18,7 +18,6 @@ Mutation::Mutation(FuzzItem item, Dictionary dict): curFuzzItem(item), dict(dict
     effCount ++;
   }
   stageName = stageShort = "init";
-  stageMax = 1;
 }
 
 void Mutation::flipbit(int pos) {
@@ -647,7 +646,7 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
         candidateQueue.clear();
       } else {
         /* Skip with percentage */
-        stageMax += HAVOC_MIN;
+        stageMax += HAVOC_MIN * workingQueue.size();
         perfScore -= 0.01 * workingQueue.size();
       }
       if (perfScore < 0) break;
