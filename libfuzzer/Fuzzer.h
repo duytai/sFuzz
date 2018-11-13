@@ -12,6 +12,7 @@
 #include "Util.h"
 #include "FuzzItem.h"
 #include "Mutation.h"
+#include "CFG.h"
 
 using namespace dev;
 using namespace eth;
@@ -31,8 +32,9 @@ namespace fuzzer {
     int stageFinds[32];
     double lastNewPath;
     Timer timer;
+    CFG cfg;
     public:
-      Fuzzer(bytes code /* code */, ContractABI ca /* contract abi */);
+      Fuzzer(bytes code , ContractABI ca, CFG cfg);
       u8 hasNewBits(bytes tracebits);
       FuzzItem saveIfInterest(bytes data);
       void start();

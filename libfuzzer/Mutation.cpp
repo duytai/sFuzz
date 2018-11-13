@@ -428,7 +428,9 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
   stageShort = "havoc";
   stageName = "havoc";
   stageMax = HAVOC_MIN;
+  stageCur = 0;
   int idx = 0;
+  float perfScore = 1;
   vector<FuzzItem> workingQueue;
   vector<FuzzItem> candidateQueue;
   workingQueue.push_back(curFuzzItem);
@@ -436,9 +438,9 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
     bytes origin = workingQueue[idx].data;
     bytes data = workingQueue[idx].data;
     double lowBound = calculateScore(workingQueue[idx], virginbits);
-    for (stageCur = 0; stageCur < HAVOC_MIN; stageCur += 1) {
+    for (int i = 0; i < HAVOC_MIN; i += 1) {
       u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
-      for (u32 i = 0; i < useStacking; i += 1) {
+      for (u32 j = 0; j < useStacking; j += 1) {
         u32 val = UR(15 + ((dict.extras.size() + 0) ? 2 : 0));
         dataSize = data.size();
         byte *out_buf = data.data();
@@ -628,6 +630,7 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
         }
       }
       auto item = cb(data);
+      stageCur ++;
       double score = calculateScore(item, virginbits);
       if (score > lowBound) {
         candidateQueue.push_back(item);
@@ -639,10 +642,15 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
     if (idx > (int)workingQueue.size() - 1) {
       if (candidateQueue.size() > 0) {
         workingQueue = candidateQueue;
+        stageMax += HAVOC_MIN * workingQueue.size();
+        perfScore += 0.1 * workingQueue.size();
+        candidateQueue.clear();
       } else {
-        /* 25% stop, 75% continue */
-        cout << UR(4) << endl;
+        /* Skip with percentage */
+        stageMax += HAVOC_MIN;
+        perfScore -= 0.01 * workingQueue.size();
       }
+      if (perfScore < 0) break;
       idx = 0;
     }
   }
