@@ -63,12 +63,12 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   auto execSpeed = padStr(to_string((int)(totalExecs / duration)), 20);
   auto cyclePercentage = (int)((float)(idx + 1) / queues.size() * 100);
   auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
-  auto cycleDone = padStr(to_string(queueCycle), 11);
-  auto exceptionCount = padStr(to_string(uniqExceptions.size()), 11);
-  auto coveredTupleStr = padStr(to_string(coveredTuples) + " (" + to_string((int)((float)coveredTuples/ totalBranches * 100)) + "%)", 11);
-  auto typeExceptionCount = padStr(to_string(typeExceptions.size()), 11);
+  auto cycleDone = padStr(to_string(queueCycle), 15);
+  auto exceptionCount = padStr(to_string(uniqExceptions.size()), 15);
+  auto coveredTupleStr = padStr(to_string(coveredTuples) + " (" + to_string((int)((float)coveredTuples/ totalBranches * 100)) + "%)", 15);
+  auto typeExceptionCount = padStr(to_string(typeExceptions.size()), 15);
   auto tupleSpeed = coveredTuples ? mutation.dataSize * 8 / coveredTuples : mutation.dataSize * 8;
-  auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 11);
+  auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
   auto flip1 = to_string(stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -89,24 +89,29 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   auto dictionary = padStr(dict1, 30);
   auto hav1 = to_string(stageFinds[STAGE_HAVOC]) + "/" + to_string(mutation.stageCycles[STAGE_HAVOC]);
   auto havoc = padStr(hav1, 30);
+  auto pending = padStr(to_string(queues.size() - idx - 1), 5);
+  auto fav = count_if(queues.begin() + idx + 1, queues.end(), [](FuzzItem item) {
+    return !item.wasFuzzed;
+  });
+  auto pendingFav = padStr(to_string(fav), 5);
   printf(cGRN Bold "%sAFL Solidity v0.0.1" cRST "\n", padStr("", 20).c_str());
-  printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV5 bV bTR "\n");
+  printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
-  printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV bRTR "\n");
+  printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV2 bV2 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
   printf(bH " stage execs : %s" bH "      tuples : %s" bH "\n", stageExec.c_str(), coveredTupleStr.c_str());
   printf(bH " total execs : %s" bH " except type : %s" bH "\n", allExecs.c_str(), typeExceptionCount.c_str());
   printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerTupe.c_str());
   printf(bH "  cycle prog : %s" bH " uniq except : %s" bH "\n", cycleProgress.c_str(), exceptionCount.c_str());
-  printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bRTR "\n");
-  printf(bH "   bit flips : %s" bH "                " bH "\n", bitflip.c_str());
-  printf(bH "  byte flips : %s" bH "                " bH "\n", byteflip.c_str());
-  printf(bH " arithmetics : %s" bH "                " bH "\n", arithmetic.c_str());
-  printf(bH "  known ints : %s" bH "                " bH "\n", knownInts.c_str());
-  printf(bH "  dictionary : %s" bH "                " bH "\n", dictionary.c_str());
-  printf(bH "       havoc : %s" bH "                " bH "\n", havoc.c_str());
-  printf(bBL bV50 bV5 bV bBTR bV20 bBR "\n");
+  printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " bV2 bV2 cRST bRTR "\n");
+  printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
+  printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
+  printf(bH " arithmetics : %s" bH "                    " bH "\n", arithmetic.c_str());
+  printf(bH "  known ints : %s" bH "                    " bH "\n", knownInts.c_str());
+  printf(bH "  dictionary : %s" bH "                    " bH "\n", dictionary.c_str());
+  printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
+  printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
 }
 
 /* Save data if interest */

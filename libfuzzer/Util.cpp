@@ -170,7 +170,7 @@ namespace fuzzer {
       << " min, "
       << seconds
       << " sec";
-    return padStr(ret.str(), 44);
+    return padStr(ret.str(), 48);
   }
   
   string padStr(string str, int len) {
