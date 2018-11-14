@@ -17,7 +17,7 @@ Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg): ca(ca), code(code), virginb
   totalExecs = 0;
   clearScreen = false;
   queueCycle = 0;
-  coveredBranches = 0;
+  coveredTuples = 0;
 }
 
 /* Detect new branch by comparing tracebits to virginbits */
@@ -54,21 +54,18 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   double duration = timer.elapsed();
   double fromLastNewPath = timer.elapsed() - lastNewPath;
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
-  auto nowTrying = padStr(mutation.stageName, 17);
+  auto nowTrying = padStr(mutation.stageName, 20);
   auto stageExecProgress = to_string(mutation.stageCur) + "/" + to_string(mutation.stageMax);
   auto stageExecPercentage = to_string((int)((float) (mutation.stageCur) / mutation.stageMax * 100));
-  auto stageExec = padStr(stageExecProgress + " (" + stageExecPercentage + "%)", 17);
-  auto allExecs = padStr(to_string(totalExecs), 17);
-  auto execSpeed = padStr(to_string((int)(totalExecs / duration)), 17);
+  auto stageExec = padStr(stageExecProgress + " (" + stageExecPercentage + "%)", 20);
+  auto allExecs = padStr(to_string(totalExecs), 20);
+  auto execSpeed = padStr(to_string((int)(totalExecs / duration)), 20);
   auto cyclePercentage = (int)((float)(idx + 1) / queues.size() * 100);
-  auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 17);
+  auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(queueCycle), 11);
-  auto coveredBranchesStr = padStr(to_string(coveredBranches) + " (" + to_string((int)((float)coveredBranches/ totalBranches * 100)) + "%)", 11);
-  //auto numBytes = countBytes(item.res.tracebits.data());
-  //auto bytePercentage = (int)(numBytes * 100 / MAP_SIZE);
+  auto coveredTupleStr = padStr(to_string(coveredTuples) + " (" + to_string((int)((float)coveredTuples/ totalBranches * 100)) + "%)", 11);
   auto mapDensitive = padStr("n/a", 11);
-  //padStr(to_string(numBytes) + " (" + to_string(bytePercentage) + "%)", 11);
-  auto tupleSpeed = coveredBranches ? mutation.dataSize * 8 / coveredBranches : mutation.dataSize * 8;
+  auto tupleSpeed = coveredTuples ? mutation.dataSize * 8 / coveredTuples : mutation.dataSize * 8;
   auto bitPerBranch = padStr(to_string(tupleSpeed) + " bits", 11);
   auto flip1 = to_string(stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
@@ -94,13 +91,13 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
-  printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bTTR bV cGRN " overall results " cRST bV2 bV10 bV bRTR "\n");
-  printf(bH "  now trying : %s" bH "    cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
-  printf(bH " stage execs : %s" bH " total branches : %s" bH "\n", stageExec.c_str(), coveredBranchesStr.c_str());
-  printf(bH " total execs : %s" bH "    map density : %s" bH "\n", allExecs.c_str(), mapDensitive.c_str());
-  printf(bH "  exec speed : %s" bH "   bit/branches : %s" bH "\n", execSpeed.c_str(), bitPerBranch.c_str());
-  printf(bH "  cycle prog : %s" bH "                  %s" bH "\n", cycleProgress.c_str(), padStr("", 11).c_str());
-  printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bBTR bV10 bV5 bTTR bV cGRN " path geometry " cRST bRTR "\n");
+  printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV bRTR "\n");
+  printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
+  printf(bH " stage execs : %s" bH "      tuples : %s" bH "\n", stageExec.c_str(), coveredTupleStr.c_str());
+  printf(bH " total execs : %s" bH " map density : %s" bH "\n", allExecs.c_str(), mapDensitive.c_str());
+  printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerBranch.c_str());
+  printf(bH "  cycle prog : %s" bH "               %s" bH "\n", cycleProgress.c_str(), padStr("", 11).c_str());
+  printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bRTR "\n");
   printf(bH "   bit flips : %s" bH "                " bH "\n", bitflip.c_str());
   printf(bH "  byte flips : %s" bH "                " bH "\n", byteflip.c_str());
   printf(bH " arithmetics : %s" bH "                " bH "\n", arithmetic.c_str());
@@ -119,7 +116,7 @@ FuzzItem Fuzzer::saveIfInterest(bytes data) {
   if (hasNewBits(item.res.tracebits)) {
     queues.push_back(item);
     lastNewPath = timer.elapsed();
-    coveredBranches = (MAP_SIZE << 3) - coutBits(virginbits.data());
+    coveredTuples = (MAP_SIZE << 3) - coutBits(virginbits.data());
   }
   return item;
 }

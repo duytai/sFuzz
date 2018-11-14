@@ -30,7 +30,7 @@ namespace fuzzer {
     int totalExecs;
     int queueCycle;
     int stageFinds[32];
-    int coveredBranches;
+    int coveredTuples;
     double lastNewPath;
     Timer timer;
     CFG cfg;
