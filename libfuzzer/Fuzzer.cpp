@@ -44,6 +44,7 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
 }
 
 void Fuzzer::showStats(Mutation mutation, FuzzItem) {
+  //return;
   int numLines = 18, i = 0;
   if (!clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -63,10 +64,11 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   auto cyclePercentage = (int)((float)(idx + 1) / queues.size() * 100);
   auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(queueCycle), 11);
+  auto exceptionCount = padStr(to_string(uniqExceptions.size()), 11);
   auto coveredTupleStr = padStr(to_string(coveredTuples) + " (" + to_string((int)((float)coveredTuples/ totalBranches * 100)) + "%)", 11);
-  auto mapDensitive = padStr("n/a", 11);
+  auto typeExceptionCount = padStr(to_string(typeExceptions.size()), 11);
   auto tupleSpeed = coveredTuples ? mutation.dataSize * 8 / coveredTuples : mutation.dataSize * 8;
-  auto bitPerBranch = padStr(to_string(tupleSpeed) + " bits", 11);
+  auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 11);
   auto flip1 = to_string(stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -94,9 +96,9 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
   printf(bH " stage execs : %s" bH "      tuples : %s" bH "\n", stageExec.c_str(), coveredTupleStr.c_str());
-  printf(bH " total execs : %s" bH " map density : %s" bH "\n", allExecs.c_str(), mapDensitive.c_str());
-  printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerBranch.c_str());
-  printf(bH "  cycle prog : %s" bH "               %s" bH "\n", cycleProgress.c_str(), padStr("", 11).c_str());
+  printf(bH " total execs : %s" bH " except type : %s" bH "\n", allExecs.c_str(), typeExceptionCount.c_str());
+  printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerTupe.c_str());
+  printf(bH "  cycle prog : %s" bH " uniq except : %s" bH "\n", cycleProgress.c_str(), exceptionCount.c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bRTR "\n");
   printf(bH "   bit flips : %s" bH "                " bH "\n", bitflip.c_str());
   printf(bH "  byte flips : %s" bH "                " bH "\n", byteflip.c_str());
@@ -118,6 +120,8 @@ FuzzItem Fuzzer::saveIfInterest(bytes data) {
     lastNewPath = timer.elapsed();
     coveredTuples = (MAP_SIZE << 3) - coutBits(virginbits.data());
   }
+  for(auto it : item.res.uniqExceptions) uniqExceptions.insert(it);
+  for(auto it : item.res.typeExceptions) typeExceptions.insert(it);
   return item;
 }
 

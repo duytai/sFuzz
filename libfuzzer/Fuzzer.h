@@ -25,6 +25,8 @@ namespace fuzzer {
     bytes virginbits;
     TargetContainer container;
     vector<FuzzItem> queues;
+    unordered_set<u64> uniqExceptions;
+    unordered_set<string> typeExceptions;
     int idx;
     bool clearScreen;
     int totalExecs;

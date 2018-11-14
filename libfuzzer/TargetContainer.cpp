@@ -21,9 +21,13 @@ namespace fuzzer {
     u64 prevLocation = 0;
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
+    u64 lastpc = 0;
+    unordered_set<uint64_t> uniqExceptions;
+    unordered_set<string> typeExceptions;
     bytes tracebits(MAP_SIZE, 0);
     unordered_map<uint64_t, double> predicates;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
+      lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
       switch (inst) {
         case Instruction::GT:
@@ -66,9 +70,21 @@ namespace fuzzer {
     ca.updateTestData(data);
     vector<bytes> funcs = ca.encodeFunctions();
     program.setupAccounts(ca.accounts);
-    program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    auto res = program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    if (res.excepted != TransactionException::None) {
+      uniqExceptions.insert(lastpc ^ prevLocation);
+      ostringstream os;
+      os << res.excepted;
+      typeExceptions.insert(os.str());
+    }
     for (auto func: funcs) {
-      program.invoke(CONTRACT_FUNCTION, func, onOp);
+      res = program.invoke(CONTRACT_FUNCTION, func, onOp);
+      if (res.excepted != TransactionException::None) {
+        uniqExceptions.insert(lastpc ^ prevLocation);
+        ostringstream os;
+        os << res.excepted;
+        typeExceptions.insert(os.str());
+      }
     }
     /*
      Reset program and deploy again becuase
@@ -79,6 +95,6 @@ namespace fuzzer {
     /*
      Calculate checksum and return response
      */
-    return TargetContainerResult(tracebits, sha3(tracebits), timer.elapsed(), predicates);
+    return TargetContainerResult(tracebits, sha3(tracebits), timer.elapsed(), predicates, uniqExceptions, typeExceptions);
   }
 }
