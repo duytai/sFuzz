@@ -8,7 +8,7 @@ using namespace dev;
 using namespace eth;
 
 namespace fuzzer {
-  void CFG::simulate(const bytes& code, u256s stack, int pc, int prevLocation, unordered_map<int, int>& prevLocations) {
+  void CFG::simulate(const bytes& code, u256s stack, int pc, int prevLocation, unordered_set<int>& prevLocations) {
     int codeSize = code.size();
     while (pc < codeSize) {
       auto ist = (Instruction) code[pc];
@@ -24,7 +24,6 @@ namespace fuzzer {
         case Instruction::DUP1 ... Instruction::DUP16: {
           int stackPos = code[pc] - 0x7f;
           int stackSize = stack.size();
-          if (stackPos > stackSize) return;
           auto stackItem = stack[stackSize - stackPos];
           stack.push_back(stackItem);
           break;
@@ -33,7 +32,6 @@ namespace fuzzer {
           int stackPos = code[pc] - 0x8f;
           int stackSize = stack.size();
           int swapIndex = stackSize - stackPos - 1;
-          if (swapIndex < 0) return;
           int topIndex = stackSize - 1;
           auto tmp = stack[topIndex];
           stack[topIndex] = stack[swapIndex];
@@ -41,37 +39,33 @@ namespace fuzzer {
           break;
         }
         case Instruction::JUMP: {
-          int stackSize = stack.size();
-          if (stackSize > 1) {
-            auto jumpTo = (int) stack.back();
-            stack.pop_back();
-            if ((Instruction) code[jumpTo] == Instruction::JUMPDEST) {
-              simulate(code, stack, jumpTo, prevLocation, prevLocations);
-            }
+          auto jumpTo = (int) stack.back();
+          stack.pop_back();
+          if (jumpdests.count(jumpTo)) {
+            simulate(code, stack, jumpTo, prevLocation, prevLocations);
           }
           return;
         }
         case Instruction::JUMPI: {
-          int stackSize = stack.size();
-          if (stackSize > 1) {
-            auto jumpTo = (int) stack.back();
-            stack.pop_back();
-            if ((Instruction) code[jumpTo] == Instruction::JUMPDEST) {
-              /* Bit is not set */
-              if (!tracebits[jumpTo ^ prevLocation]) {
-                tracebits[jumpTo ^ prevLocation] = 1;
-                int newPrevLocation = jumpTo >> 1;
-                prevLocations[newPrevLocation] = 1;
-                simulate(code, stack, jumpTo, newPrevLocation, prevLocations);
-              }
-            }
-            jumpTo = pc + 1;
-            if (!tracebits[jumpTo ^ prevLocation]) {
-              tracebits[jumpTo ^ prevLocation] = 1;
+          auto jumpTo = (int) stack.back();
+          stack.pop_back();
+          stack.pop_back();
+          jumpis.insert(pc);
+          if (jumpdests.count(jumpTo)) {
+            /* Bit is not set */
+            if (tracebits[jumpTo ^ prevLocation] < 10000) {
+              tracebits[jumpTo ^ prevLocation] += 1;
               int newPrevLocation = jumpTo >> 1;
-              prevLocations[newPrevLocation] = 1;
+              prevLocations.insert(newPrevLocation);
               simulate(code, stack, jumpTo, newPrevLocation, prevLocations);
             }
+          }
+          jumpTo = pc + 1;
+          if (tracebits[jumpTo ^ prevLocation] < 10000) {
+            tracebits[jumpTo ^ prevLocation] += 1;
+            int newPrevLocation = jumpTo >> 1;
+            prevLocations.insert(newPrevLocation);
+            simulate(code, stack, jumpTo, newPrevLocation, prevLocations);
           }
           return;
         }
@@ -84,10 +78,12 @@ namespace fuzzer {
         }
         default: {
           auto info = instructionInfo(ist);
-          stack.erase(stack.end() - info.args, stack.end());
-          u256s stackItems = u256s(info.ret, 0);
-          stack.insert(stack.end(), stackItems.begin(), stackItems.end());
-          break;
+          if ((int)stack.size() >= (int)info.args) {
+            stack.erase(stack.end() - info.args, stack.end());
+            u256s stackItems = u256s(info.ret, 0);
+            stack.insert(stack.end(), stackItems.begin(), stackItems.end());
+            break;
+          } else return;
         }
       }
       pc += 1;
@@ -95,17 +91,38 @@ namespace fuzzer {
   }
 
   int CFG::totalCount() {
-    return tracebits.size();
+    return tracebits.size() + extraEstimation;
+  }
+  
+  unordered_set<int> CFG::findops(const bytes& code, Instruction op) {
+    int pc = 0;
+    int size = code.size();
+    unordered_set<int> ret;
+    jumpdests.clear();
+    while (pc < size) {
+      if ((Instruction) code[pc] == op) ret.insert(pc);
+      if (code[pc] > 0x5f && code[pc] < 0x80) {
+        /* PUSH instruction */
+        int jumpNum = code[pc] - 0x5f;
+        pc += jumpNum;
+      }
+      pc += 1;
+    }
+    return ret;
   }
   
   CFG::CFG(string code, string codeRuntime) {
     u256s stack;
+    unordered_set<int> prevLocations;
     int pc = 0;
-    unordered_map<int, int> prevLocations;
+    int allJumpi = findops(fromHex(code), Instruction::JUMPI).size();
+    jumpdests = findops(fromHex(code), Instruction::JUMPDEST);
     simulate(fromHex(code), stack, pc, 0, prevLocations);
     for (auto it : prevLocations) {
-      unordered_map<int, int> temp;
-      simulate(fromHex(codeRuntime), stack, pc, it.first, temp);
+      unordered_set<int> temp;
+      simulate(fromHex(codeRuntime), stack, pc, it, temp);
     }
+    int numJumpi = jumpis.size();
+    extraEstimation = 2 * (allJumpi - numJumpi);
   }
 }

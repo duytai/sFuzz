@@ -43,7 +43,7 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
   return ret;
 }
 
-void Fuzzer::showStats(Mutation mutation, FuzzItem item) {
+void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   int numLines = 18, i = 0;
   if (!clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -64,11 +64,12 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem item) {
   auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 17);
   auto cycleDone = padStr(to_string(queueCycle), 11);
   auto coveredBranchesStr = padStr(to_string(coveredBranches) + " (" + to_string((int)((float)coveredBranches/ totalBranches * 100)) + "%)", 11);
-  auto numBytes = countBytes(item.res.tracebits.data());
-  auto bytePercentage = (int)(numBytes * 100 / MAP_SIZE);
-  auto mapDensitive = padStr(to_string(numBytes) + " (" + to_string(bytePercentage) + "%)", 11);
+  //auto numBytes = countBytes(item.res.tracebits.data());
+  //auto bytePercentage = (int)(numBytes * 100 / MAP_SIZE);
+  auto mapDensitive = padStr("n/a", 11);
+  //padStr(to_string(numBytes) + " (" + to_string(bytePercentage) + "%)", 11);
   auto tupleSpeed = coveredBranches ? mutation.dataSize * 8 / coveredBranches : mutation.dataSize * 8;
-  auto countCoverage = padStr(to_string(tupleSpeed) + " bits", 11);
+  auto bitPerBranch = padStr(to_string(tupleSpeed) + " bits", 11);
   auto flip1 = to_string(stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -97,7 +98,7 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem item) {
   printf(bH "  now trying : %s" bH "    cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
   printf(bH " stage execs : %s" bH " total branches : %s" bH "\n", stageExec.c_str(), coveredBranchesStr.c_str());
   printf(bH " total execs : %s" bH "    map density : %s" bH "\n", allExecs.c_str(), mapDensitive.c_str());
-  printf(bH "  exec speed : %s" bH " count coverage : %s" bH "\n", execSpeed.c_str(), countCoverage.c_str());
+  printf(bH "  exec speed : %s" bH "   bit/branches : %s" bH "\n", execSpeed.c_str(), bitPerBranch.c_str());
   printf(bH "  cycle prog : %s" bH "                  %s" bH "\n", cycleProgress.c_str(), padStr("", 11).c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bBTR bV10 bV5 bTTR bV cGRN " path geometry " cRST bRTR "\n");
   printf(bH "   bit flips : %s" bH "                " bH "\n", bitflip.c_str());
