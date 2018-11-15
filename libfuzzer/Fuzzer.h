@@ -35,10 +35,11 @@ namespace fuzzer {
     int stageFinds[32];
     int coveredTuples;
     double lastNewPath;
+    string contractName;
     Timer timer;
     CFG cfg;
     public:
-      Fuzzer(bytes code , ContractABI ca, CFG cfg);
+      Fuzzer(bytes code , ContractABI ca, CFG cfg, string contractName);
       u8 hasNewBits(bytes tracebits);
       FuzzItem saveIfInterest(bytes data, int depth);
       void start();

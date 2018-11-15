@@ -17,9 +17,9 @@ namespace fuzzer {
     unordered_set<int> jumpis;
     unordered_set<int> findops(const bytes& code, Instruction op);
     void simulate(const bytes& code, u256s stack, int pc, int prevLocation, unordered_set<int>& prevLocations);
-    int extraEstimation;
     public:
       int totalCount();
+      int extraEstimation;
       CFG(string code, string codeRuntime);
   };
 }

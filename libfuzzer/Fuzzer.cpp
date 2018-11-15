@@ -12,13 +12,14 @@ using namespace std;
 using namespace fuzzer;
 
 /* Setup virgin byte to 255 */
-Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)), container(code, ca), cfg(cfg) {
+Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg, string ctrName): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)), container(code, ca), cfg(cfg) {
   idx = 0;
   totalExecs = 0;
   clearScreen = false;
   queueCycle = 0;
   coveredTuples = 0;
   maxdepth = 0;
+  contractName = ctrName;
 }
 
 /* Detect new branch by comparing tracebits to virginbits */
@@ -49,7 +50,7 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   int numLines = 18, i = 0;
   if (!clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
-    printf(CURSOR_HIDE);
+    //printf(CURSOR_HIDE);
     clearScreen = true;
   }
   int totalBranches = cfg.totalCount();
@@ -66,7 +67,8 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   auto cycleProgress = padStr(to_string(idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(queueCycle), 15);
   auto exceptionCount = padStr(to_string(uniqExceptions.size()), 15);
-  auto coveredTupleStr = padStr(to_string(coveredTuples) + " (" + to_string((int)((float)coveredTuples/ totalBranches * 100)) + "%)", 15);
+  auto tupleCountMethod = cfg.extraEstimation > 0 ? "Est" : "Exa";
+  auto coveredTupleStr = padStr(to_string(coveredTuples) + " (" + to_string((int)((float)coveredTuples/ totalBranches * 100)) + "% " + tupleCountMethod + ")", 15);
   auto typeExceptionCount = padStr(to_string(typeExceptions.size()), 15);
   auto tupleSpeed = coveredTuples ? mutation.dataSize * 8 / coveredTuples : mutation.dataSize * 8;
   auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
@@ -96,7 +98,7 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(maxdepth), 5);
-  printf(cGRN Bold "%sAFL Solidity v0.0.1" cRST "\n", padStr("", 20).c_str());
+  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contractName.c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());

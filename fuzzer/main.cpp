@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
     auto binRuntime = root.get<string>(binRuntimePath);
     ContractABI ca(abiJson);
     CFG cfg(bin, binRuntime);
-    Fuzzer fuzzer(fromHex(bin), ca, cfg);
+    Fuzzer fuzzer(fromHex(bin), ca, cfg, contractName);
     fuzzer.start();
     return 0;
   }
