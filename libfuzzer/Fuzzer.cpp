@@ -18,6 +18,7 @@ Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg): ca(ca), code(code), virginb
   clearScreen = false;
   queueCycle = 0;
   coveredTuples = 0;
+  maxdepth = 0;
 }
 
 /* Detect new branch by comparing tracebits to virginbits */
@@ -94,6 +95,7 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
     return !item.wasFuzzed;
   });
   auto pendingFav = padStr(to_string(fav), 5);
+  auto maxdepthStr = padStr(to_string(maxdepth), 5);
   printf(cGRN Bold "%sAFL Solidity v0.0.1" cRST "\n", padStr("", 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
@@ -107,7 +109,7 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " bV2 bV2 cRST bRTR "\n");
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
-  printf(bH " arithmetics : %s" bH "                    " bH "\n", arithmetic.c_str());
+  printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
   printf(bH "  known ints : %s" bH "                    " bH "\n", knownInts.c_str());
   printf(bH "  dictionary : %s" bH "                    " bH "\n", dictionary.c_str());
   printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
@@ -115,12 +117,14 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
 }
 
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(bytes data) {
+FuzzItem Fuzzer::saveIfInterest(bytes data, int depth) {
   FuzzItem item(data);
   item.res = container.exec(data);
   item.wasFuzzed = false;
   totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
+    if (depth + 1 > maxdepth) maxdepth = depth + 1;
+    item.depth = depth + 1;
     queues.push_back(item);
     lastNewPath = timer.elapsed();
     coveredTuples = (MAP_SIZE << 3) - coutBits(virginbits.data());
@@ -135,7 +139,7 @@ void Fuzzer::start() {
   Dictionary dict(code);
   /* First test case */
   timer.restart();
-  saveIfInterest(ca.randomTestcase());
+  saveIfInterest(ca.randomTestcase(), 0);
   int origHitCount = queues.size();
   double lastSpeed = 0;
   int refreshRate = 100;
@@ -143,7 +147,7 @@ void Fuzzer::start() {
     FuzzItem curItem = queues[idx];
     Mutation mutation(curItem, dict);
     auto save = [&](bytes data) {
-      auto item = saveIfInterest(data);
+      auto item = saveIfInterest(data, curItem.depth);
       double speed = totalExecs / (double) timer.elapsed();
       if (speed > lastSpeed) {
         refreshRate += 10;

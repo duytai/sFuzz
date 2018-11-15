@@ -12,10 +12,12 @@ namespace fuzzer {
     FuzzItem(bytes data) {
       this->data = data;
       this->wasFuzzed = false;
+      this->depth = 0;
     }
     bytes data;
     TargetContainerResult res;
     bool wasFuzzed;
+    int depth;
   };
   using OnMutateFunc = function<FuzzItem (bytes b)>;
 }

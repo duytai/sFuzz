@@ -28,6 +28,7 @@ namespace fuzzer {
     unordered_set<u64> uniqExceptions;
     unordered_set<string> typeExceptions;
     int idx;
+    int maxdepth;
     bool clearScreen;
     int totalExecs;
     int queueCycle;
@@ -39,7 +40,7 @@ namespace fuzzer {
     public:
       Fuzzer(bytes code , ContractABI ca, CFG cfg);
       u8 hasNewBits(bytes tracebits);
-      FuzzItem saveIfInterest(bytes data);
+      FuzzItem saveIfInterest(bytes data, int depth);
       void start();
       void showStats(Mutation mutation, FuzzItem item);
   };
