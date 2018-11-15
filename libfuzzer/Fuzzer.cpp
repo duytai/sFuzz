@@ -1,5 +1,7 @@
 #include <thread>
 #include <unistd.h>
+#include <fstream>
+#include "boost/filesystem.hpp"
 #include "Fuzzer.h"
 #include "Mutation.h"
 #include "Util.h"
@@ -130,6 +132,11 @@ FuzzItem Fuzzer::saveIfInterest(bytes data, int depth) {
     queues.push_back(item);
     lastNewPath = timer.elapsed();
     coveredTuples = (MAP_SIZE << 3) - coutBits(virginbits.data());
+    ofstream testfile(contractName + "/" + to_string(queues.size()) + ".txt");
+    for (int i = 0; i < (int)data.size(); i += 32) {
+      testfile << toHex(bytes(data.begin() + i, data.begin() + i + 32)) << endl;
+    }
+    testfile.close();
   }
   for(auto it : item.res.uniqExceptions) uniqExceptions.insert(it);
   for(auto it : item.res.typeExceptions) typeExceptions.insert(it);
@@ -138,6 +145,8 @@ FuzzItem Fuzzer::saveIfInterest(bytes data, int depth) {
 
 /* Start fuzzing */
 void Fuzzer::start() {
+  boost::filesystem::remove_all(contractName);
+  boost::filesystem::create_directory(contractName);
   Dictionary dict(code);
   /* First test case */
   timer.restart();
