@@ -647,7 +647,7 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
       } else {
         /* Skip with percentage */
         stageMax += HAVOC_MIN * workingQueue.size();
-        perfScore -= 0.01 * workingQueue.size();
+        perfScore -= 0.2 * workingQueue.size();
       }
       if (perfScore < 0) break;
       idx = 0;
@@ -656,7 +656,7 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
   stageCycles[STAGE_HAVOC] += stageMax;
 }
 
-bool Mutation::splice(OnMutateFunc, vector<FuzzItem> queues) {
+bool Mutation::splice(vector<FuzzItem> queues) {
   u32 spliceCycle = 0;
   s32 firstDiff, lastDiff;
   bytes origin = curFuzzItem.data;
@@ -670,8 +670,8 @@ bool Mutation::splice(OnMutateFunc, vector<FuzzItem> queues) {
     /* Find a suitable splicing location, somewhere between the first and
      the last differing byte. Bail out if the difference is just a single
      byte or so. */
-    byte *outBuf = &curFuzzItem.data[0];
-    byte *targetBuf = &target.data[0];
+    byte *outBuf = curFuzzItem.data.data();
+    byte *targetBuf = target.data.data();
     u32 minLen = curFuzzItem.data.size() > target.data.size()
     ? target.data.size() : curFuzzItem.data.size();
     locateDiffs(outBuf, targetBuf, minLen, &firstDiff, &lastDiff);

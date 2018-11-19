@@ -14,7 +14,7 @@ using namespace std;
 using namespace fuzzer;
 
 /* Setup virgin byte to 255 */
-Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg, string ctrName): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)), container(code, ca), cfg(cfg) {
+Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg, string ctrName, int dur): ca(ca), code(code), virginbits(bytes(MAP_SIZE, 255)), container(code, ca), cfg(cfg) {
   idx = 0;
   totalExecs = 0;
   clearScreen = false;
@@ -22,6 +22,7 @@ Fuzzer::Fuzzer(bytes code, ContractABI ca, CFG cfg, string ctrName): ca(ca), cod
   coveredTuples = 0;
   maxdepth = 0;
   contractName = ctrName;
+  duration = dur;
 }
 
 /* Detect new branch by comparing tracebits to virginbits */
@@ -48,7 +49,6 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
 }
 
 void Fuzzer::showStats(Mutation mutation, FuzzItem) {
-  //return;
   int numLines = 18, i = 0;
   if (!clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -100,7 +100,7 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(maxdepth), 5);
-  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contractName.c_str());
+  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
@@ -166,6 +166,7 @@ void Fuzzer::start() {
       }
       if (refreshRate > speed) refreshRate = speed;
       if (totalExecs % refreshRate == 0) showStats(mutation, item);
+      if (timer.elapsed() > duration) exit(0);
       return item;
     };
     if (!curItem.wasFuzzed) {
@@ -216,6 +217,9 @@ void Fuzzer::start() {
       mutation.havoc(virginbits, save);
       stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
       origHitCount = queues.size();
+      if (mutation.splice(queues)) {
+        mutation.havoc(virginbits, save);
+      };
     }
     idx = (idx + 1) % queues.size();
     if (idx == 0) queueCycle ++;

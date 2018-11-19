@@ -27,6 +27,7 @@ namespace fuzzer {
     vector<FuzzItem> queues;
     unordered_set<u64> uniqExceptions;
     unordered_set<string> typeExceptions;
+    int duration;
     int idx;
     int maxdepth;
     bool clearScreen;
@@ -39,7 +40,7 @@ namespace fuzzer {
     Timer timer;
     CFG cfg;
     public:
-      Fuzzer(bytes code , ContractABI ca, CFG cfg, string contractName);
+      Fuzzer(bytes code , ContractABI ca, CFG cfg, string contractName, int duration);
       u8 hasNewBits(bytes tracebits);
       FuzzItem saveIfInterest(bytes data, int depth);
       void start();
