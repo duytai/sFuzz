@@ -41,11 +41,12 @@ namespace fuzzer {
     string contractName;
     Timer timer;
     CFG cfg;
+    void writeStats(Mutation mutation);
     public:
       Fuzzer(bytes code , ContractABI ca, CFG cfg, string contractName, int duration, FuzzMode mode);
       u8 hasNewBits(bytes tracebits);
       FuzzItem saveIfInterest(bytes data, int depth);
       void start();
-      void showStats(Mutation mutation, FuzzItem item);
+      void showStats(Mutation mutation);
   };
 }

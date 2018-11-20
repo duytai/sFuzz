@@ -49,7 +49,7 @@ u8 Fuzzer::hasNewBits(bytes tracebits) {
   return ret;
 }
 
-void Fuzzer::showStats(Mutation mutation, FuzzItem) {
+void Fuzzer::showStats(Mutation mutation) {
   int numLines = 19, i = 0;
   if (!clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -123,6 +123,18 @@ void Fuzzer::showStats(Mutation mutation, FuzzItem) {
   printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
 }
 
+void Fuzzer::writeStats(Mutation) {
+  double speed = totalExecs / (double) timer.elapsed();
+  ofstream stats(contractName + "/stats.csv");
+  stats << "Testcases,Speed,Execs,Tuples,Coverage" << endl;
+  stats << queues.size();
+  stats << "," << speed;
+  stats << "," << totalExecs;
+  stats << "," << coveredTuples;
+  stats << "," << coveredTuples * 100 / cfg.totalCount();
+  stats << endl;
+}
+
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(bytes data, int depth) {
   FuzzItem item(data);
@@ -135,11 +147,11 @@ FuzzItem Fuzzer::saveIfInterest(bytes data, int depth) {
     queues.push_back(item);
     lastNewPath = timer.elapsed();
     coveredTuples = (MAP_SIZE << 3) - coutBits(virginbits.data());
-    ofstream testfile(contractName + "/" + to_string(queues.size()) + ".txt");
-    for (int i = 0; i < (int)data.size(); i += 32) {
-      testfile << toHex(bytes(data.begin() + i, data.begin() + i + 32)) << endl;
-    }
-    testfile.close();
+    //ofstream testfile(contractName + "/" + to_string(queues.size()) + ".txt");
+    //for (int i = 0; i < (int)data.size(); i += 32) {
+    //  testfile << toHex(bytes(data.begin() + i, data.begin() + i + 32)) << endl;
+    //}
+    //testfile.close();
   }
   for(auto it : item.res.uniqExceptions) uniqExceptions.insert(it);
   for(auto it : item.res.typeExceptions) typeExceptions.insert(it);
@@ -168,8 +180,12 @@ void Fuzzer::start() {
         lastSpeed = speed;
       }
       if (refreshRate > speed) refreshRate = speed;
-      if (totalExecs % refreshRate == 0) showStats(mutation, item);
-      if (timer.elapsed() > duration) exit(0);
+      if (totalExecs % refreshRate == 0) showStats(mutation);
+      /* Stop program */
+      if (timer.elapsed() > duration) {
+        writeStats(mutation);
+        exit(0);
+      }
       return item;
     };
     switch (mode) {
