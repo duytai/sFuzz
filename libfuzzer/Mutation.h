@@ -40,6 +40,7 @@ namespace fuzzer {
       void overwriteWithDictionary(OnMutateFunc cb);
       void insertWithDictionary(OnMutateFunc cb);
       void overwriteWithAutoDictionary(OnMutateFunc cb);
+      void random(OnMutateFunc cb);
       void havoc(const bytes& virginbits, OnMutateFunc cb);
       bool splice(vector<FuzzItem> items);
       double calculateScore(const FuzzItem& item, const bytes& bitmaps);

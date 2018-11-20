@@ -19,6 +19,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
+  enum FuzzMode { RANDOM, AFL };
   class Fuzzer {
     ContractABI ca;
     bytes code;
@@ -27,6 +28,7 @@ namespace fuzzer {
     vector<FuzzItem> queues;
     unordered_set<u64> uniqExceptions;
     unordered_set<string> typeExceptions;
+    FuzzMode mode;
     int duration;
     int idx;
     int maxdepth;
@@ -40,7 +42,7 @@ namespace fuzzer {
     Timer timer;
     CFG cfg;
     public:
-      Fuzzer(bytes code , ContractABI ca, CFG cfg, string contractName, int duration);
+      Fuzzer(bytes code , ContractABI ca, CFG cfg, string contractName, int duration, FuzzMode mode);
       u8 hasNewBits(bytes tracebits);
       FuzzItem saveIfInterest(bytes data, int depth);
       void start();

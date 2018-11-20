@@ -28,6 +28,7 @@ int main(int argc, char* argv[]) {
   path p("contracts/");
   string jsonFile = "";
   string contractName = "";
+  int mode = 1;
   int duration = 600;
   po::options_description desc("Allowed options");
   desc.add_options()
@@ -36,6 +37,7 @@ int main(int argc, char* argv[]) {
     ("file,f", po::value(&jsonFile), "fuzz a contract")
     ("name,n", po::value(&contractName), "contract name")
     ("clean,c", "clean all generated files")
+  ("mode,m", po::value(&mode), "choose mode: 0 - Random | 1 - AFL ")
     ("duration,d", po::value(&duration), "fuzz duration");
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -68,7 +70,7 @@ int main(int argc, char* argv[]) {
     for (auto& file : boost::make_iterator_range(directory_iterator(p), {})) {
       if (!is_directory(file.status()) && boost::ends_with(file.path().string(), ".sol")) {
         string filePath = file.path().string();
-        string fileName = file.path().filename().string();
+        string fileName = file.path().filename().replace_extension("").string();
         fuzzMe << "solc --combined-json abi,bin,bin-runtime ";
         fuzzMe << filePath;
         fuzzMe << " > " << filePath + ".json" << endl;
@@ -76,6 +78,7 @@ int main(int argc, char* argv[]) {
         os << "./fuzzer -f " + filePath + ".json";
         os << " -n " + contractName;
         os << " -d " + to_string(duration);
+        os << " -m " + to_string(mode);
         os << "\n";
         numContracts ++;
       }
@@ -119,7 +122,8 @@ int main(int argc, char* argv[]) {
     auto binRuntime = root.get<string>(binRuntimePath);
     ContractABI ca(abiJson);
     CFG cfg(bin, binRuntime);
-    Fuzzer fuzzer(fromHex(bin), ca, cfg, fullContractName, duration);
+    FuzzMode fuzzMode = mode == 1 ? AFL : RANDOM;
+    Fuzzer fuzzer(fromHex(bin), ca, cfg, fullContractName, duration, fuzzMode);
     fuzzer.start();
     return 0;
   }

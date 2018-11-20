@@ -685,3 +685,14 @@ bool Mutation::splice(vector<FuzzItem> queues) {
   }
   return false;
 }
+
+void Mutation::random(OnMutateFunc cb) {
+  stageShort = "random";
+  stageName = "random 8/8";
+  stageMax = 1;
+  for (int i = 0; i < dataSize; i ++) {
+    curFuzzItem.data[stageCur] = UR(256);
+  }
+  cb(curFuzzItem.data);
+  stageCycles[STAGE_RANDOM] += stageMax;
+}
