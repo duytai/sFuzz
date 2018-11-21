@@ -15,6 +15,57 @@ namespace fuzzer {
     this->name = name;
     this->tds = tds;
   }
+  
+  string ContractABI::toStandardJson() {
+    stringstream os;
+    pt::ptree funcs;
+    pt::ptree root;
+    for (auto fd : this->fds) {
+      pt::ptree func;
+      pt::ptree inputs;
+      func.put("name", fd.name);
+      for (auto td : fd.tds) {
+        pt::ptree input;
+        input.put("type", td.name);
+        switch (td.dimensions.size()) {
+          case 0: {
+            input.put("value", "0x" + toHex(td.dt.value));
+            break;
+          }
+          case 1: {
+            pt::ptree values;
+            for (auto dt : td.dts) {
+              pt::ptree value;
+              value.put_value("0x" + toHex(dt.value));
+              values.push_back(make_pair("", value));
+            }
+            input.add_child("value", values);
+            break;
+          }
+          case 2: {
+            pt::ptree valuess;
+            for (auto dts : td.dtss) {
+              pt::ptree values;
+              for (auto dt : dts) {
+                pt::ptree value;
+                value.put_value("0x" + toHex(dt.value));
+                values.push_back(make_pair("", value));
+              }
+              valuess.push_back(make_pair("", values));
+            }
+            input.add_child("value", valuess);
+            break;
+          }
+        }
+        inputs.push_back(make_pair("", input));
+      }
+      func.add_child("inputs", inputs);
+      funcs.push_back(make_pair("", func));
+    }
+    root.add_child("functions", funcs);
+    pt::write_json(os, root);
+    return os.str();
+  }
   /*
    * Start with a simple assumption:
    * - dynamic_size: 32

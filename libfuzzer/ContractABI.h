@@ -60,6 +60,8 @@ namespace fuzzer {
       bytes randomTestcase();
       /* Update then call encodeConstructor/encodeFunction to feed to evm */
       void updateTestData(bytes data);
+      /* Standard Json */
+      string toStandardJson();
       static bytes encodeTuple(vector<TypeDef> tds);
       static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);

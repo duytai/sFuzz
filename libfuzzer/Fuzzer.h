@@ -20,16 +20,15 @@ using namespace std;
 
 namespace fuzzer {
   enum FuzzMode { RANDOM, AFL };
-  class Fuzzer {
-    ContractABI ca;
-    bytes code;
-    bytes virginbits;
-    TargetContainer container;
-    vector<FuzzItem> queues;
-    unordered_set<u64> uniqExceptions;
-    unordered_set<string> typeExceptions;
+  struct FuzzParam {
+    string abiJson;
+    string bin;
+    string binRuntime;
+    string contractName;
     FuzzMode mode;
     int duration;
+  };
+  struct FuzzStat {
     int idx;
     int maxdepth;
     bool clearScreen;
@@ -38,15 +37,22 @@ namespace fuzzer {
     int stageFinds[32];
     int coveredTuples;
     double lastNewPath;
-    string contractName;
+  };
+  class Fuzzer {
+    bytes virginbits;
+    vector<FuzzItem> queues;
+    unordered_set<u64> uniqExceptions;
+    unordered_set<string> typeExceptions;
     Timer timer;
-    CFG cfg;
-    void writeStats(Mutation mutation);
+    FuzzParam fuzzParam;
+    FuzzStat fuzzStat;
+    void writeStats(Mutation mutation, CFG cfg);
     public:
-      Fuzzer(bytes code , ContractABI ca, CFG cfg, string contractName, int duration, FuzzMode mode);
+      Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(bytes tracebits);
-      FuzzItem saveIfInterest(bytes data, int depth);
+      FuzzItem saveIfInterest(TargetContainer& container, bytes data, int depth);
       void start();
-      void showStats(Mutation mutation);
+      void writeTestcase(bytes data);
+      void showStats(Mutation mutation, CFG cfg);
   };
 }

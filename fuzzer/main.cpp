@@ -117,13 +117,14 @@ int main(int argc, char* argv[]) {
     pt::ptree::path_type abiPath("contracts|"+ fullContractName +"|abi", '|');
     pt::ptree::path_type binPath("contracts|"+ fullContractName +"|bin", '|');
     pt::ptree::path_type binRuntimePath("contracts|" + fullContractName + "|bin-runtime", '|');
-    auto abiJson = root.get<string>(abiPath);
-    auto bin = root.get<string>(binPath);
-    auto binRuntime = root.get<string>(binRuntimePath);
-    ContractABI ca(abiJson);
-    CFG cfg(bin, binRuntime);
-    FuzzMode fuzzMode = mode == 1 ? AFL : RANDOM;
-    Fuzzer fuzzer(fromHex(bin), ca, cfg, fullContractName, duration, fuzzMode);
+    FuzzParam fuzzParam;
+    fuzzParam.abiJson = root.get<string>(abiPath);
+    fuzzParam.bin = root.get<string>(binPath);
+    fuzzParam.binRuntime = root.get<string>(binRuntimePath);
+    fuzzParam.mode = mode == 1 ? AFL : RANDOM;
+    fuzzParam.contractName = fullContractName;
+    fuzzParam.duration = duration;
+    Fuzzer fuzzer(fuzzParam);
     fuzzer.start();
     return 0;
   }
