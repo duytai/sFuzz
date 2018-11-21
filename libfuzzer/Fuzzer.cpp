@@ -22,6 +22,7 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
   fuzzStat.coveredTuples = 0;
   fuzzStat.maxdepth = 0;
   virginbits = bytes(MAP_SIZE, 255);
+  fill_n(fuzzStat.stageFinds, 32, 0);
 }
 
 /* Detect new branch by comparing tracebits to virginbits */
