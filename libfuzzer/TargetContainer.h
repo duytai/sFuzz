@@ -18,13 +18,12 @@ using namespace std;
 namespace fuzzer {
   struct TargetContainerResult {
     TargetContainerResult() {}
-    TargetContainerResult(bytes tracebits, h256 cksum, double exTime, unordered_map<uint64_t, double> predicates, unordered_set<uint64_t> uniqExceptions, unordered_set<string> typeExceptions) {
+    TargetContainerResult(bytes tracebits, h256 cksum, double exTime, unordered_map<uint64_t, double> predicates, unordered_map<string, unordered_set<uint64_t>> uniqExceptions) {
       this->tracebits = tracebits;
       this->cksum = cksum;
       this->exTime = exTime;
       this->predicates = predicates;
       this->uniqExceptions = uniqExceptions;
-      this->typeExceptions = typeExceptions;
     }
     /* Contains execution paths */
     bytes tracebits;
@@ -34,8 +33,7 @@ namespace fuzzer {
     double exTime;
     /* Save predicates */
     unordered_map<uint64_t, double> predicates;
-    unordered_set<uint64_t> uniqExceptions;
-    unordered_set<string> typeExceptions;
+    unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
   };
   
   class TargetContainer {

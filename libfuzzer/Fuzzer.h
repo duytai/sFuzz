@@ -37,12 +37,13 @@ namespace fuzzer {
     int stageFinds[32];
     int coveredTuples;
     double lastNewPath;
+    int numTest;
+    int numException;
   };
   class Fuzzer {
     bytes virginbits;
     vector<FuzzItem> queues;
-    unordered_set<u64> uniqExceptions;
-    unordered_set<string> typeExceptions;
+    unordered_map<string, unordered_set<u64>> uniqExceptions;
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
@@ -50,9 +51,11 @@ namespace fuzzer {
     public:
       Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(bytes tracebits);
+      u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetContainer& container, bytes data, int depth);
       void start();
       void writeTestcase(bytes data);
+      void writeException(bytes data);
       void showStats(Mutation mutation, CFG cfg);
   };
 }

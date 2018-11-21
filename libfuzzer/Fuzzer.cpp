@@ -21,10 +21,28 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
   fuzzStat.queueCycle = 0;
   fuzzStat.coveredTuples = 0;
   fuzzStat.maxdepth = 0;
+  fuzzStat.numTest = 0;
+  fuzzStat.numException = 0;
   virginbits = bytes(MAP_SIZE, 255);
   fill_n(fuzzStat.stageFinds, 32, 0);
 }
-
+/* Detect new exception */
+u8 Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
+  int orginExceptions = 0;
+  int newExceptions = 0;
+  for (auto it : uniqExceptions) orginExceptions += it.second.size();
+  for (auto it : uexps) {
+    if (!uniqExceptions.count(it.first)) {
+      uniqExceptions[it.first] = it.second;
+    } else {
+      for (auto v : it.second) {
+        uniqExceptions[it.first].insert(v);
+      }
+    }
+  }
+  for (auto it : uniqExceptions) newExceptions += it.second.size();
+  return newExceptions - orginExceptions;
+}
 /* Detect new branch by comparing tracebits to virginbits */
 u8 Fuzzer::hasNewBits(bytes tracebits) {
   u8 ret = 0;
@@ -67,10 +85,12 @@ void Fuzzer::showStats(Mutation mutation, CFG cfg) {
   auto cyclePercentage = (int)((float)(fuzzStat.idx + 1) / queues.size() * 100);
   auto cycleProgress = padStr(to_string(fuzzStat.idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(fuzzStat.queueCycle), 15);
-  auto exceptionCount = padStr(to_string(uniqExceptions.size()), 15);
+  int expCout = 0;
+  for (auto exp: uniqExceptions) expCout+= exp.second.size();
+  auto exceptionCount = padStr(to_string(expCout), 15);
   auto tupleCountMethod = cfg.extraEstimation > 0 ? "Est" : "Exa";
   auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples) + " (" + to_string((int)((float)fuzzStat.coveredTuples/ totalBranches * 100)) + "% " + tupleCountMethod + ")", 15);
-  auto typeExceptionCount = padStr(to_string(typeExceptions.size()), 15);
+  auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 15);
   auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
   auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
@@ -138,12 +158,22 @@ void Fuzzer::writeStats(Mutation, CFG cfg) {
 void Fuzzer::writeTestcase(bytes data) {
   ContractABI ca(fuzzParam.abiJson);
   ca.updateTestData(data);
+  fuzzStat.numTest ++;
   string ret = ca.toStandardJson();
-  ofstream test(fuzzParam.contractName + "/__TEST__" + to_string(queues.size()) + "__.json");
+  ofstream test(fuzzParam.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
   test << ret;
   test.close();
 }
 
+void Fuzzer::writeException(bytes data) {
+  ContractABI ca(fuzzParam.abiJson);
+  ca.updateTestData(data);
+  fuzzStat.numException ++;
+  string ret = ca.toStandardJson();
+  ofstream exp(fuzzParam.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
+  exp << ret;
+  exp.close();
+}
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int depth) {
   FuzzItem item(data);
@@ -158,8 +188,9 @@ FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int dept
     fuzzStat.coveredTuples = (MAP_SIZE << 3) - coutBits(virginbits.data());
     writeTestcase(data);
   }
-  for(auto it : item.res.uniqExceptions) uniqExceptions.insert(it);
-  for(auto it : item.res.typeExceptions) typeExceptions.insert(it);
+  if (hasNewExceptions(item.res.uniqExceptions)) {
+    writeException(data);
+  }
   return item;
 }
 

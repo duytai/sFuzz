@@ -22,8 +22,7 @@ namespace fuzzer {
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
     u64 lastpc = 0;
-    unordered_set<uint64_t> uniqExceptions;
-    unordered_set<string> typeExceptions;
+    unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     bytes tracebits(MAP_SIZE, 0);
     unordered_map<uint64_t, double> predicates;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
@@ -72,18 +71,20 @@ namespace fuzzer {
     program.setupAccounts(ca.accounts);
     auto res = program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
-      uniqExceptions.insert(lastpc ^ prevLocation);
       ostringstream os;
       os << res.excepted;
-      typeExceptions.insert(os.str());
+      unordered_set<uint64_t> exps;
+      if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
+      uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
     }
     for (auto func: funcs) {
       res = program.invoke(CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
-        uniqExceptions.insert(lastpc ^ prevLocation);
         ostringstream os;
         os << res.excepted;
-        typeExceptions.insert(os.str());
+        unordered_set<uint64_t> exps;
+        if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
+        uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
       }
     }
     /*
@@ -95,6 +96,6 @@ namespace fuzzer {
     /*
      Calculate checksum and return response
      */
-    return TargetContainerResult(tracebits, sha3(tracebits), timer.elapsed(), predicates, uniqExceptions, typeExceptions);
+    return TargetContainerResult(tracebits, sha3(tracebits), timer.elapsed(), predicates, uniqExceptions);
   }
 }
