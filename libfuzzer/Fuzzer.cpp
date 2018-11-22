@@ -23,7 +23,6 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
   fuzzStat.maxdepth = 0;
   fuzzStat.numTest = 0;
   fuzzStat.numException = 0;
-  virginbits = bytes(MAP_SIZE, 255);
   fill_n(fuzzStat.stageFinds, 32, 0);
 }
 /* Detect new exception */
@@ -44,26 +43,11 @@ u8 Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
   return newExceptions - orginExceptions;
 }
 /* Detect new branch by comparing tracebits to virginbits */
-u8 Fuzzer::hasNewBits(bytes tracebits) {
-  u8 ret = 0;
-  u32 i = (MAP_SIZE >> 2);
-  u32* current = (u32*) tracebits.data();
-  u32* virgin = (u32*) virginbits.data();
-  while (i--) {
-    if (unlikely(*current) && unlikely(*current & *virgin)) {
-      if (likely(ret < 2)) {
-        u8* cur = (u8*)current;
-        u8* vir = (u8*)virgin;
-        if ((cur[0] && vir[0] == 0xff) || (cur[1] && vir[1] == 0xff) ||
-            (cur[2] && vir[2] == 0xff) || (cur[3] && vir[3] == 0xff)) ret = 2;
-        else ret = 1;
-      }
-      *virgin &= ~*current;
-    }
-    current++;
-    virgin++;
-  }
-  return ret;
+u8 Fuzzer::hasNewBits(unordered_set<uint64_t> singleTracebits) {
+  auto originSize = tracebits.size();
+  for (auto it : singleTracebits) tracebits.insert(it);
+  auto newSize = tracebits.size();
+  return newSize - originSize;
 }
 
 void Fuzzer::showStats(Mutation mutation, CFG cfg) {
@@ -185,7 +169,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int dept
     item.depth = depth + 1;
     queues.push_back(item);
     fuzzStat.lastNewPath = timer.elapsed();
-    fuzzStat.coveredTuples = (MAP_SIZE << 3) - coutBits(virginbits.data());
+    fuzzStat.coveredTuples = tracebits.size();
     writeTestcase(data);
   }
   if (hasNewExceptions(item.res.uniqExceptions)) {
@@ -269,16 +253,16 @@ void Fuzzer::start() {
           mutation.overwriteWithDictionary(save);
           fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
           origHitCount = queues.size();
-          mutation.havoc(virginbits, save);
+          mutation.havoc(tracebits, save);
           fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
           origHitCount = queues.size();
           queues[fuzzStat.idx].wasFuzzed = true;
         } else {
-          mutation.havoc(virginbits, save);
+          mutation.havoc(tracebits, save);
           fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
           origHitCount = queues.size();
           if (mutation.splice(queues)) {
-            mutation.havoc(virginbits, save);
+            mutation.havoc(tracebits, save);
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
           };

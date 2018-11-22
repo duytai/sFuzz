@@ -23,7 +23,7 @@ namespace fuzzer {
     u64 jumpDest2 = 0;
     u64 lastpc = 0;
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
-    bytes tracebits(MAP_SIZE, 0);
+    unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
       lastpc = pc;
@@ -52,7 +52,7 @@ namespace fuzzer {
         jumpDest2 = pc + 1;
       }
       if (prevInst == Instruction::JUMPCI) {
-        tracebits[pc ^ prevLocation]++;
+        tracebits.insert(pc ^ prevLocation);
         prevLocation = pc >> 1;
         /* Calculate branch distance */
         if (lastCompValue != 0) {
@@ -96,6 +96,8 @@ namespace fuzzer {
     /*
      Calculate checksum and return response
      */
-    return TargetContainerResult(tracebits, sha3(tracebits), timer.elapsed(), predicates, uniqExceptions);
+    double hash = 0;
+    for (auto t : tracebits) hash = hash + (double)(t + hash)/3;
+    return TargetContainerResult(tracebits, hash, predicates, uniqExceptions);
   }
 }

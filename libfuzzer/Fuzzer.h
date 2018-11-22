@@ -41,7 +41,7 @@ namespace fuzzer {
     int numException;
   };
   class Fuzzer {
-    bytes virginbits;
+    unordered_set<uint64_t> tracebits;
     vector<FuzzItem> queues;
     unordered_map<string, unordered_set<u64>> uniqExceptions;
     Timer timer;
@@ -50,7 +50,7 @@ namespace fuzzer {
     void writeStats(Mutation mutation, CFG cfg);
     public:
       Fuzzer(FuzzParam fuzzParam);
-      u8 hasNewBits(bytes tracebits);
+      u8 hasNewBits(unordered_set<uint64_t> tracebits);
       u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetContainer& container, bytes data, int depth);
       void start();

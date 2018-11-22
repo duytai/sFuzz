@@ -41,9 +41,9 @@ namespace fuzzer {
       void insertWithDictionary(OnMutateFunc cb);
       void overwriteWithAutoDictionary(OnMutateFunc cb);
       void random(OnMutateFunc cb);
-      void havoc(const bytes& virginbits, OnMutateFunc cb);
+      void havoc(unordered_set<uint64_t> tracebits, OnMutateFunc cb);
       bool splice(vector<FuzzItem> items);
-      double calculateScore(const FuzzItem& item, const bytes& bitmaps);
+      double calculateScore(const FuzzItem& item, unordered_set<uint64_t> tracebits);
       int dataSize;
       int stageMax;
       int stageCur;

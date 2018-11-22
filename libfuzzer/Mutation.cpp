@@ -410,12 +410,10 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   stageCycles[STAGE_EXTRAS_UO] += stageMax;
 }
 /* Calculate score */
-double Mutation::calculateScore(const FuzzItem& item, const bytes& bitmaps) {
+double Mutation::calculateScore(const FuzzItem& item, unordered_set<uint64_t> tracebits) {
   double score = 0;
   for (auto it : item.res.predicates) {
-    if (bitmaps[it.first] == 0xff) {
-      score += 1/ it.second;
-    }
+    if (!tracebits.count(it.first)) score += 1/ it.second;
   }
   return score;
 }
@@ -423,7 +421,7 @@ double Mutation::calculateScore(const FuzzItem& item, const bytes& bitmaps) {
 /*
  * TODO: If found more, do more havoc
  */
-void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
+void Mutation::havoc(unordered_set<uint64_t> tracebits, OnMutateFunc cb) {
   stageShort = "havoc";
   stageName = "havoc";
   stageMax = HAVOC_MIN;
@@ -436,7 +434,7 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
   while (true) {
     bytes origin = workingQueue[idx].data;
     bytes data = workingQueue[idx].data;
-    double lowBound = calculateScore(workingQueue[idx], virginbits);
+    double lowBound = calculateScore(workingQueue[idx], tracebits);
     for (int i = 0; i < HAVOC_MIN; i += 1) {
       u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
       for (u32 j = 0; j < useStacking; j += 1) {
@@ -630,7 +628,7 @@ void Mutation::havoc(const bytes& virginbits, OnMutateFunc cb) {
       }
       auto item = cb(data);
       stageCur ++;
-      double score = calculateScore(item, virginbits);
+      double score = calculateScore(item, tracebits);
       if (score > lowBound) {
         candidateQueue.push_back(item);
       }
