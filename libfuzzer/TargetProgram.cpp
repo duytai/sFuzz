@@ -31,7 +31,6 @@ namespace fuzzer {
     SealEngineFace *se = ChainParams(genesisInfo(networkName)).createSealEngine();
     EnvInfo envInfo(blockHeader, lastBlockHashes, 0);
     executive = new Executive(state, envInfo, *se);
-    nonce = 0;
   }
 
   void TargetProgram::deploy(bytes code) {
@@ -59,17 +58,18 @@ namespace fuzzer {
   
   ExecutionResult TargetProgram::invoke(bytes data, OnOpFunc onOp) {
     ExecutionResult res;
-    Address sender(69);
+    Address sender(senderValue);
     u256 value = 0;
     u256 gasPrice = 0;
-    Transaction t = Transaction(value, gasPrice, gas, data, nonce);
+    if (!nonces.count(senderValue)) nonces[senderValue] = 0;
+    Transaction t = Transaction(value, gasPrice, gas, data, nonces[senderValue]);
     t.forceSender(sender);
     executive->setResultRecipient(res);
     executive->initialize(t);
     executive->call(contractAddress, sender, value, gasPrice, &data, gas);
     executive->go(onOp);
     executive->finalize();
-    nonce ++;
+    nonces[senderValue] ++;
     return res;
   }
 
@@ -83,6 +83,8 @@ namespace fuzzer {
       u256 balanceValue = u256("0x" + toHex(balance));
       state.setBalance(Address(addr), balanceValue);
     }
+    senderValue = u160("0x" + toHex(bytes(env.sender.begin() + 12, env.sender.end())));
+    senderValue = (senderValue == 0 || senderValue == 100) ? senderValue + 1 : senderValue;
   }
   
   void TargetProgram::reset() {

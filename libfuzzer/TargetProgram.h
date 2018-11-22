@@ -22,7 +22,8 @@ namespace fuzzer {
     private:
       State state;
       u256 gas;
-      u256 nonce;
+      u160 senderValue;
+      unordered_map<u160, u256> nonces;
       Address contractAddress;
       Executive *executive;
       ExecutionResult invoke(bytes data, OnOpFunc onOp);
