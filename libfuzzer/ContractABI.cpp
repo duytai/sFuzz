@@ -63,6 +63,28 @@ namespace fuzzer {
       funcs.push_back(make_pair("", func));
     }
     root.add_child("functions", funcs);
+    /* Accounts */
+    pt::ptree accs;
+    for (auto account : env.accounts) {
+      bytes balance(account.begin(), account.begin() + 12);
+      bytes addr(account.begin() + 12, account.end());
+      u256 balanceValue = u256("0x" + toHex(balance));
+      pt::ptree acc;
+      acc.put("address", toHex(addr));
+      acc.put("balance", balanceValue);
+      accs.push_back(make_pair("", acc));
+    }
+    root.add_child("accounts", accs);
+    /* Sender */
+    pt::ptree sender;
+    {
+      bytes balance(env.sender.begin(), env.sender.begin() + 12);
+      bytes addr(env.sender.begin() + 12, env.sender.end());
+      u256 balanceValue = u256("0x" + toHex(balance));
+      sender.put("address", toHex(addr));
+      sender.put("balance", balanceValue);
+    }
+    root.add_child("sender", sender);
     pt::write_json(os, root);
     return os.str();
   }
