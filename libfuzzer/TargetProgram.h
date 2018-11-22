@@ -8,6 +8,7 @@
 #include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
 #include "LastBlockHashes.h"
+#include "ContractABI.h"
 
 
 using namespace dev;
@@ -22,7 +23,6 @@ namespace fuzzer {
       State state;
       u256 gas;
       u256 nonce;
-      Address sender;
       Address contractAddress;
       Executive *executive;
       ExecutionResult invoke(bytes data, OnOpFunc onOp);
@@ -31,7 +31,7 @@ namespace fuzzer {
       ~TargetProgram();
       void deploy(bytes code);
       void reset();
-      void setupAccounts(vector<bytes> accounts);
+      void updateEnv(ContractEnv env);
       ExecutionResult invoke(int type, bytes data, OnOpFunc onOp);
   };
 }

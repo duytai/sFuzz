@@ -86,12 +86,14 @@ namespace fuzzer {
       return (realLen / 32 + 1) * 32;
     };
     /* Pad to enough data before decoding */
-    int offset = 32;
+    int offset = 64;
     auto padLen = [&](int singleLen) {
       int fitLen = offset + singleLen;
       while ((int)data.size() < fitLen) data.push_back(0);
     };
-    this->accounts.clear();
+    env.accounts.clear();
+    /* decode sender env */
+    env.sender = bytes(data.begin() + 32, data.begin() + 64);
     for (auto &fd : this->fds) {
       for (auto &td : fd.tds) {
         switch (td.dimensions.size()) {
@@ -104,7 +106,7 @@ namespace fuzzer {
             bytes d(data.begin() + offset, data.begin() + offset + realLen);
             /* If address, extract account */
             if (boost::starts_with(td.name, "address")) {
-              accounts.push_back(d);
+              env.accounts.push_back(d);
             }
             td.addValue(d);
             /* Ignore (containerLen - realLen) bytes */
@@ -124,7 +126,9 @@ namespace fuzzer {
             }
             /* If address, extract account */
             if (boost::starts_with(td.name, "address")) {
-              accounts.insert(accounts.end(), ds.begin(), ds.end());
+              env
+                .accounts
+                .insert(env.accounts.end(), ds.begin(), ds.end());
             }
             td.addValue(ds);
             break;
@@ -146,7 +150,9 @@ namespace fuzzer {
               dss.push_back(ds);
               /* If address, extract account */
               if (boost::starts_with(td.name, "address")) {
-                accounts.insert(accounts.end(), ds.begin(), ds.end());
+                env
+                  .accounts
+                  .insert(env.accounts.end(), ds.begin(), ds.end());
               }
             }
             td.addValue(dss);
@@ -173,6 +179,9 @@ namespace fuzzer {
       if (!(realLen % 32)) return realLen;
       return (realLen / 32 + 1) * 32;
     };
+    /* sender env */
+    bytes sender(32, 0);
+    ret.insert(ret.end(), sender.begin(), sender.end());
     for (auto fd : this->fds) {
       for (auto td : fd.tds) {
         switch(td.dimensions.size()) {

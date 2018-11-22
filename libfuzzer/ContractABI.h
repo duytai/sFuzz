@@ -46,12 +46,17 @@ namespace fuzzer {
     FuncDef(string name, vector<TypeDef> tds);
   };
   
+  struct ContractEnv {
+    vector<bytes> accounts;
+    bytes sender;
+  };
+  
   class ContractABI {
     public:
       vector<FuncDef> fds;
-      vector<bytes> accounts;
       ContractABI(){};
       ContractABI(string abiJson);
+      ContractEnv env;
       /* encoded ABI of contract constructor */
       bytes encodeConstructor();
       /* encoded ABI of contract functions */

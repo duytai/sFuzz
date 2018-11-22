@@ -16,7 +16,7 @@ using namespace eth;
 
 
 namespace fuzzer {
-  TargetProgram::TargetProgram(): state(State(0)), sender(Address(69)), contractAddress(Address(100)) {
+  TargetProgram::TargetProgram(): state(State(0)), contractAddress(Address(100)) {
     Network networkName = Network::MainNetworkTest;
     LastBlockHashes lastBlockHashes;
     BlockHeader blockHeader;
@@ -59,6 +59,7 @@ namespace fuzzer {
   
   ExecutionResult TargetProgram::invoke(bytes data, OnOpFunc onOp) {
     ExecutionResult res;
+    Address sender(69);
     u256 value = 0;
     u256 gasPrice = 0;
     Transaction t = Transaction(value, gasPrice, gas, data, nonce);
@@ -71,13 +72,15 @@ namespace fuzzer {
     nonce ++;
     return res;
   }
-  
-  void TargetProgram::setupAccounts(vector<bytes> accounts) {
+
+  void TargetProgram::updateEnv(ContractEnv env) {
+    auto accounts = env.accounts;
+    accounts.push_back(env.sender);
     for (auto account : accounts) {
       /* 8 bytes - 4 bytes (balance) - 20 bytes (address) */
-      bytes balance(account.begin() + 8, account.begin() + 8 + 4);
-      bytes addr(account.begin() + 8 + 4, account.end());
-      int balanceValue = int((balance[0]) << 24 | (balance[1]) << 16 | (balance[2]) << 8 | (balance[3]));
+      bytes balance(account.begin(), account.begin() + 12);
+      bytes addr(account.begin() + 12, account.end());
+      u256 balanceValue = u256("0x" + toHex(balance));
       state.setBalance(Address(addr), balanceValue);
     }
   }

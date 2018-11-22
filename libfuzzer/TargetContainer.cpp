@@ -68,7 +68,7 @@ namespace fuzzer {
     Timer timer;
     ca.updateTestData(data);
     vector<bytes> funcs = ca.encodeFunctions();
-    program.setupAccounts(ca.accounts);
+    program.updateEnv(ca.env);
     auto res = program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
