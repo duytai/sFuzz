@@ -74,6 +74,7 @@ namespace fuzzer {
   }
 
   void TargetProgram::updateEnv(ContractEnv env) {
+    unordered_set<string> accountSet; // to check exists
     auto accounts = env.accounts;
     accounts.push_back(env.sender);
     for (auto account : accounts) {
@@ -81,7 +82,8 @@ namespace fuzzer {
       bytes balance(account.begin(), account.begin() + 12);
       bytes addr(account.begin() + 12, account.end());
       u256 balanceValue = u256("0x" + toHex(balance));
-      state.setBalance(Address(addr), balanceValue);
+      auto pair = accountSet.insert(toString(addr));
+      if (pair.second) state.setBalance(Address(addr), balanceValue);
     }
     senderAddrValue = u160("0x" + toHex(bytes(env.sender.begin() + 12, env.sender.end())));
   }

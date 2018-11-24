@@ -64,15 +64,19 @@ namespace fuzzer {
     }
     root.add_child("functions", funcs);
     /* Accounts */
+    unordered_set<string> accountSet; // to check exists
     pt::ptree accs;
     for (auto account : env.accounts) {
       bytes balance(account.begin(), account.begin() + 12);
       bytes addr(account.begin() + 12, account.end());
       u256 balanceValue = u256("0x" + toHex(balance));
-      pt::ptree acc;
-      acc.put("address", toHex(addr));
-      acc.put("balance", balanceValue);
-      accs.push_back(make_pair("", acc));
+      auto pair = accountSet.insert(toHex(addr));
+      if (pair.second) {
+        pt::ptree acc;
+        acc.put("address", toHex(addr));
+        acc.put("balance", balanceValue);
+        accs.push_back(make_pair("", acc));
+      }
     }
     root.add_child("accounts", accs);
     /* Sender */
