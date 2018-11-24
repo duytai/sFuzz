@@ -22,7 +22,7 @@ namespace fuzzer {
     private:
       State state;
       u256 gas;
-      u160 senderValue;
+      u160 senderAddrValue;
       unordered_map<u160, u256> nonces;
       Address contractAddress;
       Executive *executive;

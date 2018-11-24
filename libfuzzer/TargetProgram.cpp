@@ -58,18 +58,18 @@ namespace fuzzer {
   
   ExecutionResult TargetProgram::invoke(bytes data, OnOpFunc onOp) {
     ExecutionResult res;
-    Address sender(senderValue);
+    Address sender(senderAddrValue);
     u256 value = 0;
     u256 gasPrice = 0;
-    if (!nonces.count(senderValue)) nonces[senderValue] = 0;
-    Transaction t = Transaction(value, gasPrice, gas, data, nonces[senderValue]);
+    if (!nonces.count(senderAddrValue)) nonces[senderAddrValue] = 0;
+    Transaction t = Transaction(value, gasPrice, gas, data, nonces[senderAddrValue]);
     t.forceSender(sender);
     executive->setResultRecipient(res);
     executive->initialize(t);
     executive->call(contractAddress, sender, value, gasPrice, &data, gas);
     executive->go(onOp);
     executive->finalize();
-    nonces[senderValue] ++;
+    nonces[senderAddrValue] ++;
     return res;
   }
 
@@ -83,8 +83,8 @@ namespace fuzzer {
       u256 balanceValue = u256("0x" + toHex(balance));
       state.setBalance(Address(addr), balanceValue);
     }
-    senderValue = u160("0x" + toHex(bytes(env.sender.begin() + 12, env.sender.end())));
-    senderValue = (senderValue == 0 || senderValue == 100) ? senderValue + 1 : senderValue;
+    senderAddrValue = u160("0x" + toHex(bytes(env.sender.begin() + 12, env.sender.end())));
+    senderAddrValue = (senderAddrValue == 0 || senderAddrValue == 100) ? senderAddrValue + 1 : senderAddrValue;
   }
   
   void TargetProgram::reset() {
