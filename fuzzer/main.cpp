@@ -38,30 +38,16 @@ int main(int argc, char* argv[]) {
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
   /* Show help message */
-  if (vm.count("help")) {
-    stringstream output;
-    output << desc << endl;
-    output << "Example:" << endl;
-    output << "> Generate executable scripts" << endl;
-    output << "  " cGRN "./fuzzer -g" cRST << endl;
-    cout << output.str();
-    return 0;
-  }
+  if (vm.count("help")) showHelp(desc);
   /* Generate working scripts */
   if (vm.count("generate")) {
     std::ofstream fuzzMe("fuzzMe");
-    stringstream output;
     fuzzMe << "#!/bin/bash" << endl;
     fuzzMe << compileSolFiles(contractsFolder);
     fuzzMe << compileSolFiles(assetsFolder);
     fuzzMe << fuzzJsonFiles(contractsFolder, assetsFolder, duration, mode);
-    /* Show response */
-    output << cGRN "> Created \"fuzzMe\"" cRST "\n";
-    output << cGRN "> To fuzz contracts:" cRST "\n";
-    output << "  chmod +x fuzzMe\n";
-    output << "  ./fuzzMe\n";
-    cout << output.str();
     fuzzMe.close();
+    showGenerate();
     return 0;
   }
   /* Fuzz a single contract */

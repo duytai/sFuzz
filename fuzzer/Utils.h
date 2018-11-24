@@ -99,3 +99,21 @@ vector<ContractInfo> parseAssets(string assets) {
   });
   return ls;
 }
+
+void showHelp(po::options_description desc) {
+  stringstream output;
+  output << desc << endl;
+  output << "Example:" << endl;
+  output << "> Generate executable scripts" << endl;
+  output << "  " cGRN "./fuzzer -g" cRST << endl;
+  cout << output.str();
+}
+
+void showGenerate() {
+  stringstream output;
+  output << cGRN "> Created \"fuzzMe\"" cRST "\n";
+  output << cGRN "> To fuzz contracts:" cRST "\n";
+  output << "  chmod +x fuzzMe\n";
+  output << "  ./fuzzMe\n";
+  cout << output.str();
+}
