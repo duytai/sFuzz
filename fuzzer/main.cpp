@@ -25,19 +25,18 @@ int main(int argc, char* argv[]) {
   logOptions.verbosity = VerbositySilent;
   dev::setupLogging(logOptions);
   /* Program options */
-  path p("contracts/");
   string jsonFile = "";
   string contractName = "";
+  string contractsFolder = "contracts/";
   int mode = 1;
   int duration = 600;
   po::options_description desc("Allowed options");
   desc.add_options()
     ("help,h", "produce help message")
-    ("scan,s", "scan and generate working script")
+    ("scan,s", po::value(&contractsFolder), "scan and generate working script")
     ("file,f", po::value(&jsonFile), "fuzz a contract")
     ("name,n", po::value(&contractName), "contract name")
-    ("clean,c", "clean all generated files")
-  ("mode,m", po::value(&mode), "choose mode: 0 - Random | 1 - AFL ")
+    ("mode,m", po::value(&mode), "choose mode: 0 - Random | 1 - AFL ")
     ("duration,d", po::value(&duration), "fuzz duration");
   po::variables_map vm;
   po::store(po::parse_command_line(argc, argv, desc), vm);
@@ -47,22 +46,14 @@ int main(int argc, char* argv[]) {
     cout << desc << "\n";
     printf("Example: \n");
     printf("> Scan contracts/ folder to create executable file\n");
-    printf("  " cGRN "./fuzzer -s" cRST "\n");
-    printf("> Clean all generated files\n");
+    printf("  " cGRN "./fuzzer -s contracts/" cRST "\n");
     printf("> Fuzz one contract\n");
     printf("  " cGRN "./fuzzer -s" cRST "\n");
     return 0;
   }
-  if (vm.count("clean")) {
-    remove_all("fuzzMe");
-    for (auto& file : boost::make_iterator_range(directory_iterator(p), {})) {
-      if (is_directory(file) || !boost::ends_with(file.path().string(), ".sol")) {
-        remove_all(file);
-      }
-    }
-  }
   if (vm.count("scan")) {
     std::ofstream fuzzMe("fuzzMe");
+    path p(contractsFolder);
     int numContracts = 0;
     /* List all .sol files */
     stringstream os;
