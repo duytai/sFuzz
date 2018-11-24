@@ -41,5 +41,6 @@ namespace fuzzer {
     public:
       TargetContainer(bytes code, ContractABI ca);
       TargetContainerResult exec(bytes data);
+      void loadAsset(bytes code, ContractABI ca);
   };
 }

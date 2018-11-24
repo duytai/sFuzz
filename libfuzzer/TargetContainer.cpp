@@ -23,7 +23,7 @@ namespace fuzzer {
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
-    Address addr(100);
+    Address addr(u160("0x64"));
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
@@ -89,5 +89,8 @@ namespace fuzzer {
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
     return TargetContainerResult(tracebits, cksum, predicates, uniqExceptions);
+  }
+  
+  void TargetContainer::loadAsset(bytes, ContractABI) {
   }
 }
