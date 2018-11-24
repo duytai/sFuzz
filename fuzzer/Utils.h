@@ -39,7 +39,7 @@ ContractInfo parseJson(string jsonFile, string contractName) {
   ContractInfo contractInfo;
   contractInfo.abiJson = root.get<string>(abiPath);
   contractInfo.bin = root.get<string>(binPath);
-  contractInfo.binRuntime = root.get<string>(binRuntimePath);
+  contractInfo.binRuntime = root.get_child_optional(binRuntimePath) ? root.get<string>(binRuntimePath) : "";
   contractInfo.contractName = fullContractName;
   return contractInfo;
 }
@@ -79,11 +79,11 @@ string fuzzJsonFiles(string contracts, string assets, int duration, int mode) {
     auto filePath = file.path().string();
     auto contractName = toContractName(file);
     ret << "./fuzzer";
-    ret << " -f " + filePath;
-    ret << " -n " + contractName;
-    ret << " -a " + assets;
-    ret << " -d " + to_string(duration);
-    ret << " -m " + to_string(mode);
+    ret << " --file " + filePath;
+    ret << " --name " + contractName;
+    ret << " --assets " + assets;
+    ret << " --duration " + to_string(duration);
+    ret << " --mode " + to_string(mode);
     ret << endl;
   });
   return ret.str();

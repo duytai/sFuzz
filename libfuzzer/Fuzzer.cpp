@@ -57,7 +57,7 @@ void Fuzzer::showStats(Mutation mutation, CFG cfg) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
   }
-  int totalBranches = cfg.totalCount();
+  int totalTuples = cfg.totalCount();
   double duration = timer.elapsed();
   double fromLastNewPath = timer.elapsed() - fuzzStat.lastNewPath;
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
@@ -74,7 +74,8 @@ void Fuzzer::showStats(Mutation mutation, CFG cfg) {
   for (auto exp: uniqExceptions) expCout+= exp.second.size();
   auto exceptionCount = padStr(to_string(expCout), 15);
   auto tupleCountMethod = cfg.extraEstimation > 0 ? "Est" : "Exa";
-  auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples) + " (" + to_string((int)((float)fuzzStat.coveredTuples/ totalBranches * 100)) + "% " + tupleCountMethod + ")", 15);
+  auto coveredTuplePercentage = totalTuples ? to_string((int)((float)fuzzStat.coveredTuples/ totalTuples * 100)) + "% " : "n/a ";
+  auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples) + " (" + coveredTuplePercentage + tupleCountMethod + ")", 15);
   auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 15);
   auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
   auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);

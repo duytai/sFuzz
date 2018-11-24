@@ -112,17 +112,20 @@ namespace fuzzer {
   }
   
   CFG::CFG(string code, string codeRuntime) {
+    extraEstimation = 0;
     u256s stack;
     unordered_set<int> prevLocations;
     int pc = 0;
-    int allJumpi = findops(fromHex(code), Instruction::JUMPI).size();
-    jumpdests = findops(fromHex(code), Instruction::JUMPDEST);
-    simulate(fromHex(code), stack, pc, 0, prevLocations);
-    for (auto it : prevLocations) {
-      unordered_set<int> temp;
-      simulate(fromHex(codeRuntime), stack, pc, it, temp);
+    if (!code.empty() && !codeRuntime.empty()) {
+      int allJumpi = findops(fromHex(code), Instruction::JUMPI).size();
+      jumpdests = findops(fromHex(code), Instruction::JUMPDEST);
+      simulate(fromHex(code), stack, pc, 0, prevLocations);
+      for (auto it : prevLocations) {
+        unordered_set<int> temp;
+        simulate(fromHex(codeRuntime), stack, pc, it, temp);
+      }
+      int numJumpi = jumpis.size();
+      extraEstimation = 2 * (allJumpi - numJumpi);
     }
-    int numJumpi = jumpis.size();
-    extraEstimation = 2 * (allJumpi - numJumpi);
   }
 }
