@@ -106,7 +106,7 @@ void Fuzzer::showStats(Mutation mutation, CFG cfg) {
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
-  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), fuzzParam.contractName.substr(0, 20).c_str());
+  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), fuzzParam.fuzzContract.contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
@@ -129,7 +129,7 @@ void Fuzzer::showStats(Mutation mutation, CFG cfg) {
 
 void Fuzzer::writeStats(Mutation, CFG cfg) {
   double speed = fuzzStat.totalExecs / (double) timer.elapsed();
-  ofstream stats(fuzzParam.contractName + "/stats.csv");
+  ofstream stats(fuzzParam.fuzzContract.contractName + "/stats.csv");
   stats << "Testcases,Speed,Execs,Tuples,Coverage" << endl;
   stats << queues.size();
   stats << "," << speed;
@@ -141,21 +141,21 @@ void Fuzzer::writeStats(Mutation, CFG cfg) {
 }
 
 void Fuzzer::writeTestcase(bytes data) {
-  ContractABI ca(fuzzParam.abiJson);
+  ContractABI ca(fuzzParam.fuzzContract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numTest ++;
   string ret = ca.toStandardJson();
-  ofstream test(fuzzParam.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
+  ofstream test(fuzzParam.fuzzContract.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
   test << ret;
   test.close();
 }
 
 void Fuzzer::writeException(bytes data) {
-  ContractABI ca(fuzzParam.abiJson);
+  ContractABI ca(fuzzParam.fuzzContract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numException ++;
   string ret = ca.toStandardJson();
-  ofstream exp(fuzzParam.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
+  ofstream exp(fuzzParam.fuzzContract.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
   exp << ret;
   exp.close();
 }
@@ -182,12 +182,13 @@ FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int dept
 
 /* Start fuzzing */
 void Fuzzer::start() {
-  boost::filesystem::remove_all(fuzzParam.contractName);
-  boost::filesystem::create_directory(fuzzParam.contractName);
-  Dictionary dict(fromHex(fuzzParam.bin));
-  ContractABI ca(fuzzParam.abiJson);
-  CFG cfg(fuzzParam.bin, fuzzParam.binRuntime);
-  TargetContainer container(fromHex(fuzzParam.bin), ca);
+  auto fuzzContract = fuzzParam.fuzzContract;
+  boost::filesystem::remove_all(fuzzContract.contractName);
+  boost::filesystem::create_directory(fuzzContract.contractName);
+  Dictionary dict(fromHex(fuzzContract.bin));
+  ContractABI ca(fuzzContract.abiJson);
+  CFG cfg(fuzzContract.bin, fuzzContract.binRuntime);
+  TargetContainer container(fromHex(fuzzContract.bin), ca);
   /* First test case */
   timer.restart();
   saveIfInterest(container, ca.randomTestcase(), 0);

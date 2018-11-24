@@ -20,11 +20,15 @@ using namespace std;
 
 namespace fuzzer {
   enum FuzzMode { RANDOM, AFL };
-  struct FuzzParam {
+  struct ContractInfo {
     string abiJson;
     string bin;
     string binRuntime;
     string contractName;
+  };
+  struct FuzzParam {
+    ContractInfo fuzzContract;
+    vector<ContractInfo> assetContracts;
     FuzzMode mode;
     int duration;
   };
