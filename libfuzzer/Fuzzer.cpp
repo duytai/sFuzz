@@ -25,6 +25,7 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
   fuzzStat.numException = 0;
   fill_n(fuzzStat.stageFinds, 32, 0);
 }
+
 /* Detect new exception */
 u8 Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
   int orginExceptions = 0;
@@ -160,8 +161,9 @@ void Fuzzer::writeException(bytes data) {
 }
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int depth) {
-  FuzzItem item(data);
-  item.res = container.exec(data);
+  auto revisedData = ContractABI::preprocessTestData(data);
+  FuzzItem item(revisedData);
+  item.res = container.exec(revisedData);
   item.wasFuzzed = false;
   fuzzStat.totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
@@ -170,10 +172,10 @@ FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int dept
     queues.push_back(item);
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
-    writeTestcase(data);
+    writeTestcase(revisedData);
   }
   if (hasNewExceptions(item.res.uniqExceptions)) {
-    writeException(data);
+    writeException(revisedData);
   }
   return item;
 }

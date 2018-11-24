@@ -15,7 +15,7 @@ namespace fuzzer {
     this->name = name;
     this->tds = tds;
   }
-  
+    
   string ContractABI::toStandardJson() {
     stringstream os;
     pt::ptree funcs;
@@ -89,11 +89,22 @@ namespace fuzzer {
     return os.str();
   }
   /*
-   * Start with a simple assumption:
-   * - dynamic_size: 32
-   * - array_size: 5
-   * - sub_array_size: 5
+   * Validate generated data before sending it to vm
+   * msg.sender address can not be 0 (32 - 64)
    */
+  bytes ContractABI::preprocessTestData(bytes data) {
+    auto first = data.begin() + 32 + 12;
+    auto last = first + 20;
+    auto senderValue = u256("0x"+ toHex(bytes(first, last)));
+    while (!senderValue) {
+      for (int i = 0; i < 20; i ++) {
+        *(first + i) = rand() % 256;
+      }
+      senderValue = u256("0x"+ toHex(bytes(first, last)));
+    }
+    return data;
+  }
+  
   void ContractABI::updateTestData(bytes data) {
     /* Detect dynamic len by consulting first 32 bytes */
     int lenOffset = 0;
@@ -114,7 +125,6 @@ namespace fuzzer {
       while ((int)data.size() < fitLen) data.push_back(0);
     };
     env.accounts.clear();
-    /* decode sender env */
     env.sender = bytes(data.begin() + 32, data.begin() + 64);
     for (auto &fd : this->fds) {
       for (auto &td : fd.tds) {
@@ -148,9 +158,7 @@ namespace fuzzer {
             }
             /* If address, extract account */
             if (boost::starts_with(td.name, "address")) {
-              env
-                .accounts
-                .insert(env.accounts.end(), ds.begin(), ds.end());
+              env.accounts.insert(env.accounts.end(), ds.begin(), ds.end());
             }
             td.addValue(ds);
             break;
@@ -172,9 +180,7 @@ namespace fuzzer {
               dss.push_back(ds);
               /* If address, extract account */
               if (boost::starts_with(td.name, "address")) {
-                env
-                  .accounts
-                  .insert(env.accounts.end(), ds.begin(), ds.end());
+                env.accounts.insert(env.accounts.end(), ds.begin(), ds.end());
               }
             }
             td.addValue(dss);

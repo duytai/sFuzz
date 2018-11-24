@@ -37,7 +37,7 @@ namespace fuzzer {
     state.setCode(contractAddress, bytes{code});
   }
   
-  ExecutionResult TargetProgram::invoke(int type, bytes data, OnOpFunc onOp) {
+  ExecutionResult TargetProgram::invoke(ContractCall type, bytes data, OnOpFunc onOp) {
     switch (type) {
       case CONTRACT_CONSTRUCTOR: {
         bytes code = state.code(contractAddress);
@@ -84,7 +84,6 @@ namespace fuzzer {
       state.setBalance(Address(addr), balanceValue);
     }
     senderAddrValue = u160("0x" + toHex(bytes(env.sender.begin() + 12, env.sender.end())));
-    senderAddrValue = (senderAddrValue == 0 || senderAddrValue == 100) ? senderAddrValue + 1 : senderAddrValue;
   }
   
   void TargetProgram::reset() {

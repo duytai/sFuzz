@@ -72,5 +72,6 @@ namespace fuzzer {
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);
       static bytes encodeSingle(DataType dt);
       static bytes functionSelector(string name, vector<TypeDef> tds);
+      static bytes preprocessTestData(bytes data);
   };
 }
