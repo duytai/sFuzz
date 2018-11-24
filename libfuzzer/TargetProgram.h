@@ -23,15 +23,13 @@ namespace fuzzer {
       u256 gas;
       u160 senderAddrValue;
       unordered_map<u160, u256> nonces;
-      Address contractAddress;
       Executive *executive;
-      ExecutionResult invoke(bytes data, OnOpFunc onOp);
+      ExecutionResult invoke(Address addr, bytes data, OnOpFunc onOp);
     public:
-      TargetProgram();
+      TargetProgram(State& state);
       ~TargetProgram();
-      void deploy(bytes code);
-      void reset();
+      void deploy(Address addr, bytes code);
       void updateEnv(ContractEnv env);
-      ExecutionResult invoke(ContractCall type, bytes data, OnOpFunc onOp);
+      ExecutionResult invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp);
   };
 }

@@ -16,7 +16,7 @@ using namespace eth;
 
 
 namespace fuzzer {
-  TargetProgram::TargetProgram(): state(State(0)), contractAddress(Address(100)) {
+  TargetProgram::TargetProgram(State& st): state(st) {
     Network networkName = Network::MainNetworkTest;
     LastBlockHashes lastBlockHashes;
     BlockHeader blockHeader;
@@ -33,22 +33,23 @@ namespace fuzzer {
     executive = new Executive(state, envInfo, *se);
   }
 
-  void TargetProgram::deploy(bytes code) {
-    state.setCode(contractAddress, bytes{code});
+  void TargetProgram::deploy(Address addr, bytes code) {
+    state.clearStorage(addr);
+    state.setCode(addr, bytes{code});
   }
   
-  ExecutionResult TargetProgram::invoke(ContractCall type, bytes data, OnOpFunc onOp) {
+  ExecutionResult TargetProgram::invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp) {
     switch (type) {
       case CONTRACT_CONSTRUCTOR: {
-        bytes code = state.code(contractAddress);
+        bytes code = state.code(addr);
         code.insert(code.end(), data.begin(), data.end());
-        state.setCode(contractAddress, bytes{code});
-        ExecutionResult res = invoke(data, onOp);
-        state.setCode(contractAddress, bytes{res.output});
+        state.setCode(addr, bytes{code});
+        ExecutionResult res = invoke(addr, data, onOp);
+        state.setCode(addr, bytes{res.output});
         return res;
       }
       case CONTRACT_FUNCTION: {
-        return invoke(data, onOp);
+        return invoke(addr, data, onOp);
       }
       default: {
         throw "Unknown invoke type";
@@ -56,7 +57,7 @@ namespace fuzzer {
     }
   }
   
-  ExecutionResult TargetProgram::invoke(bytes data, OnOpFunc onOp) {
+  ExecutionResult TargetProgram::invoke(Address addr, bytes data, OnOpFunc onOp) {
     ExecutionResult res;
     Address sender(senderAddrValue);
     u256 value = 0;
@@ -66,7 +67,7 @@ namespace fuzzer {
     t.forceSender(sender);
     executive->setResultRecipient(res);
     executive->initialize(t);
-    executive->call(contractAddress, sender, value, gasPrice, &data, gas);
+    executive->call(addr, sender, value, gasPrice, &data, gas);
     executive->go(onOp);
     executive->finalize();
     nonces[senderAddrValue] ++;
@@ -86,10 +87,6 @@ namespace fuzzer {
       if (pair.second) state.setBalance(Address(addr), balanceValue);
     }
     senderAddrValue = u160("0x" + toHex(bytes(env.sender.begin() + 12, env.sender.end())));
-  }
-  
-  void TargetProgram::reset() {
-    state.clearStorage(contractAddress);
   }
   
   TargetProgram::~TargetProgram() {

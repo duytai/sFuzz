@@ -10,9 +10,7 @@ using namespace std;
 using namespace fuzzer;
 
 namespace fuzzer {
-  TargetContainer::TargetContainer(bytes code, ContractABI ca): code(code), ca(ca){
-    program.deploy(code);
-  }
+  TargetContainer::TargetContainer(bytes code, ContractABI ca): code(code), ca(ca), state(State(0)), program(TargetProgram(state)){}
   
   TargetContainerResult TargetContainer::exec(bytes data) {
     /* Save all hit branches to trace_bits */
@@ -25,6 +23,7 @@ namespace fuzzer {
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
+    Address addr(100);
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
@@ -65,11 +64,11 @@ namespace fuzzer {
       prevInst = inst;
     };
     /* Decode and call functions */
-    Timer timer;
     ca.updateTestData(data);
     vector<bytes> funcs = ca.encodeFunctions();
+    program.deploy(addr, code);
     program.updateEnv(ca.env);
-    auto res = program.invoke(CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    auto res = program.invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
       os << res.excepted;
@@ -78,7 +77,7 @@ namespace fuzzer {
       uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
     }
     for (auto func: funcs) {
-      res = program.invoke(CONTRACT_FUNCTION, func, onOp);
+      res = program.invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
         os << res.excepted;
@@ -87,17 +86,8 @@ namespace fuzzer {
         uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
       }
     }
-    /*
-     Reset program and deploy again becuase
-     it changed after invoke constructor
-     */
-    program.reset();
-    program.deploy(code);
-    /*
-     Calculate checksum and return response
-     */
-    double hash = 0;
-    for (auto t : tracebits) hash = hash + (double)(t + hash)/3;
-    return TargetContainerResult(tracebits, hash, predicates, uniqExceptions);
+    double cksum = 0;
+    for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
+    return TargetContainerResult(tracebits, cksum, predicates, uniqExceptions);
   }
 }
