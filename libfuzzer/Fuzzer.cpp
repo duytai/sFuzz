@@ -190,6 +190,11 @@ void Fuzzer::start() {
   ContractABI ca(fuzzContract.abiJson);
   CFG cfg(fuzzContract.bin, fuzzContract.binRuntime);
   TargetContainer container(fromHex(fuzzContract.bin), ca);
+  /* Load assets */
+  for (auto assetInfo : fuzzParam.assetContracts) {
+    ContractABI assetCa(assetInfo.abiJson);
+    container.loadAsset(fromHex(assetInfo.bin), assetCa);
+  }
   /* First test case */
   timer.restart();
   saveIfInterest(container, ca.randomTestcase(), 0);

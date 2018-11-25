@@ -16,7 +16,7 @@ using namespace eth;
 
 
 namespace fuzzer {
-  TargetProgram::TargetProgram(State& st): state(st) {
+  TargetProgram::TargetProgram(): state(State(0)) {
     Network networkName = Network::MainNetworkTest;
     LastBlockHashes lastBlockHashes;
     BlockHeader blockHeader;
@@ -31,6 +31,7 @@ namespace fuzzer {
     SealEngineFace *se = ChainParams(genesisInfo(networkName)).createSealEngine();
     EnvInfo envInfo(blockHeader, lastBlockHashes, 0);
     executive = new Executive(state, envInfo, *se);
+    senderAddrValue = DEFAULT_SENDER_ADDRESS;
   }
 
   void TargetProgram::deploy(Address addr, bytes code) {
@@ -79,7 +80,7 @@ namespace fuzzer {
     auto accounts = env.accounts;
     accounts.push_back(env.sender);
     for (auto account : accounts) {
-      /* 8 bytes - 4 bytes (balance) - 20 bytes (address) */
+      /* 12 bytes (balance) - 20 bytes (address) */
       bytes balance(account.begin(), account.begin() + 12);
       bytes addr(account.begin() + 12, account.end());
       u256 balanceValue = u256("0x" + toHex(balance));

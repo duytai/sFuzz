@@ -26,7 +26,7 @@ namespace fuzzer {
       Executive *executive;
       ExecutionResult invoke(Address addr, bytes data, OnOpFunc onOp);
     public:
-      TargetProgram(State& state);
+      TargetProgram();
       ~TargetProgram();
       void deploy(Address addr, bytes code);
       void updateEnv(ContractEnv env);

@@ -10,7 +10,10 @@ using namespace std;
 using namespace fuzzer;
 
 namespace fuzzer {
-  TargetContainer::TargetContainer(bytes code, ContractABI ca): code(code), ca(ca), state(State(0)), program(TargetProgram(state)){}
+  TargetContainer::TargetContainer(bytes code, ContractABI ca): code(code), ca(ca) {
+    contractBaseAddress = CONTRACT_BASE_ADDRESS;
+    assetBaseAddress = ASSET_BASE_ADDRESS;
+  }
   
   TargetContainerResult TargetContainer::exec(bytes data) {
     /* Save all hit branches to trace_bits */
@@ -23,7 +26,7 @@ namespace fuzzer {
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
-    Address addr(u160("0x64"));
+    Address addr(contractBaseAddress);
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
@@ -91,6 +94,11 @@ namespace fuzzer {
     return TargetContainerResult(tracebits, cksum, predicates, uniqExceptions);
   }
   
-  void TargetContainer::loadAsset(bytes, ContractABI) {
+  void TargetContainer::loadAsset(bytes code, ContractABI ca) {
+    OnOpFunc onOp = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
+    auto assetAddress = Address(ASSET_BASE_ADDRESS);
+    program.deploy(assetAddress, bytes{code});
+    program.invoke(assetAddress, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    ASSET_BASE_ADDRESS += 1;
   }
 }

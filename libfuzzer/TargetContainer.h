@@ -36,8 +36,9 @@ namespace fuzzer {
   class TargetContainer {
     bytes code;
     ContractABI ca;
-    State state;
     TargetProgram program;
+    u160 contractBaseAddress;
+    u160 assetBaseAddress;
     public:
       TargetContainer(bytes code, ContractABI ca);
       TargetContainerResult exec(bytes data);
