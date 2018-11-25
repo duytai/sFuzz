@@ -26,8 +26,7 @@ namespace fuzzer {
     string contractName;
   };
   struct FuzzParam {
-    ContractInfo fuzzContract;
-    vector<ContractInfo> assetContracts;
+    vector<ContractInfo> contractInfo;
     FuzzMode mode;
     int duration;
   };
@@ -50,12 +49,13 @@ namespace fuzzer {
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
+    ContractInfo fuzzContract;
     void writeStats(Mutation mutation);
     public:
       Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(unordered_set<uint64_t> tracebits);
       u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
-      FuzzItem saveIfInterest(TargetContainer& container, bytes data, int depth);
+      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, int depth);
       void start();
       void writeTestcase(bytes data);
       void writeException(bytes data);

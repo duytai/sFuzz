@@ -45,9 +45,7 @@ namespace fuzzer {
   typedef int16_t  s16;
   typedef int32_t  s32;
   typedef int64_t  s64;
-  
-  static u160 CONTRACT_BASE_ADDRESS = u160("0xffff");
-  static u160 ASSET_BASE_ADDRESS = u160("0xffffff");
+    
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
   static int REFRESH_RATE = 100;
 

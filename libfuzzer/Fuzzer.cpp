@@ -24,6 +24,7 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
   fuzzStat.numTest = 0;
   fuzzStat.numException = 0;
   fill_n(fuzzStat.stageFinds, 32, 0);
+  fuzzContract = *fuzzParam.contractInfo.begin();
 }
 
 /* Detect new exception */
@@ -104,7 +105,7 @@ void Fuzzer::showStats(Mutation mutation) {
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
-  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), fuzzParam.fuzzContract.contractName.substr(0, 20).c_str());
+  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), fuzzContract.contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
@@ -127,7 +128,7 @@ void Fuzzer::showStats(Mutation mutation) {
 
 void Fuzzer::writeStats(Mutation) {
   double speed = fuzzStat.totalExecs / (double) timer.elapsed();
-  ofstream stats(fuzzParam.fuzzContract.contractName + "/stats.csv");
+  ofstream stats(fuzzContract.contractName + "/stats.csv");
   stats << "Testcases,Speed,Execs,Tuples,Coverage" << endl;
   stats << queues.size();
   stats << "," << speed;
@@ -138,29 +139,29 @@ void Fuzzer::writeStats(Mutation) {
 }
 
 void Fuzzer::writeTestcase(bytes data) {
-  ContractABI ca(fuzzParam.fuzzContract.abiJson);
+  ContractABI ca(fuzzContract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numTest ++;
   string ret = ca.toStandardJson();
-  ofstream test(fuzzParam.fuzzContract.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
+  ofstream test(fuzzContract.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
   test << ret;
   test.close();
 }
 
 void Fuzzer::writeException(bytes data) {
-  ContractABI ca(fuzzParam.fuzzContract.abiJson);
+  ContractABI ca(fuzzContract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numException ++;
   string ret = ca.toStandardJson();
-  ofstream exp(fuzzParam.fuzzContract.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
+  ofstream exp(fuzzContract.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
   exp << ret;
   exp.close();
 }
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int depth) {
+FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
   auto revisedData = ContractABI::preprocessTestData(data);
   FuzzItem item(revisedData);
-  item.res = container.exec(revisedData);
+  item.res = te.exec(revisedData);
   item.wasFuzzed = false;
   fuzzStat.totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
@@ -179,22 +180,21 @@ FuzzItem Fuzzer::saveIfInterest(TargetContainer& container, bytes data, int dept
 
 /* Start fuzzing */
 void Fuzzer::start() {
-  auto fuzzContract = fuzzParam.fuzzContract;
+  auto fuzzContract = *fuzzParam.contractInfo.begin();
   boost::filesystem::remove_all(fuzzContract.contractName);
   boost::filesystem::create_directory(fuzzContract.contractName);
   Dictionary dict(fromHex(fuzzContract.bin));
   TargetContainer container;
-  /* Load contract */
-  {
-    ContractABI ca(fuzzContract.abiJson);
-    container.loadContract(fromHex(fuzzContract.bin), ca);
-    saveIfInterest(container, ca.randomTestcase(), 0);
+  /* Load contracts */
+  vector<TargetExecutive> tes;
+  vector<ContractABI> cas;
+  for (auto contractInfo : fuzzParam.contractInfo) {
+    ContractABI ca(contractInfo.abiJson);
+    auto te = container.loadContract(fromHex(contractInfo.bin), ca);
+    tes.push_back(te);
+    cas.push_back(ca);
   }
-  /* Load assets */
-  for (auto assetInfo : fuzzParam.assetContracts) {
-    ContractABI assetCa(assetInfo.abiJson);
-    container.loadAsset(fromHex(assetInfo.bin), assetCa);
-  }
+  saveIfInterest(*tes.begin(), (*cas.begin()).randomTestcase(), 0);
   /* First test case */
   timer.restart();
   int origHitCount = queues.size();
@@ -204,7 +204,7 @@ void Fuzzer::start() {
     FuzzItem curItem = queues[fuzzStat.idx];
     Mutation mutation(curItem, dict);
     auto save = [&](bytes data) {
-      auto item = saveIfInterest(container, data, curItem.depth);
+      auto item = saveIfInterest(*tes.begin(), data, curItem.depth);
       double speed = fuzzStat.totalExecs / (double) timer.elapsed();
       if (speed > lastSpeed) {
         refreshRate += 10;

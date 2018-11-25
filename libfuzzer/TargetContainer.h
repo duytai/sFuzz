@@ -33,16 +33,27 @@ namespace fuzzer {
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
   };
   
-  class TargetContainer {
-    bytes code;
+  class TargetExecutive {
+    TargetProgram *program;
     ContractABI ca;
-    TargetProgram program;
-    u160 contractBaseAddress;
-    u160 assetBaseAddress;
+    bytes code;
+    Address addr;
+    public:
+      TargetExecutive(TargetProgram *program, Address addr, ContractABI ca, bytes code) {
+        this->code = code;
+        this->ca = ca;
+        this->addr = addr;
+        this->program = program;
+      }
+      TargetContainerResult exec(bytes data);
+  };
+  
+  class TargetContainer {
+    TargetProgram *program;
+    u160 baseAddress;
     public:
       TargetContainer();
-      TargetContainerResult exec(bytes data);
-      void loadContract(bytes code, ContractABI ca);
-      void loadAsset(bytes code, ContractABI ca);
+      ~TargetContainer();
+      TargetExecutive loadContract(bytes code, ContractABI ca);
   };
 }

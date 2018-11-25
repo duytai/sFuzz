@@ -8,14 +8,29 @@ using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
-
+//    OnOpFunc onOp = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
+//    auto assetAddress = Address(ASSET_BASE_ADDRESS);
+//    program.deploy(assetAddress, bytes{code});
+//    program.invoke(assetAddress, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+//    ASSET_BASE_ADDRESS += 1;
 namespace fuzzer {
   TargetContainer::TargetContainer() {
-    contractBaseAddress = CONTRACT_BASE_ADDRESS;
-    assetBaseAddress = ASSET_BASE_ADDRESS;
+    program = new TargetProgram();
+    baseAddress = u160("0xff");
   }
   
-  TargetContainerResult TargetContainer::exec(bytes data) {
+  TargetContainer::~TargetContainer() {
+    delete program;
+  }
+  
+  TargetExecutive TargetContainer::loadContract(bytes code, ContractABI ca) {
+    Address addr(baseAddress);
+    TargetExecutive te(program, addr, ca, code);
+    baseAddress ++;
+    return te;
+  }
+  
+  TargetContainerResult TargetExecutive::exec(bytes data) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
     double lastCompValue = 0;
@@ -26,7 +41,6 @@ namespace fuzzer {
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
-    Address addr(contractBaseAddress);
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
@@ -69,9 +83,9 @@ namespace fuzzer {
     /* Decode and call functions */
     ca.updateTestData(data);
     vector<bytes> funcs = ca.encodeFunctions();
-    program.deploy(addr, code);
-    program.updateEnv(ca.env);
-    auto res = program.invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    program->deploy(addr, code);
+    program->updateEnv(ca.env);
+    auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
       os << res.excepted;
@@ -80,7 +94,7 @@ namespace fuzzer {
       uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
     }
     for (auto func: funcs) {
-      res = program.invoke(addr, CONTRACT_FUNCTION, func, onOp);
+      res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
         os << res.excepted;
@@ -92,18 +106,5 @@ namespace fuzzer {
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
     return TargetContainerResult(tracebits, cksum, predicates, uniqExceptions);
-  }
-  
-  void TargetContainer::loadContract(bytes code, ContractABI ca) {
-    this->code = code;
-    this->ca = ca;
-  }
-  
-  void TargetContainer::loadAsset(bytes code, ContractABI ca) {
-    OnOpFunc onOp = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
-    auto assetAddress = Address(ASSET_BASE_ADDRESS);
-    program.deploy(assetAddress, bytes{code});
-    program.invoke(assetAddress, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
-    ASSET_BASE_ADDRESS += 1;
   }
 }
