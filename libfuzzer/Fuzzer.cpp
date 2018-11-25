@@ -51,13 +51,12 @@ u8 Fuzzer::hasNewBits(unordered_set<uint64_t> singleTracebits) {
   return newSize - originSize;
 }
 
-void Fuzzer::showStats(Mutation mutation, CFG cfg) {
+void Fuzzer::showStats(Mutation mutation) {
   int numLines = 19, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
   }
-  int totalTuples = cfg.totalCount();
   double duration = timer.elapsed();
   double fromLastNewPath = timer.elapsed() - fuzzStat.lastNewPath;
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
@@ -73,9 +72,7 @@ void Fuzzer::showStats(Mutation mutation, CFG cfg) {
   int expCout = 0;
   for (auto exp: uniqExceptions) expCout+= exp.second.size();
   auto exceptionCount = padStr(to_string(expCout), 15);
-  auto tupleCountMethod = cfg.extraEstimation > 0 ? "Est" : "Exa";
-  auto coveredTuplePercentage = totalTuples ? to_string((int)((float)fuzzStat.coveredTuples/ totalTuples * 100)) + "% " : "n/a ";
-  auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples) + " (" + coveredTuplePercentage + tupleCountMethod + ")", 15);
+  auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples), 15);
   auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 15);
   auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
   auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
@@ -128,7 +125,7 @@ void Fuzzer::showStats(Mutation mutation, CFG cfg) {
   printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
 }
 
-void Fuzzer::writeStats(Mutation, CFG cfg) {
+void Fuzzer::writeStats(Mutation) {
   double speed = fuzzStat.totalExecs / (double) timer.elapsed();
   ofstream stats(fuzzParam.fuzzContract.contractName + "/stats.csv");
   stats << "Testcases,Speed,Execs,Tuples,Coverage" << endl;
@@ -136,7 +133,6 @@ void Fuzzer::writeStats(Mutation, CFG cfg) {
   stats << "," << speed;
   stats << "," << fuzzStat.totalExecs;
   stats << "," << fuzzStat.coveredTuples;
-  stats << "," << fuzzStat.coveredTuples * 100 / cfg.totalCount();
   stats << endl;
   stats.close();
 }
@@ -187,9 +183,13 @@ void Fuzzer::start() {
   boost::filesystem::remove_all(fuzzContract.contractName);
   boost::filesystem::create_directory(fuzzContract.contractName);
   Dictionary dict(fromHex(fuzzContract.bin));
-  ContractABI ca(fuzzContract.abiJson);
-  CFG cfg(fuzzContract.bin, fuzzContract.binRuntime);
-  TargetContainer container(fromHex(fuzzContract.bin), ca);
+  TargetContainer container;
+  /* Load contract */
+  {
+    ContractABI ca(fuzzContract.abiJson);
+    container.loadContract(fromHex(fuzzContract.bin), ca);
+    saveIfInterest(container, ca.randomTestcase(), 0);
+  }
   /* Load assets */
   for (auto assetInfo : fuzzParam.assetContracts) {
     ContractABI assetCa(assetInfo.abiJson);
@@ -197,10 +197,9 @@ void Fuzzer::start() {
   }
   /* First test case */
   timer.restart();
-  saveIfInterest(container, ca.randomTestcase(), 0);
   int origHitCount = queues.size();
   double lastSpeed = 0;
-  int refreshRate = 100;
+  int refreshRate = REFRESH_RATE;
   while (true) {
     FuzzItem curItem = queues[fuzzStat.idx];
     Mutation mutation(curItem, dict);
@@ -212,10 +211,10 @@ void Fuzzer::start() {
         lastSpeed = speed;
       }
       if (refreshRate > speed) refreshRate = speed;
-      if (fuzzStat.totalExecs % refreshRate == 0) showStats(mutation, cfg);
+      if (fuzzStat.totalExecs % refreshRate == 0) showStats(mutation);
       /* Stop program */
       if (timer.elapsed() > fuzzParam.duration) {
-        writeStats(mutation, cfg);
+        writeStats(mutation);
         exit(0);
       }
       return item;

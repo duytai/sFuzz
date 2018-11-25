@@ -49,6 +49,7 @@ namespace fuzzer {
   static u160 CONTRACT_BASE_ADDRESS = u160("0xffff");
   static u160 ASSET_BASE_ADDRESS = u160("0xffffff");
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
+  static int REFRESH_RATE = 100;
 
   static u32 SPLICE_CYCLES = 15;
   static u32 MAX_DET_EXTRAS = 200;

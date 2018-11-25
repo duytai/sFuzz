@@ -12,7 +12,6 @@
 #include "Util.h"
 #include "FuzzItem.h"
 #include "Mutation.h"
-#include "CFG.h"
 
 using namespace dev;
 using namespace eth;
@@ -51,7 +50,7 @@ namespace fuzzer {
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
-    void writeStats(Mutation mutation, CFG cfg);
+    void writeStats(Mutation mutation);
     public:
       Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(unordered_set<uint64_t> tracebits);
@@ -60,6 +59,6 @@ namespace fuzzer {
       void start();
       void writeTestcase(bytes data);
       void writeException(bytes data);
-      void showStats(Mutation mutation, CFG cfg);
+      void showStats(Mutation mutation);
   };
 }

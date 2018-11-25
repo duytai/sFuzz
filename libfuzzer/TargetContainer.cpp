@@ -10,7 +10,7 @@ using namespace std;
 using namespace fuzzer;
 
 namespace fuzzer {
-  TargetContainer::TargetContainer(bytes code, ContractABI ca): code(code), ca(ca) {
+  TargetContainer::TargetContainer() {
     contractBaseAddress = CONTRACT_BASE_ADDRESS;
     assetBaseAddress = ASSET_BASE_ADDRESS;
   }
@@ -92,6 +92,11 @@ namespace fuzzer {
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
     return TargetContainerResult(tracebits, cksum, predicates, uniqExceptions);
+  }
+  
+  void TargetContainer::loadContract(bytes code, ContractABI ca) {
+    this->code = code;
+    this->ca = ca;
   }
   
   void TargetContainer::loadAsset(bytes code, ContractABI ca) {

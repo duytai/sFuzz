@@ -40,8 +40,9 @@ namespace fuzzer {
     u160 contractBaseAddress;
     u160 assetBaseAddress;
     public:
-      TargetContainer(bytes code, ContractABI ca);
+      TargetContainer();
       TargetContainerResult exec(bytes data);
+      void loadContract(bytes code, ContractABI ca);
       void loadAsset(bytes code, ContractABI ca);
   };
 }
