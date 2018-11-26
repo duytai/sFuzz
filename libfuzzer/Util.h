@@ -73,8 +73,9 @@ namespace fuzzer {
   static int STAGE_INTEREST32 = 11;
   static int STAGE_EXTRAS_UO = 12;
   static int STAGE_EXTRAS_UI = 13;
-  static int STAGE_HAVOC = 14;
-  static int STAGE_RANDOM = 15;
+  static int STAGE_EXTRAS_AO = 14;
+  static int STAGE_HAVOC = 15;
+  static int STAGE_RANDOM = 16;
   static int HAVOC_STACK_POW2 = 7;
   static int HAVOC_CYCLES_INIT = 1024;
   static int HAVOC_CYCLES = 256;
@@ -118,6 +119,5 @@ namespace fuzzer {
   /* Data struct */
   struct ExtraData {
     bytes data;
-    u32 hitCount;
   };
 }

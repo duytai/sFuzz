@@ -9,7 +9,7 @@ using namespace fuzzer;
 
 int Mutation::stageCycles[32] = {};
 
-Mutation::Mutation(FuzzItem item, Dictionary dict): curFuzzItem(item), dict(dict), dataSize(item.data.size()) {
+Mutation::Mutation(FuzzItem item, Dicts dicts): curFuzzItem(item), dicts(dicts), dataSize(item.data.size()) {
   effCount = 0;
   eff = bytes(effALen(dataSize), 0);
   eff[0] = 1;
@@ -369,6 +369,7 @@ void Mutation::fourInterest(OnMutateFunc cb) {
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   stageShort = "ext_UO";
   stageName = "dict (over)";
+  auto dict = get<0>(dicts);
   stageMax = dataSize * dict.extras.size();
   stageCur = 0;
   /* Start fuzzing */
@@ -409,6 +410,37 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
   }
   stageCycles[STAGE_EXTRAS_UO] += stageMax;
 }
+
+void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
+  stageShort = "ext_AO";
+  stageName = "address (over)";
+  auto dict = get<1>(dicts);
+  
+  stageMax = (dataSize / 32) * dict.extras.size();
+  stageCur = 0;
+  /* Start fuzzing */
+  byte *outBuf = curFuzzItem.data.data();
+  byte inBuf[curFuzzItem.data.size()];
+  memcpy(inBuf, outBuf, curFuzzItem.data.size());
+  u32 extrasCount = dict.extras.size();
+  u32 extrasLen = 20;
+  for (u32 i = 0; i < (u32)dataSize; i += 32) {
+    for (u32 j = 0; j < extrasCount; j += 1) {
+      byte *extrasBuf = dict.extras[j].data.data();
+      if (!memcmp(extrasBuf, outBuf + i + 12, extrasLen)) {
+        stageMax --;
+        continue;
+      }
+      memcpy(outBuf + i + 12, extrasBuf, extrasLen);
+      cb(curFuzzItem.data);
+      stageCur ++;
+    }
+    /* Restore all the clobbered memory. */
+    memcpy(outBuf + i, inBuf + i, 32);
+  }
+  stageCycles[STAGE_EXTRAS_AO] += stageMax;
+}
+
 /* Calculate score */
 double Mutation::calculateScore(const FuzzItem& item, unordered_set<uint64_t> tracebits) {
   double score = 0;
@@ -428,6 +460,7 @@ void Mutation::havoc(unordered_set<uint64_t> tracebits, OnMutateFunc cb) {
   stageCur = 0;
   int idx = 0;
   float perfScore = 1;
+  auto dict = get<0>(dicts);
   vector<FuzzItem> workingQueue;
   vector<FuzzItem> candidateQueue;
   workingQueue.push_back(curFuzzItem);

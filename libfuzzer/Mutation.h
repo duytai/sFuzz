@@ -17,14 +17,15 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
+  using Dicts = tuple<Dictionary/* code */, Dictionary/* address */>;
   class Mutation {
     FuzzItem curFuzzItem;
-    Dictionary dict;
+    Dicts dicts;
     int effCount;
     bytes eff;
     void flipbit(int pos);
     public:
-      Mutation(FuzzItem item, Dictionary dict);
+      Mutation(FuzzItem item, Dicts dicts);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);
@@ -37,6 +38,7 @@ namespace fuzzer {
       void singleInterest(OnMutateFunc cb);
       void twoInterest(OnMutateFunc cb);
       void fourInterest(OnMutateFunc cb);
+      void overwriteWithAddressDictionary(OnMutateFunc cb);
       void overwriteWithDictionary(OnMutateFunc cb);
       void insertWithDictionary(OnMutateFunc cb);
       void overwriteWithAutoDictionary(OnMutateFunc cb);

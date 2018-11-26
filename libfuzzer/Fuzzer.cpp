@@ -101,8 +101,9 @@ void Fuzzer::showStats(Mutation mutation) {
   auto int2 = to_string(fuzzStat.stageFinds[STAGE_INTEREST16]) + "/" + to_string(mutation.stageCycles[STAGE_INTEREST16]);
   auto int4 = to_string(fuzzStat.stageFinds[STAGE_INTEREST32]) + "/" + to_string(mutation.stageCycles[STAGE_INTEREST32]);
   auto knownInts = padStr(int1 + ", " + int2 + ", " + int4, 30);
+  auto addrDict1 = to_string(fuzzStat.stageFinds[STAGE_EXTRAS_AO]) + "/" + to_string(mutation.stageCycles[STAGE_EXTRAS_AO]);
   auto dict1 = to_string(fuzzStat.stageFinds[STAGE_EXTRAS_UO]) + "/" + to_string(mutation.stageCycles[STAGE_EXTRAS_UO]);
-  auto dictionary = padStr(dict1, 30);
+  auto dictionary = padStr(dict1 + ", " + addrDict1, 30);
   auto hav1 = to_string(fuzzStat.stageFinds[STAGE_HAVOC]) + "/" + to_string(mutation.stageCycles[STAGE_HAVOC]);
   auto havoc = padStr(hav1, 30);
   auto random1 = to_string(fuzzStat.stageFinds[STAGE_RANDOM]) + "/" + to_string(mutation.stageCycles[STAGE_RANDOM]);
@@ -193,6 +194,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
 /* Start fuzzing */
 void Fuzzer::start() {
   TargetContainer container;
+  Dictionary codeDict, addressDict;
   for (auto contractInfo : fuzzParam.contractInfo) {
     ContractABI ca(contractInfo.abiJson);
     auto bin = fromHex(contractInfo.bin);
@@ -202,17 +204,18 @@ void Fuzzer::start() {
       auto data = ca.randomTestcase();
       auto revisedData = ContractABI::postprocessTestData(data);
       executive.deploy(revisedData);
+      addressDict.fromAddress(executive.addr.asBytes());
     } else {
       auto contractName = contractInfo.contractName;
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
-      Dictionary dict(bin);
+      codeDict.fromCode(bin);
       
       saveIfInterest(executive, ca.randomTestcase(), 0);
       int origHitCount = queues.size();
       while (true) {
         FuzzItem curItem = queues[fuzzStat.idx];
-        Mutation mutation(curItem, dict);
+        Mutation mutation(curItem, make_tuple(codeDict, addressDict));
         auto save = [&](bytes data) {
           auto item = saveIfInterest(executive, data, curItem.depth);
           if (fuzzStat.totalExecs % REFRESH_RATE == 0) showStats(mutation);
@@ -229,45 +232,63 @@ void Fuzzer::start() {
               mutation.singleWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.twoWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.fourWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.singleWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.twoWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.fourWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.singleArith(save);
               fuzzStat.stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.twoArith(save);
               fuzzStat.stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.fourArith(save);
               fuzzStat.stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.singleInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.twoInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.fourInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               mutation.overwriteWithDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
+              mutation.overwriteWithAddressDictionary(save);
+              fuzzStat.stageFinds[STAGE_EXTRAS_AO] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              
               mutation.havoc(tracebits, save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              
               queues[fuzzStat.idx].wasFuzzed = true;
             } else {
               mutation.havoc(tracebits, save);

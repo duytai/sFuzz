@@ -37,8 +37,8 @@ namespace fuzzer {
     TargetProgram *program;
     ContractABI ca;
     bytes code;
-    Address addr;
     public:
+      Address addr;
       TargetExecutive(TargetProgram *program, Address addr, ContractABI ca, bytes code) {
         this->code = code;
         this->ca = ca;

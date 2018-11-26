@@ -7,7 +7,13 @@ using namespace std;
 using namespace eth;
 
 namespace fuzzer {
-  Dictionary::Dictionary(bytes code) {
+  void Dictionary::fromAddress(bytes data) {
+    ExtraData d;
+    d.data = data;
+    extras.push_back(d);
+  }
+  
+  void Dictionary::fromCode(bytes code) {
     int pc = 0;
     int size = code.size();
     struct bytesComparation {
@@ -30,7 +36,6 @@ namespace fuzzer {
     for (auto value : values) {
       ExtraData d;
       d.data = value;
-      d.hitCount = 0;
       extras.push_back(d);
     }
   }

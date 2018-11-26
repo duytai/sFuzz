@@ -16,7 +16,7 @@ namespace fuzzer {
   class Dictionary {
     public:
       vector<ExtraData> extras;
-      Dictionary() {};
-      Dictionary(bytes code);
+      void fromCode(bytes code);
+      void fromAddress(bytes address);
   };
 }
