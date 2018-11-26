@@ -8,11 +8,7 @@ using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
-//    OnOpFunc onOp = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
-//    auto assetAddress = Address(ASSET_BASE_ADDRESS);
-//    program.deploy(assetAddress, bytes{code});
-//    program.invoke(assetAddress, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
-//    ASSET_BASE_ADDRESS += 1;
+
 namespace fuzzer {
   TargetContainer::TargetContainer() {
     program = new TargetProgram();
@@ -84,7 +80,7 @@ namespace fuzzer {
     ca.updateTestData(data);
     vector<bytes> funcs = ca.encodeFunctions();
     program->deploy(addr, code);
-    program->updateEnv(ca.env);
+    program->updateEnv(ca.decodeAccounts());
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;

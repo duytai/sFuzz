@@ -53,11 +53,11 @@ int main(int argc, char* argv[]) {
   /* Fuzz a single contract */
   if (vm.count("file") && vm.count("name")) {
     FuzzParam fuzzParam;
-    auto assetContracts = parseAssets(assetsFolder);
+    auto contractInfo = parseAssets(assetsFolder);
+    contractInfo.push_back(parseJson(jsonFile, contractName, true));
+    fuzzParam.contractInfo = contractInfo;
     fuzzParam.mode = !mode ? RANDOM : AFL;
     fuzzParam.duration = duration;
-    fuzzParam.contractInfo.push_back(parseJson(jsonFile, contractName));
-    fuzzParam.contractInfo.insert(fuzzParam.contractInfo.end(), assetContracts.begin(), assetContracts.end());
     Fuzzer fuzzer(fuzzParam);
     fuzzer.start();
     return 0;

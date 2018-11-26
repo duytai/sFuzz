@@ -8,6 +8,7 @@ using namespace dev;
 using namespace std;
 
 namespace fuzzer {
+  using Accounts = vector<tuple<bytes, u160, u256, bool>>;
   struct DataType {
     bytes value;
     bool padLeft;
@@ -46,17 +47,12 @@ namespace fuzzer {
     FuncDef(string name, vector<TypeDef> tds);
   };
   
-  struct ContractEnv {
-    vector<bytes> accounts;
-    bytes sender;
-  };
-  
   class ContractABI {
+    vector<bytes> accounts;
     public:
       vector<FuncDef> fds;
       ContractABI(){};
       ContractABI(string abiJson);
-      ContractEnv env;
       /* encoded ABI of contract constructor */
       bytes encodeConstructor();
       /* encoded ABI of contract functions */
@@ -67,11 +63,12 @@ namespace fuzzer {
       void updateTestData(bytes data);
       /* Standard Json */
       string toStandardJson();
+      Accounts decodeAccounts();
       static bytes encodeTuple(vector<TypeDef> tds);
       static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);
       static bytes encodeSingle(DataType dt);
       static bytes functionSelector(string name, vector<TypeDef> tds);
-      static bytes preprocessTestData(bytes data);
+      static bytes postprocessTestData(bytes data);
   };
 }

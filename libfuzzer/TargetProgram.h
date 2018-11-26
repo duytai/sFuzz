@@ -21,7 +21,7 @@ namespace fuzzer {
     private:
       State state;
       u256 gas;
-      u160 senderAddrValue;
+      u160 sender;
       unordered_map<u160, u256> nonces;
       Executive *executive;
       ExecutionResult invoke(Address addr, bytes data, OnOpFunc onOp);
@@ -29,7 +29,7 @@ namespace fuzzer {
       TargetProgram();
       ~TargetProgram();
       void deploy(Address addr, bytes code);
-      void updateEnv(ContractEnv env);
+      void updateEnv(Accounts accounts);
       ExecutionResult invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp);
   };
 }

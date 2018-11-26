@@ -12,7 +12,7 @@ using namespace boost::filesystem;
 namespace pt = boost::property_tree;
 namespace po = boost::program_options;
 
-ContractInfo parseJson(string jsonFile, string contractName) {
+ContractInfo parseJson(string jsonFile, string contractName, bool isMain) {
   std::ifstream file(jsonFile);
   if (!file.is_open()) {
     stringstream output;
@@ -37,6 +37,7 @@ ContractInfo parseJson(string jsonFile, string contractName) {
   pt::ptree::path_type binPath("contracts|"+ fullContractName +"|bin", '|');
   pt::ptree::path_type binRuntimePath("contracts|" + fullContractName + "|bin-runtime", '|');
   ContractInfo contractInfo;
+  contractInfo.isMain = isMain;
   contractInfo.abiJson = root.get<string>(abiPath);
   contractInfo.bin = root.get<string>(binPath);
   contractInfo.binRuntime = root.get_child_optional(binRuntimePath) ? root.get<string>(binRuntimePath) : "";
@@ -95,7 +96,7 @@ vector<ContractInfo> parseAssets(string assets) {
   forEachFile(assets, ".json", [&](directory_entry file) {
     auto contractName = toContractName(file);
     auto jsonFile = file.path().string();
-    ls.push_back(parseJson(jsonFile, contractName));
+    ls.push_back(parseJson(jsonFile, contractName, false));
   });
   return ls;
 }

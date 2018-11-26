@@ -24,6 +24,7 @@ namespace fuzzer {
     string bin;
     string binRuntime;
     string contractName;
+    bool isMain;
   };
   struct FuzzParam {
     vector<ContractInfo> contractInfo;
@@ -49,8 +50,8 @@ namespace fuzzer {
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
-    ContractInfo fuzzContract;
     void writeStats(Mutation mutation);
+    ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(unordered_set<uint64_t> tracebits);

@@ -24,7 +24,6 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
   fuzzStat.numTest = 0;
   fuzzStat.numException = 0;
   fill_n(fuzzStat.stageFinds, 32, 0);
-  fuzzContract = *fuzzParam.contractInfo.begin();
 }
 
 /* Detect new exception */
@@ -50,6 +49,15 @@ u8 Fuzzer::hasNewBits(unordered_set<uint64_t> singleTracebits) {
   for (auto it : singleTracebits) tracebits.insert(it);
   auto newSize = tracebits.size();
   return newSize - originSize;
+}
+
+ContractInfo Fuzzer::mainContract() {
+  auto contractInfo = fuzzParam.contractInfo;
+  auto first = contractInfo.begin();
+  auto last = contractInfo.end();
+  auto predicate = [](const ContractInfo& c) { return c.isMain; };
+  auto it = find_if(first, last, predicate);
+  return *it;
 }
 
 void Fuzzer::showStats(Mutation mutation) {
@@ -105,7 +113,8 @@ void Fuzzer::showStats(Mutation mutation) {
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
-  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), fuzzContract.contractName.substr(0, 20).c_str());
+  auto contract = mainContract();
+  printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contract.contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
@@ -127,8 +136,9 @@ void Fuzzer::showStats(Mutation mutation) {
 }
 
 void Fuzzer::writeStats(Mutation) {
+  auto contract = mainContract();
   double speed = fuzzStat.totalExecs / (double) timer.elapsed();
-  ofstream stats(fuzzContract.contractName + "/stats.csv");
+  ofstream stats(contract.contractName + "/stats.csv");
   stats << "Testcases,Speed,Execs,Tuples,Coverage" << endl;
   stats << queues.size();
   stats << "," << speed;
@@ -139,27 +149,29 @@ void Fuzzer::writeStats(Mutation) {
 }
 
 void Fuzzer::writeTestcase(bytes data) {
-  ContractABI ca(fuzzContract.abiJson);
+  auto contract = mainContract();
+  ContractABI ca(contract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numTest ++;
   string ret = ca.toStandardJson();
-  ofstream test(fuzzContract.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
+  ofstream test(contract.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
   test << ret;
   test.close();
 }
 
 void Fuzzer::writeException(bytes data) {
-  ContractABI ca(fuzzContract.abiJson);
+  auto contract = mainContract();
+  ContractABI ca(contract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numException ++;
   string ret = ca.toStandardJson();
-  ofstream exp(fuzzContract.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
+  ofstream exp(contract.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
   exp << ret;
   exp.close();
 }
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
-  auto revisedData = ContractABI::preprocessTestData(data);
+  auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData);
   item.res = te.exec(revisedData);
   item.wasFuzzed = false;
@@ -180,111 +192,100 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
 
 /* Start fuzzing */
 void Fuzzer::start() {
-  auto fuzzContract = *fuzzParam.contractInfo.begin();
-  boost::filesystem::remove_all(fuzzContract.contractName);
-  boost::filesystem::create_directory(fuzzContract.contractName);
-  Dictionary dict(fromHex(fuzzContract.bin));
   TargetContainer container;
-  /* Load contracts */
-  vector<TargetExecutive> tes;
-  vector<ContractABI> cas;
   for (auto contractInfo : fuzzParam.contractInfo) {
     ContractABI ca(contractInfo.abiJson);
-    auto te = container.loadContract(fromHex(contractInfo.bin), ca);
-    tes.push_back(te);
-    cas.push_back(ca);
-  }
-  saveIfInterest(*tes.begin(), (*cas.begin()).randomTestcase(), 0);
-  /* First test case */
-  timer.restart();
-  int origHitCount = queues.size();
-  double lastSpeed = 0;
-  int refreshRate = REFRESH_RATE;
-  while (true) {
-    FuzzItem curItem = queues[fuzzStat.idx];
-    Mutation mutation(curItem, dict);
-    auto save = [&](bytes data) {
-      auto item = saveIfInterest(*tes.begin(), data, curItem.depth);
-      double speed = fuzzStat.totalExecs / (double) timer.elapsed();
-      if (speed > lastSpeed) {
-        refreshRate += 10;
-        lastSpeed = speed;
-      }
-      if (refreshRate > speed) refreshRate = speed;
-      if (fuzzStat.totalExecs % refreshRate == 0) showStats(mutation);
-      /* Stop program */
-      if (timer.elapsed() > fuzzParam.duration) {
-        writeStats(mutation);
-        exit(0);
-      }
-      return item;
-    };
-    switch (fuzzParam.mode) {
-      case AFL: {
-        if (!curItem.wasFuzzed) {
-          mutation.singleWalkingBit(save);
-          fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.twoWalkingBit(save);
-          fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.fourWalkingBit(save);
-          fuzzStat.stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.singleWalkingByte(save);
-          fuzzStat.stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.twoWalkingByte(save);
-          fuzzStat.stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.fourWalkingByte(save);
-          fuzzStat.stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.singleArith(save);
-          fuzzStat.stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.twoArith(save);
-          fuzzStat.stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.fourArith(save);
-          fuzzStat.stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.singleInterest(save);
-          fuzzStat.stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.twoInterest(save);
-          fuzzStat.stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.fourInterest(save);
-          fuzzStat.stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.overwriteWithDictionary(save);
-          fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          mutation.havoc(tracebits, save);
-          fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          queues[fuzzStat.idx].wasFuzzed = true;
-        } else {
-          mutation.havoc(tracebits, save);
-          fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-          origHitCount = queues.size();
-          if (mutation.splice(queues)) {
-            mutation.havoc(tracebits, save);
-            fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
+    auto bin = fromHex(contractInfo.bin);
+    auto executive = container.loadContract(bin, ca);
+    if (contractInfo.isMain) {
+      auto contractName = contractInfo.contractName;
+      boost::filesystem::remove_all(contractName);
+      boost::filesystem::create_directory(contractName);
+      Dictionary dict(bin);
+      
+      saveIfInterest(executive, ca.randomTestcase(), 0);
+      int origHitCount = queues.size();
+      while (true) {
+        FuzzItem curItem = queues[fuzzStat.idx];
+        Mutation mutation(curItem, dict);
+        auto save = [&](bytes data) {
+          auto item = saveIfInterest(executive, data, curItem.depth);
+          if (fuzzStat.totalExecs % REFRESH_RATE == 0) showStats(mutation);
+          /* Stop program */
+          if (timer.elapsed() > fuzzParam.duration) {
+            writeStats(mutation);
+            exit(0);
+          }
+          return item;
+        };
+        switch (fuzzParam.mode) {
+          case AFL: {
+            if (!curItem.wasFuzzed) {
+              mutation.singleWalkingBit(save);
+              fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.twoWalkingBit(save);
+              fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.fourWalkingBit(save);
+              fuzzStat.stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.singleWalkingByte(save);
+              fuzzStat.stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.twoWalkingByte(save);
+              fuzzStat.stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.fourWalkingByte(save);
+              fuzzStat.stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.singleArith(save);
+              fuzzStat.stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.twoArith(save);
+              fuzzStat.stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.fourArith(save);
+              fuzzStat.stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.singleInterest(save);
+              fuzzStat.stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.twoInterest(save);
+              fuzzStat.stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.fourInterest(save);
+              fuzzStat.stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.overwriteWithDictionary(save);
+              fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              mutation.havoc(tracebits, save);
+              fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              queues[fuzzStat.idx].wasFuzzed = true;
+            } else {
+              mutation.havoc(tracebits, save);
+              fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
+              origHitCount = queues.size();
+              if (mutation.splice(queues)) {
+                mutation.havoc(tracebits, save);
+                fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
+                origHitCount = queues.size();
+              };
+            }
+            break;
+          }
+          case RANDOM: {
+            mutation.random(save);
+            fuzzStat.stageFinds[STAGE_RANDOM] += queues.size() - origHitCount;
             origHitCount = queues.size();
-          };
+            break;
+          }
         }
-        break;
-      }
-      case RANDOM: {
-        mutation.random(save);
-        fuzzStat.stageFinds[STAGE_RANDOM] += queues.size() - origHitCount;
-        origHitCount = queues.size();
-        break;
+        fuzzStat.idx = (fuzzStat.idx + 1) % queues.size();
+        if (fuzzStat.idx == 0) fuzzStat.queueCycle ++;
       }
     }
-    fuzzStat.idx = (fuzzStat.idx + 1) % queues.size();
-    if (fuzzStat.idx == 0) fuzzStat.queueCycle ++;
   }
 }

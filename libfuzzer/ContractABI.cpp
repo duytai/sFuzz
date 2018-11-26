@@ -15,7 +15,25 @@ namespace fuzzer {
     this->name = name;
     this->tds = tds;
   }
-    
+  
+  Accounts ContractABI::decodeAccounts() {
+    unordered_set<string> accountSet;
+    Accounts ret;
+    auto isSender = true;
+    for (auto account : accounts) {
+      bytes balanceInBytes(account.begin(), account.begin() + 12);
+      bytes addressInBytes(account.begin() + 12, account.end());
+      u256 balance = u256("0x" + toHex(balanceInBytes));
+      u160 address = u160("0x" + toHex(addressInBytes));
+      auto pair = accountSet.insert(toHex(addressInBytes));
+      if (pair.second) {
+        ret.push_back(make_tuple(account, address, balance, isSender));
+        isSender = false;
+      }
+    }
+    return ret;
+  }
+  
   string ContractABI::toStandardJson() {
     stringstream os;
     pt::ptree funcs;
@@ -66,29 +84,17 @@ namespace fuzzer {
     /* Accounts */
     unordered_set<string> accountSet; // to check exists
     pt::ptree accs;
-    for (auto account : env.accounts) {
-      bytes balance(account.begin(), account.begin() + 12);
-      bytes addr(account.begin() + 12, account.end());
-      u256 balanceValue = u256("0x" + toHex(balance));
-      auto pair = accountSet.insert(toHex(addr));
-      if (pair.second) {
-        pt::ptree acc;
-        acc.put("address", toHex(addr));
-        acc.put("balance", balanceValue);
-        accs.push_back(make_pair("", acc));
-      }
+    auto accountInTuples = decodeAccounts();
+    for (auto account : accountInTuples) {
+      auto accountInBytes = get<0>(account);
+      auto balance = get<2>(account);
+      auto address = bytes(accountInBytes.begin() + 12, accountInBytes.end());
+      pt::ptree acc;
+      acc.put("address", "0x" + toHex(address));
+      acc.put("balance", balance);
+      accs.push_back(make_pair("", acc));
     }
     root.add_child("accounts", accs);
-    /* Sender */
-    pt::ptree sender;
-    {
-      bytes balance(env.sender.begin(), env.sender.begin() + 12);
-      bytes addr(env.sender.begin() + 12, env.sender.end());
-      u256 balanceValue = u256("0x" + toHex(balance));
-      sender.put("address", toHex(addr));
-      sender.put("balance", balanceValue);
-    }
-    root.add_child("sender", sender);
     pt::write_json(os, root);
     return os.str();
   }
@@ -96,7 +102,7 @@ namespace fuzzer {
    * Validate generated data before sending it to vm
    * msg.sender address can not be 0 (32 - 64)
    */
-  bytes ContractABI::preprocessTestData(bytes data) {
+  bytes ContractABI::postprocessTestData(bytes data) {
     auto first = data.begin() + 32 + 12;
     auto last = first + 20;
     auto senderValue = u256("0x"+ toHex(bytes(first, last)));
@@ -128,8 +134,9 @@ namespace fuzzer {
       int fitLen = offset + singleLen;
       while ((int)data.size() < fitLen) data.push_back(0);
     };
-    env.accounts.clear();
-    env.sender = bytes(data.begin() + 32, data.begin() + 64);
+    accounts.clear();
+    auto senderInBytes = bytes(data.begin() + 32, data.begin() + 64);
+    accounts.push_back(senderInBytes);
     for (auto &fd : this->fds) {
       for (auto &td : fd.tds) {
         switch (td.dimensions.size()) {
@@ -142,7 +149,7 @@ namespace fuzzer {
             bytes d(data.begin() + offset, data.begin() + offset + realLen);
             /* If address, extract account */
             if (boost::starts_with(td.name, "address")) {
-              env.accounts.push_back(d);
+              accounts.push_back(d);
             }
             td.addValue(d);
             /* Ignore (containerLen - realLen) bytes */
@@ -162,7 +169,7 @@ namespace fuzzer {
             }
             /* If address, extract account */
             if (boost::starts_with(td.name, "address")) {
-              env.accounts.insert(env.accounts.end(), ds.begin(), ds.end());
+              accounts.insert(accounts.end(), ds.begin(), ds.end());
             }
             td.addValue(ds);
             break;
@@ -184,7 +191,7 @@ namespace fuzzer {
               dss.push_back(ds);
               /* If address, extract account */
               if (boost::starts_with(td.name, "address")) {
-                env.accounts.insert(env.accounts.end(), ds.begin(), ds.end());
+                accounts.insert(accounts.end(), ds.begin(), ds.end());
               }
             }
             td.addValue(dss);
