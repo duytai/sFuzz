@@ -197,7 +197,12 @@ void Fuzzer::start() {
     ContractABI ca(contractInfo.abiJson);
     auto bin = fromHex(contractInfo.bin);
     auto executive = container.loadContract(bin, ca);
-    if (contractInfo.isMain) {
+    if (!contractInfo.isMain) {
+      /* Load Attacker agent contract */
+      auto data = ca.randomTestcase();
+      auto revisedData = ContractABI::postprocessTestData(data);
+      executive.deploy(revisedData);
+    } else {
       auto contractName = contractInfo.contractName;
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);

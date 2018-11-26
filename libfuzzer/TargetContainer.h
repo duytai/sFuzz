@@ -46,6 +46,7 @@ namespace fuzzer {
         this->program = program;
       }
       TargetContainerResult exec(bytes data);
+      void deploy(bytes data);
   };
   
   class TargetContainer {
