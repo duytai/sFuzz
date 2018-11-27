@@ -12,16 +12,18 @@ using namespace fuzzer;
 namespace fuzzer {
   TargetContainer::TargetContainer() {
     program = new TargetProgram();
+    oracleFactory = new OracleFactory();
     baseAddress = u160("0xff");
   }
   
   TargetContainer::~TargetContainer() {
     delete program;
+    delete oracleFactory;
   }
   
   TargetExecutive TargetContainer::loadContract(bytes code, ContractABI ca) {
     Address addr(baseAddress);
-    TargetExecutive te(program, addr, ca, code);
+    TargetExecutive te(oracleFactory, program, addr, ca, code);
     baseAddress ++;
     return te;
   }
@@ -45,7 +47,7 @@ namespace fuzzer {
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
-    OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const*) {
+    OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
       switch (inst) {
@@ -61,6 +63,22 @@ namespace fuzzer {
             u256 temp = left > right ? left - right : right - left;
             lastCompValue = abs((double)(uint64_t)temp) + 1;
           }
+          break;
+        }
+        case Instruction::CALL:
+        case Instruction::CALLCODE:
+        case Instruction::DELEGATECALL:
+        case Instruction::STATICCALL: {
+          vector<u256>::size_type stackSize = vm->stack().size();
+          FunctionCall fc;
+          fc.depth = ext->depth;
+          fc.gas = vm->stack()[stackSize - 1];
+          fc.wei = 0;
+          fc.inst = inst;
+          if (inst == Instruction::CALL || inst == Instruction::CALLCODE) {
+            fc.wei = vm->stack()[stackSize - 3];
+          }
+          oracleFactory->save(fc);
           break;
         }
         default: {
@@ -89,6 +107,7 @@ namespace fuzzer {
     vector<bytes> funcs = ca.encodeFunctions();
     program->deploy(addr, code);
     program->updateEnv(ca.decodeAccounts());
+    oracleFactory->initialize();
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -107,6 +126,7 @@ namespace fuzzer {
         uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
       }
     }
+    oracleFactory->finalize();
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
     return TargetContainerResult(tracebits, cksum, predicates, uniqExceptions);

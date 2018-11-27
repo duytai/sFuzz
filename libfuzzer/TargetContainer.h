@@ -8,6 +8,7 @@
 #include <libethereum/Executive.h>
 #include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
+#include <liboracle/OracleFactory.h>
 #include "TargetProgram.h"
 #include "ContractABI.h"
 
@@ -35,15 +36,17 @@ namespace fuzzer {
   
   class TargetExecutive {
     TargetProgram *program;
+    OracleFactory *oracleFactory;
     ContractABI ca;
     bytes code;
     public:
       Address addr;
-      TargetExecutive(TargetProgram *program, Address addr, ContractABI ca, bytes code) {
+      TargetExecutive(OracleFactory *oracleFactory, TargetProgram *program, Address addr, ContractABI ca, bytes code) {
         this->code = code;
         this->ca = ca;
         this->addr = addr;
         this->program = program;
+        this->oracleFactory = oracleFactory;
       }
       TargetContainerResult exec(bytes data);
       void deploy(bytes data);
@@ -51,10 +54,13 @@ namespace fuzzer {
   
   class TargetContainer {
     TargetProgram *program;
+    OracleFactory *oracleFactory;
     u160 baseAddress;
     public:
       TargetContainer();
       ~TargetContainer();
+      void analyze() { oracleFactory->analyze(); }
+      OracleResult oracleResult() { return oracleFactory->oracleResult; }
       TargetExecutive loadContract(bytes code, ContractABI ca);
   };
 }

@@ -60,12 +60,13 @@ ContractInfo Fuzzer::mainContract() {
   return *it;
 }
 
-void Fuzzer::showStats(Mutation mutation) {
-  int numLines = 19, i = 0;
+void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
+  int numLines = 20, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
   }
+  
   double duration = timer.elapsed();
   double fromLastNewPath = timer.elapsed() - fuzzStat.lastNewPath;
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
@@ -108,6 +109,7 @@ void Fuzzer::showStats(Mutation mutation) {
   auto havoc = padStr(hav1, 30);
   auto random1 = to_string(fuzzStat.stageFinds[STAGE_RANDOM]) + "/" + to_string(mutation.stageCycles[STAGE_RANDOM]);
   auto random = padStr(random1, 30);
+  auto gaslessSend = padStr(oracleResult.gaslessSend.str(), 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
     return !item.wasFuzzed;
@@ -133,6 +135,7 @@ void Fuzzer::showStats(Mutation mutation) {
   printf(bH "  dictionary : %s" bH "                    " bH "\n", dictionary.c_str());
   printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
+  printf(bH " GaslessSend : %s" bH "                    " bH "\n", gaslessSend.c_str());
   printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
 }
 
@@ -218,7 +221,7 @@ void Fuzzer::start() {
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
         auto save = [&](bytes data) {
           auto item = saveIfInterest(executive, data, curItem.depth);
-          if (fuzzStat.totalExecs % REFRESH_RATE == 0) showStats(mutation);
+          if (fuzzStat.totalExecs % REFRESH_RATE == 0) showStats(mutation, container.oracleResult());
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {
             writeStats(mutation);
@@ -232,62 +235,77 @@ void Fuzzer::start() {
               mutation.singleWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.twoWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.fourWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.singleWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.twoWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.fourWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.singleArith(save);
               fuzzStat.stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.twoArith(save);
               fuzzStat.stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.fourArith(save);
               fuzzStat.stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.singleInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.twoInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.fourInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+
               mutation.overwriteWithDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              container.analyze();
               
               mutation.overwriteWithAddressDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_AO] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+              container.analyze();
+                
               mutation.havoc(tracebits, save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              container.analyze();
               
               queues[fuzzStat.idx].wasFuzzed = true;
             } else {
@@ -298,6 +316,7 @@ void Fuzzer::start() {
                 mutation.havoc(tracebits, save);
                 fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
                 origHitCount = queues.size();
+                container.analyze();
               };
             }
             break;

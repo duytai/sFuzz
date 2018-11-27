@@ -8,6 +8,7 @@
 #include <libethereum/Executive.h>
 #include <libethashseal/GenesisInfo.h>
 #include <libethereum/LastBlockHashesFace.h>
+#include <liboracle/Common.h>
 #include "ContractABI.h"
 #include "Util.h"
 #include "FuzzItem.h"
@@ -60,6 +61,6 @@ namespace fuzzer {
       void start();
       void writeTestcase(bytes data);
       void writeException(bytes data);
-      void showStats(Mutation mutation);
+      void showStats(Mutation mutation, OracleResult oracleResult);
   };
 }
