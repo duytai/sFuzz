@@ -16,7 +16,7 @@ namespace fuzzer {
       OracleFactory();
       void initialize();
       void finalize();
-      void save(FunctionCall fc);
+      void save(CallLogItem fc);
       void analyze();
   };
 }

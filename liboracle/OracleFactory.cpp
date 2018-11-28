@@ -19,7 +19,7 @@ namespace fuzzer  {
     callLog.clear();
   }
   
-  void OracleFactory::save(FunctionCall fc) {
+  void OracleFactory::save(CallLogItem fc) {
     callLog.push_back(fc);
   }
   

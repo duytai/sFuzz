@@ -70,20 +70,22 @@ namespace fuzzer {
         case Instruction::DELEGATECALL:
         case Instruction::STATICCALL: {
           vector<u256>::size_type stackSize = vm->stack().size();
-          FunctionCall fc;
-          fc.depth = ext->depth;
-          fc.gas = vm->stack()[stackSize - 1];
-          fc.wei = 0;
-          fc.inst = inst;
+          u256 wei = 0;
           if (inst == Instruction::CALL || inst == Instruction::CALLCODE) {
-            fc.wei = vm->stack()[stackSize - 3];
+            wei = vm->stack()[stackSize - 3];
           }
-          oracleFactory->save(fc);
+          CallLogItemPayload payload;
+          payload.gas = vm->stack()[stackSize - 1];
+          payload.wei = wei;
+          payload.inst = inst;
+          oracleFactory->save(CallLogItem(CALL_OPCODE, ext->depth + 1, payload));
           break;
         }
-        default: {
+        case Instruction::REVERT: {
+          if (!pc) oracleFactory->save(CallLogItem(CALL_EXCEPTION, ext->depth + 2));
           break;
         }
+        default: { break; }
       }
       if (inst == Instruction::JUMPCI) {
         jumpDest1 = (u64) vm->stack().back();
@@ -108,6 +110,7 @@ namespace fuzzer {
     program->deploy(addr, code);
     program->updateEnv(ca.decodeAccounts());
     oracleFactory->initialize();
+    oracleFactory->save(CallLogItem(CALL_OPCODE, 0));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -115,8 +118,11 @@ namespace fuzzer {
       unordered_set<uint64_t> exps;
       if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
       uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
+      /* Save Call Log */
+      oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
     }
     for (auto func: funcs) {
+      oracleFactory->save(CallLogItem(CALL_OPCODE, 0));
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
@@ -124,6 +130,8 @@ namespace fuzzer {
         unordered_set<uint64_t> exps;
         if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
         uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
+        /* Save Call Log */
+        oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
       }
     }
     oracleFactory->finalize();
