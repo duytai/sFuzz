@@ -25,6 +25,7 @@ namespace fuzzer {
     // add value
     blockHeader.setGasLimit(maxGasLimit);
     blockHeader.setTimestamp(0);
+    blockHeader.setNumber(2675000);
     gas = maxGasLimit;
     Ethash::init();
     NoProof::init();
