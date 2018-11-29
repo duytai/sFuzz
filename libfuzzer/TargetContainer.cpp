@@ -85,6 +85,10 @@ namespace fuzzer {
           oracleFactory->save(CallLogItem(TIMESTAMP_OPCODE, ext->depth + 1));
           break;
         }
+        case Instruction::NUMBER: {
+          oracleFactory->save(CallLogItem(NUMBER_OPCODE, ext->depth + 1));
+          break;
+        }
         case Instruction::REVERT: {
           if (!pc) oracleFactory->save(CallLogItem(CALL_EXCEPTION, ext->depth + 1));
           break;

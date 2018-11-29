@@ -2,6 +2,7 @@
 #include "GaslessSend.h"
 #include "ExceptionDisorder.h"
 #include "TimestampDependency.h"
+#include "BlockNumDependency.h"
 
 using namespace dev;
 using namespace eth;
@@ -30,6 +31,7 @@ namespace fuzzer  {
       oracleResult.gaslessSend += gaslessSend(callLog) ? 1 : 0;
       oracleResult.exceptionDisorder += exceptionDisorder(callLog) ? 1 : 0;
       oracleResult.timestampDependency += timestampDependency(callLog) ? 1 : 0;
+      oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
     }
     callLogs.clear();
   }
