@@ -8,7 +8,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  enum CallLogItemType { CALL_OPCODE, CALL_EXCEPTION };
+  enum CallLogItemType { CALL_OPCODE, CALL_EXCEPTION, TIMESTAMP_OPCODE };
   struct CallLogItemPayload {
     u256 wei;
     u256 gas;
@@ -25,6 +25,7 @@ namespace fuzzer {
   struct OracleResult {
     u256 gaslessSend;
     u256 exceptionDisorder;
+    u256 timestampDependency;
   };
   
   using CallLogs = vector<vector<CallLogItem>>;

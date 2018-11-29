@@ -61,7 +61,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  int numLines = 21, i = 0;
+  int numLines = 22, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -111,6 +111,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto random = padStr(random1, 30);
   auto gaslessSend = padStr(oracleResult.gaslessSend.str(), 30);
   auto exceptionDisorder = padStr(oracleResult.exceptionDisorder.str(), 30);
+  auto timestampDependency = padStr(oracleResult.timestampDependency.str(), 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
     return !item.wasFuzzed;
@@ -138,6 +139,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
   printf(bH " GaslessSend : %s" bH "                    " bH "\n", gaslessSend.c_str());
   printf(bH "    Disorder : %s" bH "                    " bH "\n", exceptionDisorder.c_str());
+  printf(bH "   Timestamp : %s" bH "                    " bH "\n", timestampDependency.c_str());
   printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
 }
 
