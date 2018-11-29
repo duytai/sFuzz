@@ -70,14 +70,16 @@ namespace fuzzer {
         case Instruction::DELEGATECALL:
         case Instruction::STATICCALL: {
           vector<u256>::size_type stackSize = vm->stack().size();
-          u256 wei = 0;
-          if (inst == Instruction::CALL || inst == Instruction::CALLCODE) {
-            wei = vm->stack()[stackSize - 3];
-          }
+          u256 wei = (inst == Instruction::CALL || inst == Instruction::CALLCODE) ? vm->stack()[stackSize - 3] : 0;
+          auto sizeOffset = (inst == Instruction::CALL || inst == Instruction::CALLCODE) ? (stackSize - 4) : (stackSize - 3);
+          auto inOff = (uint64_t) vm->stack()[sizeOffset];
+          auto inSize = (uint64_t) vm->stack()[sizeOffset - 1];
+          auto first = vm->memory().begin();
           CallLogItemPayload payload;
           payload.gas = vm->stack()[stackSize - 1];
           payload.wei = wei;
           payload.inst = inst;
+          payload.data = bytes(first + inOff, first + inOff + inSize);
           oracleFactory->save(CallLogItem(CALL_OPCODE, ext->depth + 1, payload));
           break;
         }
@@ -118,7 +120,12 @@ namespace fuzzer {
     program->deploy(addr, code);
     program->updateEnv(ca.decodeAccounts());
     oracleFactory->initialize();
-    oracleFactory->save(CallLogItem(CALL_OPCODE, 0));
+    CallLogItemPayload payload;
+    payload.gas = MAX_GAS;
+    payload.wei = 0;
+    payload.inst = Instruction::CALL;
+    payload.data = ca.encodeConstructor();
+    oracleFactory->save(CallLogItem(CALL_OPCODE, 0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -130,7 +137,8 @@ namespace fuzzer {
       oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
     }
     for (auto func: funcs) {
-      oracleFactory->save(CallLogItem(CALL_OPCODE, 0));
+      payload.data = func;
+      oracleFactory->save(CallLogItem(CALL_OPCODE, 0, payload));
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;

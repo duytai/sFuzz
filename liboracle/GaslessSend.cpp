@@ -10,9 +10,10 @@ namespace fuzzer {
     u256 numSend = 0;
     for (auto callLogItem : callLog) {
       if (callLogItem.type == CALL_OPCODE) {
+        auto level = callLogItem.level;
         auto inst = callLogItem.payload.inst;
         auto gas = callLogItem.payload.gas;
-        if (inst == Instruction::CALL && gas == sendGas) {
+        if (inst == Instruction::CALL && gas == sendGas && level == 1) {
           numSend += 1;
         };
       }

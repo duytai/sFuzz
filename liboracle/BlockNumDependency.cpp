@@ -20,8 +20,8 @@ namespace fuzzer {
         numBlockNumber = 0;
         numCallWithWei = 0;
       } else {
-        if (type == NUMBER_OPCODE) numBlockNumber ++;
-        if (type == CALL_OPCODE) {
+        if (type == NUMBER_OPCODE && level == 1) numBlockNumber ++;
+        if (type == CALL_OPCODE && level == 1) {
           auto payload = callLogItem.payload;
           if (payload.wei) {
             numCallWithWei ++;

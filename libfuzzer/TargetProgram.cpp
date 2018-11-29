@@ -26,7 +26,7 @@ namespace fuzzer {
     blockHeader.setGasLimit(maxGasLimit);
     blockHeader.setTimestamp(0);
     blockHeader.setNumber(2675000);
-    gas = maxGasLimit;
+    gas = MAX_GAS;
     Ethash::init();
     NoProof::init();
     SealEngineFace *se = ChainParams(genesisInfo(networkName)).createSealEngine();

@@ -48,6 +48,7 @@ namespace fuzzer {
     
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
   static int REFRESH_RATE = 1000;
+  static u256 MAX_GAS = 100000000000;
 
   static u32 SPLICE_CYCLES = 15;
   static u32 MAX_DET_EXTRAS = 200;

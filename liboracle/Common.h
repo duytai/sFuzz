@@ -18,6 +18,7 @@ namespace fuzzer {
     u256 wei;
     u256 gas;
     Instruction inst;
+    bytes data;
   };
   struct CallLogItem {
     CallLogItemType type;

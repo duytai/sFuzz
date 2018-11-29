@@ -19,8 +19,8 @@ namespace fuzzer {
         numTimestamp = 0;
         numCallWithWei = 0;
       } else {
-        if (type == TIMESTAMP_OPCODE) numTimestamp ++;
-        if (type == CALL_OPCODE) {
+        if (type == TIMESTAMP_OPCODE && level == 1) numTimestamp ++;
+        if (type == CALL_OPCODE && level == 1) {
           auto payload = callLogItem.payload;
           if (payload.wei) {
             numCallWithWei ++;
