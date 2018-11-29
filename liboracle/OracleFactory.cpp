@@ -1,5 +1,6 @@
 #include "OracleFactory.h"
 #include "GaslessSend.h"
+#include "ExceptionDisorder.h"
 
 using namespace dev;
 using namespace eth;
@@ -26,6 +27,7 @@ namespace fuzzer  {
   void OracleFactory::analyze() {
     for (auto callLog : callLogs) {
       oracleResult.gaslessSend += gaslessSend(callLog) ? 1 : 0;
+      oracleResult.exceptionDisorder += exceptionDisorder(callLog) ? 1 : 0;
     }
     callLogs.clear();
   }

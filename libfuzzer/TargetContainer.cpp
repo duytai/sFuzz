@@ -82,7 +82,7 @@ namespace fuzzer {
           break;
         }
         case Instruction::REVERT: {
-          if (!pc) oracleFactory->save(CallLogItem(CALL_EXCEPTION, ext->depth + 2));
+          if (!pc) oracleFactory->save(CallLogItem(CALL_EXCEPTION, ext->depth + 1));
           break;
         }
         default: { break; }

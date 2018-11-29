@@ -7,14 +7,17 @@ using namespace std;
 namespace fuzzer {
   bool gaslessSend(CallLog callLog) {
     u256 sendGas = 2300;
+    u256 numSend = 0;
     for (auto callLogItem : callLog) {
       if (callLogItem.type == CALL_OPCODE) {
         auto inst = callLogItem.payload.inst;
         auto gas = callLogItem.payload.gas;
-        if (inst == Instruction::CALL && gas == sendGas) return true;
+        if (inst == Instruction::CALL && gas == sendGas) {
+          numSend += 1;
+        };
       }
     }
-    return false;
+    return !!numSend;
   }
 }
 

@@ -24,6 +24,7 @@ namespace fuzzer {
   
   struct OracleResult {
     u256 gaslessSend;
+    u256 exceptionDisorder;
   };
   
   using CallLogs = vector<vector<CallLogItem>>;
