@@ -33,6 +33,7 @@ namespace fuzzer {
     u256 exceptionDisorder;
     u256 timestampDependency;
     u256 blockNumDependency;
+    u256 dangerDelegateCall;
   };
   
   using CallLogs = vector<vector<CallLogItem>>;

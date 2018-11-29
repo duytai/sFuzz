@@ -61,7 +61,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  int numLines = 19, i = 0;
+  int numLines = 20, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -113,6 +113,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto exceptionDisorder = padStr(oracleResult.exceptionDisorder.str(), 5);
   auto timestampDependency = padStr(oracleResult.timestampDependency.str(), 5);
   auto blockNumDependency = padStr(oracleResult.blockNumDependency.str(), 5);
+  auto delegatecall = padStr(oracleResult.dangerDelegateCall.str(), 5);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
     return !item.wasFuzzed;
@@ -138,6 +139,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "  dictionary : %s" bH "    disorder : %s" bH "\n", dictionary.c_str(), exceptionDisorder.c_str());
   printf(bH "       havoc : %s" bH "   timestamp : %s" bH "\n", havoc.c_str(), timestampDependency.c_str());
   printf(bH "      random : %s" bH "      number : %s" bH "\n", random.c_str(), blockNumDependency.c_str());
+  printf(bH "               %s" bH "    delegate : %s" bH "\n", padStr("", 30).c_str(), delegatecall.c_str());
   printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
 }
 

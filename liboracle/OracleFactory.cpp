@@ -3,6 +3,7 @@
 #include "ExceptionDisorder.h"
 #include "TimestampDependency.h"
 #include "BlockNumDependency.h"
+#include "DangerDelegateCall.h"
 
 using namespace dev;
 using namespace eth;
@@ -32,6 +33,7 @@ namespace fuzzer  {
       oracleResult.exceptionDisorder += exceptionDisorder(callLog) ? 1 : 0;
       oracleResult.timestampDependency += timestampDependency(callLog) ? 1 : 0;
       oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
+      oracleResult.dangerDelegateCall += dangerDelegateCall(callLog) ? 1 : 0;
     }
     callLogs.clear();
   }
