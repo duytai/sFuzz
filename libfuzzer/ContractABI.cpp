@@ -103,15 +103,10 @@ namespace fuzzer {
    * msg.sender address can not be 0 (32 - 64)
    */
   bytes ContractABI::postprocessTestData(bytes data) {
-    auto first = data.begin() + 32 + 12;
-    auto last = first + 20;
-    auto senderValue = u256("0x"+ toHex(bytes(first, last)));
-    while (!senderValue) {
-      for (int i = 0; i < 20; i ++) {
-        *(first + i) = rand() % 256;
-      }
-      senderValue = u256("0x"+ toHex(bytes(first, last)));
-    }
+    auto first = data.begin() + 44;
+    auto last = data.begin() + 64;
+    auto sender = u256("0x" + toHex(bytes(first, last)));
+    if (!sender) data[63] = 0xf0 + 1;
     return data;
   }
   

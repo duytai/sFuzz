@@ -13,7 +13,7 @@ namespace fuzzer {
   TargetContainer::TargetContainer() {
     program = new TargetProgram();
     oracleFactory = new OracleFactory();
-    baseAddress = u160("0xff");
+    baseAddress = u160("0xf0");
   }
   
   TargetContainer::~TargetContainer() {
@@ -88,6 +88,10 @@ namespace fuzzer {
           oracleFactory->save(CallLogItem(TIMESTAMP_OPCODE, ext->depth + 1));
           break;
         }
+        case Instruction::SUICIDE: {
+          oracleFactory->save(CallLogItem(SUICIDE_OPCODE, ext->depth + 1));
+          break;
+        }
         case Instruction::NUMBER: {
           oracleFactory->save(CallLogItem(NUMBER_OPCODE, ext->depth + 1));
           break;
@@ -128,8 +132,6 @@ namespace fuzzer {
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
     oracleFactory->save(CallLogItem(CALL_OPCODE, 0, payload));
-    payload.wei = program->getBalance(addr);
-    oracleFactory->save(CallLogItem(CONTRACT_WEI, 0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -155,9 +157,6 @@ namespace fuzzer {
         oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
       }
     }
-    payload.data.clear();
-    payload.wei = program->getBalance(addr);
-    oracleFactory->save(CallLogItem(CONTRACT_WEI, 0, payload));
     oracleFactory->finalize();
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
