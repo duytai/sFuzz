@@ -4,6 +4,8 @@
 #include "TimestampDependency.h"
 #include "BlockNumDependency.h"
 #include "DangerDelegateCall.h"
+#include "Reentrancy.h"
+#include "FreezingEther.h"
 
 using namespace dev;
 using namespace eth;
@@ -34,6 +36,8 @@ namespace fuzzer  {
       oracleResult.timestampDependency += timestampDependency(callLog) ? 1 : 0;
       oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
       oracleResult.dangerDelegateCall += dangerDelegateCall(callLog) ? 1 : 0;
+      oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
+      oracleResult.freezingEther += freezingEther(callLog) ? 1 : 0;
     }
     callLogs.clear();
   }

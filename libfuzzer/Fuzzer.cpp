@@ -114,6 +114,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto timestampDependency = padStr(oracleResult.timestampDependency.str(), 5);
   auto blockNumDependency = padStr(oracleResult.blockNumDependency.str(), 5);
   auto delegatecall = padStr(oracleResult.dangerDelegateCall.str(), 5);
+  auto reeFreeze = padStr(oracleResult.reentrancy.str() + "/" + oracleResult.freezingEther.str(), 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
     return !item.wasFuzzed;
@@ -131,7 +132,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH " total execs : %s" bH " except type : %s" bH "\n", allExecs.c_str(), typeExceptionCount.c_str());
   printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerTupe.c_str());
   printf(bH "  cycle prog : %s" bH " uniq except : %s" bH "\n", cycleProgress.c_str(), exceptionCount.c_str());
-  printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " bV2 bV2 cRST bRTR "\n");
+  printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bV2 bV2 bRTR "\n");
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
   printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
@@ -139,7 +140,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "  dictionary : %s" bH "    disorder : %s" bH "\n", dictionary.c_str(), exceptionDisorder.c_str());
   printf(bH "       havoc : %s" bH "   timestamp : %s" bH "\n", havoc.c_str(), timestampDependency.c_str());
   printf(bH "      random : %s" bH "      number : %s" bH "\n", random.c_str(), blockNumDependency.c_str());
-  printf(bH "               %s" bH "    delegate : %s" bH "\n", padStr("", 30).c_str(), delegatecall.c_str());
+  printf(bH "  reen/free  : %s" bH "    delegate : %s" bH "\n", reeFreeze.c_str(), delegatecall.c_str());
   printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
 }
 
