@@ -32,6 +32,7 @@ namespace fuzzer {
     OnOpFunc onOp = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
     ca.updateTestData(data);
     program->deploy(addr, bytes{code});
+    program->setBalance(addr, 0xffffffff);
     program->updateEnv(ca.decodeAccounts());
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
   }
@@ -118,6 +119,7 @@ namespace fuzzer {
     ca.updateTestData(data);
     vector<bytes> funcs = ca.encodeFunctions();
     program->deploy(addr, code);
+    program->setBalance(addr, 0xffffffff);
     program->updateEnv(ca.decodeAccounts());
     oracleFactory->initialize();
     CallLogItemPayload payload;

@@ -33,11 +33,16 @@ namespace fuzzer {
     EnvInfo envInfo(blockHeader, lastBlockHashes, 0);
     executive = new Executive(state, envInfo, *se);
   }
+  
+  void TargetProgram::setBalance(Address addr, u256 balance) {
+    state.setBalance(addr, balance);
+  }
 
   void TargetProgram::deploy(Address addr, bytes code) {
     state.clearStorage(addr);
     state.setCode(addr, bytes{code});
   }
+  
   
   ExecutionResult TargetProgram::invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp) {
     switch (type) {

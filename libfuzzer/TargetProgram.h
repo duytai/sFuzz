@@ -28,6 +28,7 @@ namespace fuzzer {
     public:
       TargetProgram();
       ~TargetProgram();
+      void setBalance(Address addr, u256 balance);
       void deploy(Address addr, bytes code);
       void updateEnv(Accounts accounts);
       ExecutionResult invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp);
