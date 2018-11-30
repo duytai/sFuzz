@@ -13,7 +13,7 @@ using namespace std;
 
 namespace fuzzer  {
   OracleFactory::OracleFactory() {
-    oracleResult.gaslessSend = 0;
+    hasTranfer = false;
   }
   
   void OracleFactory::initialize() {
@@ -37,7 +37,13 @@ namespace fuzzer  {
       oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
       oracleResult.dangerDelegateCall += dangerDelegateCall(callLog) ? 1 : 0;
       oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
-      oracleResult.freezingEther += freezingEther(callLog) ? 1 : 0;
+      if (hasTranfer) {
+        oracleResult.freezingEther = 0;
+      } else if (!freezingEther(callLog)) {
+        hasTranfer = true;
+      } else {
+        oracleResult.freezingEther += 1;
+      }
     }
     callLogs.clear();
   }

@@ -13,6 +13,7 @@ namespace fuzzer {
     CALL_EXCEPTION,
     TIMESTAMP_OPCODE,
     NUMBER_OPCODE,
+    CONTRACT_WEI,
   };
   struct CallLogItemPayload {
     u256 wei;

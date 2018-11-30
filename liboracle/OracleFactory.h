@@ -11,6 +11,7 @@ namespace fuzzer {
   class OracleFactory {
     CallLog callLog;
     CallLogs callLogs;
+    bool hasTranfer;
     public:
       OracleResult oracleResult;
       OracleFactory();

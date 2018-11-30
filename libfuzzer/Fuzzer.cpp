@@ -317,6 +317,8 @@ void Fuzzer::start() {
               mutation.havoc(tracebits, save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              container.analyze();
+              
               if (mutation.splice(queues)) {
                 mutation.havoc(tracebits, save);
                 fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;

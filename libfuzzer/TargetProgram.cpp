@@ -37,6 +37,10 @@ namespace fuzzer {
   void TargetProgram::setBalance(Address addr, u256 balance) {
     state.setBalance(addr, balance);
   }
+    
+  u256 TargetProgram::getBalance(Address addr) {
+    return state.balance(addr);
+  }
 
   void TargetProgram::deploy(Address addr, bytes code) {
     state.clearStorage(addr);
