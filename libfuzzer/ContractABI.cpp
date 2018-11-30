@@ -106,7 +106,7 @@ namespace fuzzer {
     auto first = data.begin() + 44;
     auto last = data.begin() + 64;
     auto sender = u256("0x" + toHex(bytes(first, last)));
-    if (!sender) data[63] = 0xf0 + 1;
+    if (!sender) data[63] = 0xf0;
     return data;
   }
   

@@ -22,13 +22,9 @@ namespace fuzzer {
         if (type == NUMBER_OPCODE && level == 1) numBlockNumber ++;
         if (type == CALL_OPCODE && level == 1) {
           auto payload = callLogItem.payload;
-          /*
-           * FixMe: check ether
-           */
-          numCallWithWei ++;
-          //if (payload.wei) {
-          //  numCallWithWei ++;
-          //}
+          if (payload.wei) {
+            numCallWithWei ++;
+          }
         }
       }
     }
