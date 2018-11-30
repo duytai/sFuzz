@@ -1,4 +1,3 @@
-
 #include "BlockNumDependency.h"
 
 using namespace dev;
@@ -23,9 +22,13 @@ namespace fuzzer {
         if (type == NUMBER_OPCODE && level == 1) numBlockNumber ++;
         if (type == CALL_OPCODE && level == 1) {
           auto payload = callLogItem.payload;
-          if (payload.wei) {
-            numCallWithWei ++;
-          }
+          /*
+           * FixMe: check ether
+           */
+          numCallWithWei ++;
+          //if (payload.wei) {
+          //  numCallWithWei ++;
+          //}
         }
       }
     }
