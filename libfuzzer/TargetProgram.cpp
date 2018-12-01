@@ -47,7 +47,6 @@ namespace fuzzer {
     state.setCode(addr, bytes{code});
   }
   
-  
   ExecutionResult TargetProgram::invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp) {
     switch (type) {
       case CONTRACT_CONSTRUCTOR: {

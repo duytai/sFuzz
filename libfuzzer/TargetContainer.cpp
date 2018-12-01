@@ -13,7 +13,7 @@ namespace fuzzer {
   TargetContainer::TargetContainer() {
     program = new TargetProgram();
     oracleFactory = new OracleFactory();
-    baseAddress = u160("0xf0");
+    baseAddress = ATTACKER_ADDRESS;
   }
   
   TargetContainer::~TargetContainer() {
@@ -22,6 +22,10 @@ namespace fuzzer {
   }
   
   TargetExecutive TargetContainer::loadContract(bytes code, ContractABI ca) {
+    if (baseAddress > CONTRACT_ADDRESS) {
+      cout << "> Currently does not allow to load more than 1 asset contract" << endl;
+      exit(0);
+    }
     Address addr(baseAddress);
     TargetExecutive te(oracleFactory, program, addr, ca, code);
     baseAddress ++;
@@ -32,7 +36,7 @@ namespace fuzzer {
     OnOpFunc onOp = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
     ca.updateTestData(data);
     program->deploy(addr, bytes{code});
-    program->setBalance(addr, 0xffffffff);
+    program->setBalance(addr, DEFAULT_BALANCE);
     program->updateEnv(ca.decodeAccounts());
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
   }
@@ -123,7 +127,7 @@ namespace fuzzer {
     ca.updateTestData(data);
     vector<bytes> funcs = ca.encodeFunctions();
     program->deploy(addr, code);
-    program->setBalance(addr, 0xffffffff);
+    program->setBalance(addr, DEFAULT_BALANCE);
     program->updateEnv(ca.decodeAccounts());
     oracleFactory->initialize();
     CallLogItemPayload payload;
@@ -143,9 +147,11 @@ namespace fuzzer {
       oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
     }
     for (auto func: funcs) {
+      /* Update payload */
       payload.data = func;
       payload.wei = 0;
       oracleFactory->save(CallLogItem(CALL_OPCODE, 0, payload));
+      /* Call function */
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;

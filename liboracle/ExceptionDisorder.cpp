@@ -28,6 +28,7 @@ namespace fuzzer {
         }
       }
     }
+      
     numDisorder += (!hasRootException && hasNestedException) ? 1 : 0;
     return !!numDisorder;
   }

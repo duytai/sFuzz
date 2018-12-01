@@ -2,6 +2,7 @@
 #include <iostream>
 #include <vector>
 #include <libdevcore/FixedHash.h>
+#include <libevm/LegacyVM.h>
 #include <fstream>
 
 #define unlikely(_x)  __builtin_expect(!!(_x), 0)
@@ -35,6 +36,7 @@
 
 using namespace std;
 using namespace dev;
+using namespace eth;
 
 namespace fuzzer {
   typedef uint8_t u8;
@@ -49,6 +51,11 @@ namespace fuzzer {
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
   static int REFRESH_RATE = 1000;
   static u256 MAX_GAS = 100000000000;
+  static u160 ATTACKER_ADDRESS = 0xf0;
+  static u160 CONTRACT_ADDRESS = 0xf1;
+  static u256 DEFAULT_BALANCE = 0xffffffffff;
+  static bytes SET_DATA_SIG = fromHex("0399321e");
+  static OnOpFunc EMPTY_ONOP = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
 
   static u32 SPLICE_CYCLES = 15;
   static u32 MAX_DET_EXTRAS = 200;
@@ -112,11 +119,8 @@ namespace fuzzer {
   u32 swap32(u32 x);
   /* Locate differents */
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last);
-  /* count bits */
-  u32 coutBits(u8 *mem);
   string formatDuration(int duration);
   string padStr(string str, int len);
-  u32 countBytes(u8* mem);
   /* Data struct */
   struct ExtraData {
     bytes data;

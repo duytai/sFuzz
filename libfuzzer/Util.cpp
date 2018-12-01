@@ -177,47 +177,5 @@ namespace fuzzer {
     while ((int)str.size() < len) str += " ";
     return str;
   }
-  
-  u32 coutBits(u8 *mem) {
-    u32* ptr = (u32*)mem;
-    u32  i   = (MAP_SIZE >> 2);
-    u32  ret = 0;
-    while (i--) {
-      u32 v = *(ptr++);
-      /* This gets called on the inverse, virgin bitmap; optimize for sparse
-       data. */
-      if (v == 0xffffffff) {
-        ret += 32;
-        continue;
-      }
-      v -= ((v >> 1) & 0x55555555);
-      v = (v & 0x33333333) + ((v >> 2) & 0x33333333);
-      ret += (((v + (v >> 4)) & 0xF0F0F0F) * 0x01010101) >> 24;
-
-    }
-    return ret;
-  }
-
-  u32 countBytes(u8* mem) {
-
-    u32* ptr = (u32*)mem;
-    u32  i   = (MAP_SIZE >> 2);
-    u32  ret = 0;
-    
-    while (i--) {
-      
-      u32 v = *(ptr++);
-      
-      if (!v) continue;
-      if (v & FF(0)) ret++;
-      if (v & FF(1)) ret++;
-      if (v & FF(2)) ret++;
-      if (v & FF(3)) ret++;
-      
-    }
-    
-    return ret;
-    
-  }
 }
 
