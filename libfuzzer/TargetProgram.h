@@ -22,7 +22,6 @@ namespace fuzzer {
       State state;
       u256 gas;
       u160 sender;
-      unordered_map<u160, u256> nonces;
       Executive *executive;
       ExecutionResult invoke(Address addr, bytes data, OnOpFunc onOp);
     public:

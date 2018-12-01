@@ -71,15 +71,13 @@ namespace fuzzer {
     Address senderAddr(sender);
     u256 value = 0;
     u256 gasPrice = 0;
-    if (!nonces.count(sender)) nonces[sender] = 0;
-    Transaction t = Transaction(value, gasPrice, gas, data, nonces[sender]);
+    Transaction t = Transaction(value, gasPrice, gas, data, state.getNonce(sender));
     t.forceSender(senderAddr);
     executive->setResultRecipient(res);
     executive->initialize(t);
     executive->call(addr, senderAddr, value, gasPrice, &data, gas);
     executive->go(onOp);
     executive->finalize();
-    nonces[sender] ++;
     return res;
   }
 
