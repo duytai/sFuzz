@@ -121,6 +121,8 @@ namespace fuzzer {
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last);
   string formatDuration(int duration);
   string padStr(string str, int len);
+  bytes setVictimData(bytes data);
+  bytes u256ToBytes(u256 v);
   /* Data struct */
   struct ExtraData {
     bytes data;

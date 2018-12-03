@@ -147,6 +147,7 @@ namespace fuzzer {
       oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
     }
     for (auto func: funcs) {
+      program->invoke(ATTACKER_ADDRESS, CONTRACT_FUNCTION, setVictimData(func), EMPTY_ONOP);
       /* Update payload */
       payload.data = func;
       payload.wei = 0;
