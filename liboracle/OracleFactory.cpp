@@ -31,18 +31,26 @@ namespace fuzzer  {
   
   void OracleFactory::analyze() {
     for (auto callLog : callLogs) {
-      oracleResult.gaslessSend += gaslessSend(callLog) ? 1 : 0;
-      oracleResult.exceptionDisorder += exceptionDisorder(callLog) ? 1 : 0;
-      oracleResult.timestampDependency += timestampDependency(callLog) ? 1 : 0;
-      oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
-      oracleResult.dangerDelegateCall += dangerDelegateCall(callLog) ? 1 : 0;
-      oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
-      if (hasTranfer) {
-        oracleResult.freezingEther = 0;
-      } else if (!freezingEther(callLog)) {
-        hasTranfer = true;
-      } else {
-        oracleResult.freezingEther += 1;
+      if (!oracleResult.gaslessSend)
+        oracleResult.gaslessSend += gaslessSend(callLog) ? 1 : 0;
+      if (!oracleResult.exceptionDisorder)
+        oracleResult.exceptionDisorder += exceptionDisorder(callLog) ? 1 : 0;
+      if (!oracleResult.timestampDependency)
+        oracleResult.timestampDependency += timestampDependency(callLog) ? 1 : 0;
+      if (!oracleResult.blockNumDependency)
+        oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
+      if (!oracleResult.dangerDelegateCall)
+        oracleResult.dangerDelegateCall += dangerDelegateCall(callLog) ? 1 : 0;
+      if (!oracleResult.reentrancy)
+        oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
+      if (!oracleResult.freezingEther) {
+        if (hasTranfer) {
+          oracleResult.freezingEther = 0;
+        } else if (!freezingEther(callLog)) {
+          hasTranfer = true;
+        } else {
+          oracleResult.freezingEther += 1;
+        }
       }
     }
     callLogs.clear();
