@@ -109,12 +109,14 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto havoc = padStr(hav1, 30);
   auto random1 = to_string(fuzzStat.stageFinds[STAGE_RANDOM]) + "/" + to_string(mutation.stageCycles[STAGE_RANDOM]);
   auto random = padStr(random1, 30);
-  auto gaslessSend = padStr(oracleResult.gaslessSend.str(), 5);
-  auto exceptionDisorder = padStr(oracleResult.exceptionDisorder.str(), 5);
-  auto timestampDependency = padStr(oracleResult.timestampDependency.str(), 5);
-  auto blockNumDependency = padStr(oracleResult.blockNumDependency.str(), 5);
-  auto delegatecall = padStr(oracleResult.dangerDelegateCall.str(), 5);
-  auto reeFreeze = padStr(oracleResult.reentrancy.str() + "/" + oracleResult.freezingEther.str(), 30);
+  auto gaslessSend = padStr(!!oracleResult.gaslessSend ? "true" : "n/a", 5);
+  auto exceptionDisorder = padStr(!!oracleResult.exceptionDisorder ? "true" : "n.a", 5);
+  auto timestampDependency = padStr(!!oracleResult.timestampDependency ? "true" : "n.a", 5);
+  auto blockNumDependency = padStr(!!oracleResult.blockNumDependency ? "true" : "n.a", 5);
+  auto delegatecall = padStr(!!oracleResult.dangerDelegateCall ? "true" : "n.a", 5);
+  string reentrancy = !!oracleResult.reentrancy ? "true" : "n.a";
+  string freeEth = !!oracleResult.freezingEther ? "true" : "n.a";
+  auto reeFreeze = padStr(reentrancy + "/" + freeEth, 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
     return !item.wasFuzzed;
