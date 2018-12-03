@@ -28,6 +28,7 @@
 #define bCR "╋"
 
 #define cGRN "\x1b[0;32m"
+#define cRED "\x1b[0;31m"
 #define cRST "\x1b[0m"
 #define Bold "\e[1m"
 #define CURSOR_HIDE "\x1b[?25l"
@@ -123,6 +124,7 @@ namespace fuzzer {
   string padStr(string str, int len);
   bytes setVictimData(bytes data);
   bytes u256ToBytes(u256 v);
+  void printfWithColor(u256 value, string text);
   /* Data struct */
   struct ExtraData {
     bytes data;

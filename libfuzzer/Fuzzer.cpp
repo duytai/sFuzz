@@ -61,7 +61,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  int numLines = 20, i = 0;
+  int numLines = 21, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -109,14 +109,6 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto havoc = padStr(hav1, 30);
   auto random1 = to_string(fuzzStat.stageFinds[STAGE_RANDOM]) + "/" + to_string(mutation.stageCycles[STAGE_RANDOM]);
   auto random = padStr(random1, 30);
-  auto gaslessSend = padStr(!!oracleResult.gaslessSend ? "true" : "n/a", 5);
-  auto exceptionDisorder = padStr(!!oracleResult.exceptionDisorder ? "true" : "n.a", 5);
-  auto timestampDependency = padStr(!!oracleResult.timestampDependency ? "true" : "n.a", 5);
-  auto blockNumDependency = padStr(!!oracleResult.blockNumDependency ? "true" : "n.a", 5);
-  auto delegatecall = padStr(!!oracleResult.dangerDelegateCall ? "true" : "n.a", 5);
-  string reentrancy = !!oracleResult.reentrancy ? "true" : "n.a";
-  string freeEth = !!oracleResult.freezingEther ? "true" : "n.a";
-  auto reeFreeze = padStr(reentrancy + "/" + freeEth, 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
     return !item.wasFuzzed;
@@ -138,12 +130,21 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
   printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
-  printf(bH "  known ints : %s" bH " gaslessSend : %s" bH "\n", knownInts.c_str(), gaslessSend.c_str());
-  printf(bH "  dictionary : %s" bH "    disorder : %s" bH "\n", dictionary.c_str(), exceptionDisorder.c_str());
-  printf(bH "       havoc : %s" bH "   timestamp : %s" bH "\n", havoc.c_str(), timestampDependency.c_str());
-  printf(bH "      random : %s" bH "      number : %s" bH "\n", random.c_str(), blockNumDependency.c_str());
-  printf(bH "  reen/free  : %s" bH "    delegate : %s" bH "\n", reeFreeze.c_str(), delegatecall.c_str());
-  printf(bBL bV50 bV5 bV bBTR bV20 bV2 bV2 bBR "\n");
+  printf(bH "  known ints : %s" bH "                    " bH "\n", knownInts.c_str());
+  printf(bH "  dictionary : %s" bH "                    " bH "\n", dictionary.c_str());
+  printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
+  printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
+  printf(bLTR bV5 cGRN " oracle yields " cRST bV bV20 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
+  printf(bH " ");
+  printfWithColor(oracleResult.gaslessSend, " Gasless");
+  printfWithColor(oracleResult.exceptionDisorder, " Disorder");
+  printfWithColor(oracleResult.reentrancy, " Reentrancy");
+  printfWithColor(oracleResult.timestampDependency, " Timestamp");
+  printfWithColor(oracleResult.blockNumDependency, " Number");
+  printfWithColor(oracleResult.dangerDelegateCall, " Delegate");
+  printfWithColor(oracleResult.freezingEther, " Freeze");
+  printf("    " bH "\n");
+  printf(bBL bV50 bV5 bV2 bV20 bV2 bV2 bBR "\n");
 }
 
 void Fuzzer::writeStats(Mutation) {

@@ -199,5 +199,10 @@ namespace fuzzer {
     }
     return ret;
   }
+  
+  void printfWithColor(u256 value, string text) {
+    if (value > 0) cout << cRED + text  + cRST ;
+    if (!value) cout << cGRN + text  + cRST;
+  }
 }
 
