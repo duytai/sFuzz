@@ -263,7 +263,11 @@ namespace fuzzer {
     for (auto node : root) {
       vector<TypeDef> tds;
       string type = node.second.get<string>("type");
-      if (type == "constructor" || type == "function") {
+      string constant = "false";
+      if (node.second.get_child_optional("constant")) {
+        constant = node.second.get<string>("constant");
+      }
+      if ((type == "constructor" || type == "function") && constant == "false") {
         auto inputNodes = node.second.get_child("inputs");
         string name = type == "constructor" ? "" : node.second.get<string>("name");
         for (auto inputNode : inputNodes) {
