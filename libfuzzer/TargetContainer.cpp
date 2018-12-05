@@ -53,6 +53,11 @@ namespace fuzzer {
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
+      /* TODO: Improve it later */
+      if (!ext->depth) {
+        auto addressHex = ext->myAddress.hex();
+        if (addressHex == ATTACKER_ADDRESS_HEX) return;
+      }
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
       switch (inst) {

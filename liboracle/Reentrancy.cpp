@@ -9,10 +9,11 @@ namespace fuzzer {
     u256 numReentrancies = 0;
     unordered_map<string, u256> signatures;
     for (auto callLogItem : callLog) {
-      auto type = callLogItem.type;
       auto level = callLogItem.level;
       auto data = callLogItem.payload.data;
-      if (data.size() && type == CALL_OPCODE) {
+      auto inst = callLogItem.payload.inst;
+      if (data.size()
+          && (inst == Instruction::CALL || inst == Instruction::CALLCODE)) {
         auto sig = bytes(data.begin(), data.begin() + 4);
         auto sigStr = toHex(sig);
         if (!level) {

@@ -53,6 +53,7 @@ namespace fuzzer {
   static int REFRESH_RATE = 1000;
   static u256 MAX_GAS = 100000000000;
   static u160 ATTACKER_ADDRESS = 0xf0;
+  static string ATTACKER_ADDRESS_HEX = "00000000000000000000000000000000000000f0";
   static u160 CONTRACT_ADDRESS = 0xf1;
   static u256 DEFAULT_BALANCE = 0xffffffffff;
   static bytes SET_DATA_SIG = fromHex("0399321e");
