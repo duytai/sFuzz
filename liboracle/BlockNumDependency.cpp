@@ -12,19 +12,17 @@ namespace fuzzer {
     for (auto callLogItem : callLog) {
       auto type = callLogItem.type;
       auto level = callLogItem.level;
+      auto inst = callLogItem.payload.inst;
       if (type == CALL_OPCODE && !level) {
         if (numBlockNumber && numCallWithWei) {
           numBlockNumberDependency += 1;
         }
         numBlockNumber = 0;
         numCallWithWei = 0;
-      } else {
-        if (type == NUMBER_OPCODE && level == 1) numBlockNumber ++;
-        if (type == CALL_OPCODE && level == 1) {
-          auto payload = callLogItem.payload;
-          if (payload.wei) {
-            numCallWithWei ++;
-          }
+      } else if (level == 1) {
+        if (type == NUMBER_OPCODE) numBlockNumber ++;
+        if (inst == Instruction::CALLCODE || inst == Instruction::CALL) {
+          numCallWithWei ++;
         }
       }
     }
