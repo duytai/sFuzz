@@ -206,6 +206,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
 void Fuzzer::start() {
   TargetContainer container;
   Dictionary codeDict, addressDict;
+  unordered_map<u64, u64> showMap;
   for (auto contractInfo : fuzzParam.contractInfo) {
     ContractABI ca(contractInfo.abiJson);
     auto bin = fromHex(contractInfo.bin);
@@ -229,7 +230,12 @@ void Fuzzer::start() {
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
         auto save = [&](bytes data) {
           auto item = saveIfInterest(executive, data, curItem.depth);
-          if (fuzzStat.totalExecs % REFRESH_RATE == 0) showStats(mutation, container.oracleResult());
+          /* Show every one second */
+          u64 dur = timer.elapsed();
+          if (!showMap.count(dur)) {
+            showMap.insert(make_pair(dur, 1));
+            showStats(mutation, container.oracleResult());
+          }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {
             writeStats(mutation);
