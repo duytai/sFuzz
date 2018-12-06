@@ -189,7 +189,12 @@ h256 ExtVM::blockHash(u256 _number)
 
     if (_number >= currentNumber || _number < (std::max<u256>(256, currentNumber) - 256))
         return h256();
-
+    /* FixMe:
+     * - Since fuzzer simulates one block, we dont have other block hashes
+     * - I comment out these line to avoid this case:
+     * block.blockhash(block.number - 1);
+     */
+    /*
     if (currentNumber < m_sealEngine.chainParams().experimentalForkBlock + 256)
     {
         h256 const parentHash = envInfo().header().parentHash();
@@ -198,7 +203,7 @@ h256 ExtVM::blockHash(u256 _number)
         assert(lastHashes.size() > (unsigned)(currentNumber - 1 - _number));
         return lastHashes[(unsigned)(currentNumber - 1 - _number)];
     }
-
+    */
     u256 const nonce = m_s.getNonce(caller);
     u256 const gas = 1000000;
     Transaction tx(0, 0, gas, c_blockhashContractAddress, toBigEndian(_number), nonce);
