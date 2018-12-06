@@ -185,6 +185,8 @@ public:
 
     /// Revert all changes made to the state by this execution.
     void revert();
+    
+    void updateBlock(int64_t _blockNumber, int64_t _timestamp);
 
 private:
     /// @returns false iff go() must be called (and thus a VM execution in required).

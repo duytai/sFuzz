@@ -21,6 +21,8 @@ namespace fuzzer {
     private:
       State state;
       u256 gas;
+      int64_t timestamp;
+      int64_t blockNumber;
       u160 sender;
       Executive *executive;
       ExecutionResult invoke(Address addr, bytes data, OnOpFunc onOp);

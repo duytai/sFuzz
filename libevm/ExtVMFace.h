@@ -276,6 +276,8 @@ public:
     unsigned depth = 0;       ///< Depth of the present call.
     bool isCreate = false;    ///< Is this a CREATE call?
     bool staticCall = false;  ///< Throw on state changing.
+    int64_t timestamp = 0;
+    int64_t number = 0;
 };
 
 inline evmc_address toEvmC(Address const& _addr)

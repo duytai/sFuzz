@@ -22,14 +22,16 @@ namespace fuzzer {
     BlockHeader blockHeader;
     s64 maxGasLimit = ChainParams(genesisInfo(networkName))
       .maxGasLimit.convert_to<s64>();
-    // add value
-    blockHeader.setGasLimit(maxGasLimit);
-    blockHeader.setTimestamp(0);
-    blockHeader.setNumber(2675000);
     gas = MAX_GAS;
+    timestamp = 0;
+    blockNumber = 2675000;
     Ethash::init();
     NoProof::init();
     SealEngineFace *se = ChainParams(genesisInfo(networkName)).createSealEngine();
+    // add value
+    blockHeader.setGasLimit(maxGasLimit);
+    blockHeader.setTimestamp(timestamp);
+    blockHeader.setNumber(blockNumber);
     EnvInfo envInfo(blockHeader, lastBlockHashes, 0);
     executive = new Executive(state, envInfo, *se);
   }
@@ -76,6 +78,7 @@ namespace fuzzer {
     executive->setResultRecipient(res);
     executive->initialize(t);
     executive->call(addr, senderAddr, value, gasPrice, &data, gas);
+    executive->updateBlock(blockNumber, timestamp);
     executive->go(onOp);
     executive->finalize();
     return res;

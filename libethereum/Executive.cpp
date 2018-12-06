@@ -417,6 +417,13 @@ bool Executive::executeCreate(Address const& _sender, u256 const& _endowment, u2
     return !m_ext;
 }
 
+void Executive::updateBlock(int64_t _blockNumber, int64_t _timestamp) {
+    if (m_ext) {
+        m_ext->timestamp = _timestamp;
+        m_ext->number = _blockNumber;
+    }
+}
+
 OnOpFunc Executive::simpleTrace()
 {
     Logger& traceLogger = m_vmTraceLogger;

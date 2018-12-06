@@ -1408,7 +1408,8 @@ void LegacyVM::interpretCases()
             ON_OP();
             updateIOGas();
 
-            m_SPP[0] = m_ext->envInfo().timestamp();
+            //m_SPP[0] = m_ext->envInfo().timestamp();
+            m_SPP[0] = m_ext->timestamp;
         }
         NEXT
 
@@ -1417,7 +1418,8 @@ void LegacyVM::interpretCases()
             ON_OP();
             updateIOGas();
 
-            m_SPP[0] = m_ext->envInfo().number();
+            //m_SPP[0] = m_ext->envInfo().number();
+            m_SPP[0] = m_ext->number;
         }
         NEXT
 
