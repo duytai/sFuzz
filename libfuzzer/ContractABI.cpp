@@ -16,6 +16,15 @@ namespace fuzzer {
     this->tds = tds;
   }
   
+  FakeBlock ContractABI::decodeBlock() {
+    if (!block.size()) throw "Block is empty";
+    auto numberInBytes = bytes(block.begin(), block.begin() + 8);
+    auto timestampInBytes = bytes(block.begin() + 8, block.begin() + 16);
+    auto number = u64("0x" + toHex(numberInBytes));
+    auto timestamp = u64("0x" + toHex(timestampInBytes));
+    return make_tuple(block, (int64_t)number, (int64_t)timestamp);
+  }
+  
   Accounts ContractABI::decodeAccounts() {
     unordered_set<string> accountSet;
     Accounts ret;
@@ -124,13 +133,15 @@ namespace fuzzer {
       return (realLen / 32 + 1) * 32;
     };
     /* Pad to enough data before decoding */
-    int offset = 64;
+    int offset = 96;
     auto padLen = [&](int singleLen) {
       int fitLen = offset + singleLen;
       while ((int)data.size() < fitLen) data.push_back(0);
     };
+    block.clear();
     accounts.clear();
     auto senderInBytes = bytes(data.begin() + 32, data.begin() + 64);
+    block = bytes(data.begin() + 64, data.begin() + 96);
     accounts.push_back(senderInBytes);
     for (auto &fd : this->fds) {
       for (auto &td : fd.tds) {
@@ -200,7 +211,7 @@ namespace fuzzer {
   bytes ContractABI::randomTestcase() {
     /*
      * Random value for ABI
-     * | --- dynamic len (32 bytes) -- | content |
+     * | --- dynamic len (32 bytes) -- | sender | blockNumber(8) + timestamp(8) | content |
      */
     bytes ret(32, 5);
     int lenOffset = 0;
@@ -215,7 +226,9 @@ namespace fuzzer {
     };
     /* sender env */
     bytes sender(32, 0);
+    bytes block(32, 0);
     ret.insert(ret.end(), sender.begin(), sender.end());
+    ret.insert(ret.end(), block.begin(), block.end());
     for (auto fd : this->fds) {
       for (auto td : fd.tds) {
         switch(td.dimensions.size()) {

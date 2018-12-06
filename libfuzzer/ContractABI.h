@@ -9,6 +9,8 @@ using namespace std;
 
 namespace fuzzer {
   using Accounts = vector<tuple<bytes, u160, u256, bool>>;
+  using FakeBlock = tuple<bytes, int64_t, int64_t>;
+  
   struct DataType {
     bytes value;
     bool padLeft;
@@ -49,6 +51,7 @@ namespace fuzzer {
   
   class ContractABI {
     vector<bytes> accounts;
+    bytes block;
     public:
       vector<FuncDef> fds;
       ContractABI(){};
@@ -64,6 +67,7 @@ namespace fuzzer {
       /* Standard Json */
       string toStandardJson();
       Accounts decodeAccounts();
+      FakeBlock decodeBlock();
       static bytes encodeTuple(vector<TypeDef> tds);
       static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);

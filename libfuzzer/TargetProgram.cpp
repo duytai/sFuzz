@@ -84,7 +84,7 @@ namespace fuzzer {
     return res;
   }
 
-  void TargetProgram::updateEnv(Accounts accounts) {
+  void TargetProgram::updateEnv(Accounts accounts, FakeBlock block) {
     for (auto account: accounts) {
       auto address = get<1>(account);
       auto balance = get<2>(account);
@@ -92,6 +92,8 @@ namespace fuzzer {
       state.setBalance(Address(address), balance);
       if (isSender) sender = address;
     }
+    blockNumber = get<1>(block);
+    timestamp = get<2>(block);
   }
   
   TargetProgram::~TargetProgram() {

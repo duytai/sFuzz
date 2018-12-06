@@ -37,7 +37,7 @@ namespace fuzzer {
     ca.updateTestData(data);
     program->deploy(addr, bytes{code});
     program->setBalance(addr, DEFAULT_BALANCE);
-    program->updateEnv(ca.decodeAccounts());
+    program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
   }
   
@@ -133,7 +133,7 @@ namespace fuzzer {
     vector<bytes> funcs = ca.encodeFunctions();
     program->deploy(addr, code);
     program->setBalance(addr, DEFAULT_BALANCE);
-    program->updateEnv(ca.decodeAccounts());
+    program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     oracleFactory->initialize();
     CallLogItemPayload payload;
     payload.gas = MAX_GAS;
