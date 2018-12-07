@@ -147,11 +147,11 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bBL bV50 bV5 bV2 bV20 bV2 bV2 bBR "\n");
 }
 
-void Fuzzer::writeStats(Mutation mutation) {
+void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
   if (timer.elapsed() < 10) {
-    stats << "Time, Total Execs, Speed, Cycle Done, Tuples, Exception Type, Uniq Exception, BF-1-Tuple, BF-1-Execs, BF-2-Tuple, BF-2-Execs, BF-4-Tuple, BF-4-Execs, BYF-1-Tuple, BYF-1-Execs, BYF-2-Tuple, BYF-2-Execs, BYF-4-Tuple, BYF-4-Execs, AR-8-Tuple, AR-8-Execs, AR-16-Tuple, AR-16-Execs, AR-32-Tuple, AR-32-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, Dict-1-Tuple, Dict-1-Execs, Dict-1-Tuple, Dict-1-Execs, Havoc-1-Tuple, Havoc-1-Execs , Max Depth" << endl;
+    stats << "Time, Total Execs, Speed, Cycle Done, Tuples, Exception Type, Uniq Exception, BF-1-Tuple, BF-1-Execs, BF-2-Tuple, BF-2-Execs, BF-4-Tuple, BF-4-Execs, BYF-1-Tuple, BYF-1-Execs, BYF-2-Tuple, BYF-2-Execs, BYF-4-Tuple, BYF-4-Execs, AR-8-Tuple, AR-8-Execs, AR-16-Tuple, AR-16-Execs, AR-32-Tuple, AR-32-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, Dict-1-Tuple, Dict-1-Execs, Dict-1-Tuple, Dict-1-Execs, Havoc-1-Tuple, Havoc-1-Execs , Max Depth, Gasless, Disorder, Reentrancy, Timestamp, Number, Delegate, Freeze" << endl;
     cout << endl;
   }
   cout << "\x1b[A";
@@ -195,7 +195,15 @@ void Fuzzer::writeStats(Mutation mutation) {
   stats << mutation.stageCycles[STAGE_EXTRAS_UO] << ",";
   stats << fuzzStat.stageFinds[STAGE_HAVOC] << ",";
   stats << mutation.stageCycles[STAGE_HAVOC] << ",";
-  stats << fuzzStat.maxdepth << endl;
+  stats << fuzzStat.maxdepth << ",";
+  stats << oracleResult.gaslessSend << ",";
+  stats << oracleResult.exceptionDisorder << ",";
+  stats << oracleResult.reentrancy << ",";
+  stats << oracleResult.timestampDependency << ",";
+  stats << oracleResult.blockNumDependency << ",";
+  stats << oracleResult.dangerDelegateCall << ",";
+  stats << oracleResult.freezingEther << ",";
+  stats << endl;
   stats.close();
 }
 
@@ -273,7 +281,7 @@ void Fuzzer::start() {
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {
             showMap.insert(make_pair(dur, 1));
-            if (dur % 10 == 0) writeStats(mutation);
+            if (dur % 10 == 0) writeStats(mutation, container.oracleResult());
             //showStats(mutation, container.oracleResult());
           }
           /* Stop program */

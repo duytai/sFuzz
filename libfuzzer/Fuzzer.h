@@ -51,7 +51,7 @@ namespace fuzzer {
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
-    void writeStats(Mutation mutation);
+    void writeStats(Mutation mutation, OracleResult oracleResult);
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
