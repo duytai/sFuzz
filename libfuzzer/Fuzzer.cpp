@@ -147,16 +147,55 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bBL bV50 bV5 bV2 bV20 bV2 bV2 bBR "\n");
 }
 
-void Fuzzer::writeStats(Mutation) {
+void Fuzzer::writeStats(Mutation mutation) {
   auto contract = mainContract();
-  double speed = fuzzStat.totalExecs / (double) timer.elapsed();
-  ofstream stats(contract.contractName + "/stats.csv");
-  stats << "Testcases,Speed,Execs,Tuples,Coverage" << endl;
-  stats << queues.size();
-  stats << "," << speed;
-  stats << "," << fuzzStat.totalExecs;
-  stats << "," << fuzzStat.coveredTuples;
-  stats << endl;
+  ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
+  if (timer.elapsed() < 10) {
+    stats << "Time, Total Execs, Speed, Cycle Done, Tuples, Exception Type, Uniq Exception, BF-1-Tuple, BF-1-Execs, BF-2-Tuple, BF-2-Execs, BF-4-Tuple, BF-4-Execs, BYF-1-Tuple, BYF-1-Execs, BYF-2-Tuple, BYF-2-Execs, BYF-4-Tuple, BYF-4-Execs, AR-8-Tuple, AR-8-Execs, AR-16-Tuple, AR-16-Execs, AR-32-Tuple, AR-32-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, Dict-1-Tuple, Dict-1-Execs, Dict-1-Tuple, Dict-1-Execs, Havoc-1-Tuple, Havoc-1-Execs , Max Depth" << endl;
+    cout << endl;
+  }
+  cout << "\x1b[A";
+  cout << "WRITE AT: " << timer.elapsed() << "" << endl;
+  stats << timer.elapsed() << ",";
+  stats << fuzzStat.totalExecs << ",";
+  stats << fuzzStat.totalExecs / (double) timer.elapsed() << ",";
+  stats << fuzzStat.queueCycle << ",";
+  stats << fuzzStat.coveredTuples << ",";
+  int expCout = 0;
+  for (auto exp: uniqExceptions) expCout += exp.second.size();
+  stats << uniqExceptions.size() << ",";
+  stats << expCout << ",";
+  stats << fuzzStat.stageFinds[STAGE_FLIP1] << ",";
+  stats << mutation.stageCycles[STAGE_FLIP1] << ",";
+  stats << fuzzStat.stageFinds[STAGE_FLIP2] << ",";
+  stats << mutation.stageCycles[STAGE_FLIP2] << ",";
+  stats << fuzzStat.stageFinds[STAGE_FLIP4] << ",";
+  stats << mutation.stageCycles[STAGE_FLIP4] << ",";
+  stats << fuzzStat.stageFinds[STAGE_FLIP8] << ",";
+  stats << mutation.stageCycles[STAGE_FLIP8] << ",";
+  stats << fuzzStat.stageFinds[STAGE_FLIP16] << ",";
+  stats << mutation.stageCycles[STAGE_FLIP16] << ",";
+  stats << fuzzStat.stageFinds[STAGE_FLIP32] << ",";
+  stats << mutation.stageCycles[STAGE_FLIP32] << ",";
+  stats << fuzzStat.stageFinds[STAGE_ARITH8] << ",";
+  stats << mutation.stageCycles[STAGE_ARITH8] << ",";
+  stats << fuzzStat.stageFinds[STAGE_ARITH16] << ",";
+  stats << mutation.stageCycles[STAGE_ARITH16] << ",";
+  stats << fuzzStat.stageFinds[STAGE_ARITH32] << ",";
+  stats << mutation.stageCycles[STAGE_ARITH32] << ",";
+  stats << fuzzStat.stageFinds[STAGE_INTEREST8] << ",";
+  stats << mutation.stageCycles[STAGE_INTEREST8] << ",";
+  stats << fuzzStat.stageFinds[STAGE_INTEREST16] << ",";
+  stats << mutation.stageCycles[STAGE_INTEREST16] << ",";
+  stats << fuzzStat.stageFinds[STAGE_INTEREST32] << ",";
+  stats << mutation.stageCycles[STAGE_INTEREST32] << ",";
+  stats << fuzzStat.stageFinds[STAGE_EXTRAS_AO] << ",";
+  stats << mutation.stageCycles[STAGE_EXTRAS_AO] << ",";
+  stats << fuzzStat.stageFinds[STAGE_EXTRAS_UO] << ",";
+  stats << mutation.stageCycles[STAGE_EXTRAS_UO] << ",";
+  stats << fuzzStat.stageFinds[STAGE_HAVOC] << ",";
+  stats << mutation.stageCycles[STAGE_HAVOC] << ",";
+  stats << fuzzStat.maxdepth << endl;
   stats.close();
 }
 
@@ -234,11 +273,11 @@ void Fuzzer::start() {
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {
             showMap.insert(make_pair(dur, 1));
-            showStats(mutation, container.oracleResult());
+            if (dur % 10 == 0) writeStats(mutation);
+            //showStats(mutation, container.oracleResult());
           }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {
-            writeStats(mutation);
             exit(0);
           }
           return item;
