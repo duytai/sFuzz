@@ -59,6 +59,7 @@ int main(int argc, char* argv[]) {
     fuzzParam.mode = !mode ? RANDOM : AFL;
     fuzzParam.duration = duration;
     Fuzzer fuzzer(fuzzParam);
+    cout << ">> Fuzz " << contractName << endl;
     fuzzer.start();
     return 0;
   }
