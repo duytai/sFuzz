@@ -7,7 +7,7 @@ using namespace std;
 using namespace fuzzer;
 
 static int DEFAULT_MODE = 1; // AFL
-static int DEFAULT_DURATION = 600; // 10 mins
+static int DEFAULT_DURATION = 300; // 5 mins
 static string DEFAULT_CONTRACTS_FOLDER = "contracts/";
 static string DEFAULT_ASSETS_FOLDER = "assets/";
 

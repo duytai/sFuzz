@@ -150,7 +150,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
 void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
-  if (timer.elapsed() < 10) {
+  if (timer.elapsed() < 5) {
     stats << "Time, Total Execs, Speed, Cycle Done, Tuples, Exception Type, Uniq Exception, BF-1-Tuple, BF-1-Execs, BF-2-Tuple, BF-2-Execs, BF-4-Tuple, BF-4-Execs, BYF-1-Tuple, BYF-1-Execs, BYF-2-Tuple, BYF-2-Execs, BYF-4-Tuple, BYF-4-Execs, AR-8-Tuple, AR-8-Execs, AR-16-Tuple, AR-16-Execs, AR-32-Tuple, AR-32-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, Dict-1-Tuple, Dict-1-Execs, Dict-1-Tuple, Dict-1-Execs, Havoc-1-Tuple, Havoc-1-Execs , Max Depth, Gasless, Disorder, Reentrancy, Timestamp, Number, Delegate, Freeze" << endl;
   }
   cout << "** Write stats: " << timer.elapsed() << "" << endl;
