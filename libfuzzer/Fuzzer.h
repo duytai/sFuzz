@@ -20,6 +20,7 @@ using namespace std;
 
 namespace fuzzer {
   enum FuzzMode { RANDOM, AFL };
+  enum ReportMode { TERMINAL, CSV_FILE };
   struct ContractInfo {
     string abiJson;
     string bin;
@@ -31,6 +32,7 @@ namespace fuzzer {
     vector<ContractInfo> contractInfo;
     FuzzMode mode;
     int duration;
+    ReportMode reportMode;
   };
   struct FuzzStat {
     int idx;

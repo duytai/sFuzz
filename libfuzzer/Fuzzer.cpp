@@ -279,8 +279,11 @@ void Fuzzer::start() {
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {
             showMap.insert(make_pair(dur, 1));
-            if (dur % 5 == 0) writeStats(mutation, container.oracleResult());
-            //showStats(mutation, container.oracleResult());
+            if (fuzzParam.reportMode == CSV_FILE) {
+              if (dur % 5 == 0) writeStats(mutation, container.oracleResult());
+            } else if (fuzzParam.reportMode == TERMINAL) {
+              showStats(mutation, container.oracleResult());
+            }
           }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {

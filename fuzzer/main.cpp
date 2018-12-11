@@ -10,6 +10,7 @@ static int DEFAULT_MODE = 1; // AFL
 static int DEFAULT_DURATION = 300; // 5 mins
 static string DEFAULT_CONTRACTS_FOLDER = "contracts/";
 static string DEFAULT_ASSETS_FOLDER = "assets/";
+static ReportMode reportMode = TERMINAL;
 
 int main(int argc, char* argv[]) {
   /* Run EVM silently */
@@ -29,7 +30,7 @@ int main(int argc, char* argv[]) {
   desc.add_options()
     ("help,h", "produce help message")
     ("contracts,c", po::value(&contractsFolder), "contract's folder path")
-    ("generate,g", "generate fuzzMe script")
+    ("generate,g", "g fuzzMe script")
     ("assets,a", po::value(&assetsFolder), "asset's folder path")
     ("file,f", po::value(&jsonFile), "fuzz a contract")
     ("name,n", po::value(&contractName), "contract name")
@@ -58,6 +59,7 @@ int main(int argc, char* argv[]) {
     fuzzParam.contractInfo = contractInfo;
     fuzzParam.mode = !mode ? RANDOM : AFL;
     fuzzParam.duration = duration;
+    fuzzParam.reportMode = reportMode;
     Fuzzer fuzzer(fuzzParam);
     cout << ">> Fuzz " << contractName << endl;
     fuzzer.start();
