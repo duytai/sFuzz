@@ -12,5 +12,5 @@ include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 file(GLOB sources "*.cpp")
 add_executable(testfuzzer ${sources})
 # Link test executable against gtest & gtest_main
-target_link_libraries(testfuzzer gtest gtest_main libfuzzer)
+target_link_libraries(testfuzzer gtest gtest_main libfuzzer liboracle libstatic)
 add_test(testfuzze testfuzzer)
