@@ -1,17 +1,35 @@
 #include "StaticFactory.h"
+#include "DangerDelegateCall.h"
+#include "BlockNumDependency.h"
+#include "TimestampDependency.h"
+#include "FreezingEther.h"
 
 using namespace dev;
 using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  void StaticFactory::analyze(bytes bin) {
-    bool hasDelegate = count_if(bin.begin(), bin.end(), [](byte i) {
-      return i == 0xf4;
-    });
-    int index = -1;
-    index = toHex(bin).find("60003660405180838380828437", 0);
-    cout << hasDelegate << endl;
-    cout << index << endl;
+  OracleResult StaticFactory::analyze(bytes code) {
+    OracleResult result;
+    bytes opcodes;
+    int pc = 0, codeSize = code.size();
+    while (pc < codeSize) {
+      auto ist = (Instruction) code[pc];
+      opcodes.push_back(code[pc]);
+      switch (ist) {
+        case Instruction::PUSH1 ... Instruction::PUSH32: {
+          int jumpNum = code[pc] - 0x5f;
+          pc += jumpNum;
+          break;
+        }
+        default: { break; }
+      }
+      pc += 1;
+    }
+    result.dangerDelegateCall = dangerDelegateCall(opcodes, code);
+    result.blockNumDependency = blockNumDependency(opcodes);
+    result.timestampDependency = timestampDependency(opcodes);
+    result.freezingEther = freezingEther(opcodes);
+    return result;
   }
 }
