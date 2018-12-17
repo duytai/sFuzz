@@ -2,6 +2,7 @@
 #include <iostream>
 #include <libdevcore/Common.h>
 #include <libevm/Instruction.h>
+#include <libdevcore/FixedHash.h>
 #include <map>
 
 using namespace std;
@@ -9,17 +10,21 @@ using namespace dev;
 using namespace eth;
 
 namespace fuzzer {
+  struct OpStat {
+    vector<uint64_t> pcs;
+    vector<uint64_t> jumpdests;
+  };
+  struct CFGStat {
+    map<uint64_t, u256> pcs;
+    map<uint64_t, u256> jumpdests;
+  };
   class CFG {
-    bytes code;
-    bytes codeRuntime;
-    unordered_map<int, int> tracebits;
-    unordered_set<int> jumpdests;
-    unordered_set<int> jumpis;
-    unordered_set<int> findops(const bytes& code, Instruction op);
-    void simulate(const bytes& code, u256s stack, int pc, int prevLocation, unordered_set<int>& prevLocations);
+    string bin;
+    vector<u256> lines;
+    void simulate(bytes bin, vector<u256> stack, uint64_t pc, CFGStat& cfgStat);
     public:
-      int totalCount();
-      int extraEstimation;
-      CFG(string code, string codeRuntime);
+      CFG(bytes code);
+      static OpStat staticAnalyze(bytes bin);
+      static CFGStat toCFGStat(OpStat opStat);
   };
 }

@@ -2,70 +2,89 @@
 #include <libdevcore/Common.h>
 #include <libevm/Instruction.h>
 #include <libdevcore/CommonIO.h>
+#include "Util.h"
 
 using namespace std;
 using namespace dev;
 using namespace eth;
 
 namespace fuzzer {
-  void CFG::simulate(const bytes& code, u256s stack, int pc, int prevLocation, unordered_set<int>& prevLocations) {
-    int codeSize = code.size();
+  CFGStat CFG::toCFGStat(OpStat opStat) {
+    CFGStat cfgStat;
+    for (auto pc : opStat.pcs) cfgStat.pcs[pc] = 0;
+    for (auto pc : opStat.jumpdests) cfgStat.jumpdests[pc] = 0;
+    return cfgStat;
+  }
+  
+  OpStat CFG::staticAnalyze(bytes code) {
+    OpStat opStat;
+    uint64_t pc = 0;
+    while (pc < code.size()) {
+      auto inst = (Instruction) code[pc];
+      opStat.pcs.push_back(pc);
+      if (inst == Instruction::JUMPDEST) {
+        opStat.jumpdests.push_back(pc);
+      }
+      if (inst >= Instruction::PUSH1 && inst <= Instruction::PUSH32) {
+        auto jumpNum = code[pc] - (uint64_t) Instruction::PUSH1 + 1;
+        pc += jumpNum;
+      }
+      pc ++;
+    }
+    return opStat;
+  }
+  
+  void CFG::simulate(bytes code, vector<u256> stack, uint64_t pc, CFGStat& cfgStat) {
+    auto codeSize = code.size();
     while (pc < codeSize) {
-      auto ist = (Instruction) code[pc];
-      switch (ist) {
+      auto inst = (Instruction) code[pc];
+      cfgStat.pcs[pc] ++;
+      if (stack.size() > 1024 || cfgStat.pcs[pc] > 1024) return;
+      switch (inst) {
         case Instruction::PUSH1 ... Instruction::PUSH32: {
-          int jumpNum = code[pc] - 0x5f;
-          bytes value = bytes(code.begin() + pc + 1, code.begin() + pc + 1 + jumpNum);
-          u256 stackItem = u256("0x" + toHex(value));
-          stack.push_back(stackItem);
+          auto jumpNum = code[pc] - (uint64_t) Instruction::PUSH1 + 1;
+          auto data = bytes(code.begin() + pc + 1, code.begin() + pc + 1 + jumpNum);
+          stack.push_back(u256("0x" + toHex(data)));
           pc += jumpNum;
           break;
         }
         case Instruction::DUP1 ... Instruction::DUP16: {
-          int stackPos = code[pc] - 0x7f;
-          int stackSize = stack.size();
-          auto stackItem = stack[stackSize - stackPos];
-          stack.push_back(stackItem);
+          uint64_t stackSize = stack.size();
+          uint64_t stackPos = code[pc] - (uint64_t) Instruction::DUP1 + 1;
+          int64_t dupIndex = stackSize - stackPos;
+          if (dupIndex < 0) return;
+          auto data = stack[dupIndex];
+          stack.push_back(data);
           break;
         }
         case Instruction::SWAP1 ... Instruction::SWAP16: {
-          int stackPos = code[pc] - 0x8f;
-          int stackSize = stack.size();
-          int swapIndex = stackSize - stackPos - 1;
-          int topIndex = stackSize - 1;
+          uint64_t stackSize = stack.size();
+          uint64_t stackPos = code[pc] - (uint64_t) Instruction::SWAP1 + 1;
+          int64_t swapIndex = stackSize - stackPos - 1;
+          int64_t topIndex = stackSize - 1;
+          if (swapIndex < 0) return;
           auto tmp = stack[topIndex];
           stack[topIndex] = stack[swapIndex];
           stack[swapIndex] = tmp;
           break;
         }
-        case Instruction::JUMP: {
-          auto jumpTo = (int) stack.back();
+        case Instruction::JUMPI: {
+          if (stack.size() < 2) return;
+          auto jumpTo = (uint64_t) stack.back();
           stack.pop_back();
-          if (jumpdests.count(jumpTo)) {
-            simulate(code, stack, jumpTo, prevLocation, prevLocations);
+          stack.pop_back();
+          if ((Instruction) code[jumpTo] == Instruction::JUMPDEST) {
+            simulate(code, stack, jumpTo, cfgStat);
           }
+          simulate(code, stack, pc + 1, cfgStat);
           return;
         }
-        case Instruction::JUMPI: {
-          auto jumpTo = (int) stack.back();
+        case Instruction::JUMP: {
+          if (stack.size() < 1) return;
+          auto jumpTo = (uint64_t) stack.back();
           stack.pop_back();
-          stack.pop_back();
-          jumpis.insert(pc);
-          if (jumpdests.count(jumpTo)) {
-            /* Bit is not set */
-            if (tracebits[jumpTo ^ prevLocation] < 10000) {
-              tracebits[jumpTo ^ prevLocation] += 1;
-              int newPrevLocation = jumpTo >> 1;
-              prevLocations.insert(newPrevLocation);
-              simulate(code, stack, jumpTo, newPrevLocation, prevLocations);
-            }
-          }
-          jumpTo = pc + 1;
-          if (tracebits[jumpTo ^ prevLocation] < 10000) {
-            tracebits[jumpTo ^ prevLocation] += 1;
-            int newPrevLocation = jumpTo >> 1;
-            prevLocations.insert(newPrevLocation);
-            simulate(code, stack, jumpTo, newPrevLocation, prevLocations);
+          if ((Instruction) code[jumpTo] == Instruction::JUMPDEST) {
+            simulate(code, stack, jumpTo, cfgStat);
           }
           return;
         }
@@ -76,56 +95,51 @@ namespace fuzzer {
         case Instruction::INVALID: {
           return;
         }
+        case Instruction::JUMPDEST: {
+          cfgStat.jumpdests[pc]++;
+          break;
+        }
         default: {
-          auto info = instructionInfo(ist);
-          if ((int)stack.size() >= (int)info.args) {
-            stack.erase(stack.end() - info.args, stack.end());
-            u256s stackItems = u256s(info.ret, 0);
-            stack.insert(stack.end(), stackItems.begin(), stackItems.end());
-            break;
-          } else return;
+          auto info = instructionInfo(inst);
+          uint64_t outOp = info.args;
+          uint64_t inOp = info.ret;
+          if (stack.size() < outOp) return;
+          stack.erase(stack.end() - info.args, stack.end());
+          u256s stackItems = u256s(inOp, 0);
+          stack.insert(stack.end(), stackItems.begin(), stackItems.end());
+          break;
         }
       }
-      pc += 1;
+      pc ++;
     }
   }
-
-  int CFG::totalCount() {
-    return tracebits.size() + extraEstimation;
-  }
   
-  unordered_set<int> CFG::findops(const bytes& code, Instruction op) {
-    int pc = 0;
-    int size = code.size();
-    unordered_set<int> ret;
-    jumpdests.clear();
-    while (pc < size) {
-      if ((Instruction) code[pc] == op) ret.insert(pc);
-      if (code[pc] > 0x5f && code[pc] < 0x80) {
-        /* PUSH instruction */
-        int jumpNum = code[pc] - 0x5f;
-        pc += jumpNum;
+  CFG::CFG(bytes code) {
+    uint64_t pos = 0;
+    for (uint64_t i = 0; i < code.size() - 1; i ++) {
+      auto isReturn = (Instruction) code[i] == Instruction::RETURN;
+      auto isStop = (Instruction) code[i + 1] == Instruction::STOP;
+      if (isReturn && isStop) {
+        pos = i + 2;
+        break;
       }
-      pc += 1;
     }
-    return ret;
-  }
-  
-  CFG::CFG(string code, string codeRuntime) {
-    extraEstimation = 0;
-    u256s stack;
-    unordered_set<int> prevLocations;
-    int pc = 0;
-    if (!code.empty() && !codeRuntime.empty()) {
-      int allJumpi = findops(fromHex(code), Instruction::JUMPI).size();
-      jumpdests = findops(fromHex(code), Instruction::JUMPDEST);
-      simulate(fromHex(code), stack, pc, 0, prevLocations);
-      for (auto it : prevLocations) {
-        unordered_set<int> temp;
-        simulate(fromHex(codeRuntime), stack, pc, it, temp);
+    vector<bytes> stageCodes = {
+//      bytes(code.begin(), code.begin() + pos),
+      bytes(code.begin() + pos, code.end()),
+    };
+    for (auto stageCode : stageCodes) {
+      vector<u256> stack;
+      auto opStat = staticAnalyze(stageCode);
+      auto cfgStat = toCFGStat(opStat);
+      simulate(stageCode, stack, 0, cfgStat);
+      for (auto it : cfgStat.pcs) {
+        if (!it.second) cout << "PC: " << it.first << endl;
       }
-      int numJumpi = jumpis.size();
-      extraEstimation = 2 * (allJumpi - numJumpi);
+      for (auto it : cfgStat.jumpdests) {
+        if (!it.second) cout << "JD: " << it.first << endl;
+      }
+      cout << "jumpdest: " << cfgStat.jumpdests.size() << endl;
     }
   }
 }
