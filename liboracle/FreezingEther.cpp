@@ -7,15 +7,18 @@ using namespace std;
 namespace fuzzer {
   bool freezingEther(CallLog callLog) {
     u256 numTransfer = 0;
+    u256 numDelegatecall = 0;
     for (auto callLogItem : callLog) {
-      auto type = callLogItem.type;
+      auto inst = callLogItem.payload.inst;
       auto level = callLogItem.level;
-      if (type == CALL_OPCODE || type == SUICIDE_OPCODE) {
-        if (level == 1) numTransfer ++;
+      if (level > 0) {
+        if (inst == Instruction::DELEGATECALL) numDelegatecall += 1;
+        if (level == 1 && (inst == Instruction::CALL || inst == Instruction::SUICIDE)) {
+          numTransfer ++;
+        }
       }
     }
-    
-    return !numTransfer;
+    return !numTransfer && !!numDelegatecall;
   }
 }
 

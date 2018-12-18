@@ -90,23 +90,31 @@ namespace fuzzer {
           payload.wei = wei;
           payload.inst = inst;
           payload.data = bytes(first + inOff, first + inOff + inSize);
-          oracleFactory->save(CallLogItem(CALL_OPCODE, ext->depth + 1, payload));
+          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
         case Instruction::TIMESTAMP: {
-          oracleFactory->save(CallLogItem(TIMESTAMP_OPCODE, ext->depth + 1));
+          CallLogItemPayload payload;
+          payload.inst = inst;
+          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
         case Instruction::SUICIDE: {
-          oracleFactory->save(CallLogItem(SUICIDE_OPCODE, ext->depth + 1));
+          CallLogItemPayload payload;
+          payload.inst = inst;
+          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
         case Instruction::NUMBER: {
-          oracleFactory->save(CallLogItem(NUMBER_OPCODE, ext->depth + 1));
+          CallLogItemPayload payload;
+          payload.inst = inst;
+          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
         case Instruction::REVERT: {
-          if (!pc) oracleFactory->save(CallLogItem(CALL_EXCEPTION, ext->depth + 1));
+          CallLogItemPayload payload;
+          payload.inst = inst;
+          if (!pc) oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
         default: { break; }
@@ -136,11 +144,9 @@ namespace fuzzer {
     program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     oracleFactory->initialize();
     CallLogItemPayload payload;
-    payload.gas = MAX_GAS;
-    payload.wei = 0;
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
-    oracleFactory->save(CallLogItem(CALL_OPCODE, 0, payload));
+    oracleFactory->save(CallLogItem(0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -149,16 +155,19 @@ namespace fuzzer {
       if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
       uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
       /* Save Call Log */
-      oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
+      CallLogItemPayload payload;
+      payload.inst = Instruction::REVERT;
+      oracleFactory->save(CallLogItem(0, payload));
     }
     for (auto func: funcs) {
       if (!oracleFactory->oracleResult.reentrancy) {
         program->invoke(ATTACKER_ADDRESS, CONTRACT_FUNCTION, setVictimData(func), EMPTY_ONOP);
       }
       /* Update payload */
+      CallLogItemPayload payload;
       payload.data = func;
-      payload.wei = 0;
-      oracleFactory->save(CallLogItem(CALL_OPCODE, 0, payload));
+      payload.inst = Instruction::CALL;
+      oracleFactory->save(CallLogItem(0, payload));
       /* Call function */
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
@@ -168,7 +177,9 @@ namespace fuzzer {
         if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
         uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
         /* Save Call Log */
-        oracleFactory->save(CallLogItem(CALL_EXCEPTION, 0));
+        CallLogItemPayload payload;
+        payload.inst = Instruction::REVERT;
+        oracleFactory->save(CallLogItem(0, payload));
       }
     }
     oracleFactory->finalize();

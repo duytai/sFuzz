@@ -6,28 +6,17 @@ using namespace std;
 
 namespace fuzzer {
   bool blockNumDependency(CallLog callLog) {
-    u256 numBlockNumber = 0;
-    u256 numCallWithWei = 0;
-    u256 numBlockNumberDependency = 0;
+    u256 numBlocknumber = 0;
+    u256 numSend = 0;
     for (auto callLogItem : callLog) {
-      auto type = callLogItem.type;
       auto level = callLogItem.level;
       auto inst = callLogItem.payload.inst;
-      if (type == CALL_OPCODE && !level) {
-        if (numBlockNumber && numCallWithWei) {
-          numBlockNumberDependency += 1;
-        }
-        numBlockNumber = 0;
-        numCallWithWei = 0;
-      } else if (level == 1) {
-        if (type == NUMBER_OPCODE) numBlockNumber ++;
-        if (inst == Instruction::CALLCODE || inst == Instruction::CALL) {
-          numCallWithWei ++;
-        }
+      if (level > 0) {
+        if (inst == Instruction::NUMBER) numBlocknumber ++;
+        if (inst == Instruction::CALL) numSend ++;
       }
     }
-    numBlockNumberDependency += (numBlockNumber && numCallWithWei) ? 1 : 0;
-    return !!numBlockNumberDependency;
+    return !!numBlocknumber && !!numSend;
   }
 }
 

@@ -8,25 +8,21 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  enum CallLogItemType {
-    CALL_OPCODE,
-    CALL_EXCEPTION,
-    TIMESTAMP_OPCODE,
-    NUMBER_OPCODE,
-    SUICIDE_OPCODE,
-  };
   struct CallLogItemPayload {
     u256 wei;
     u256 gas;
     Instruction inst;
     bytes data;
+    CallLogItemPayload() {
+      wei = 0;
+      gas = 0;
+      data = bytes(0,0);
+    }
   };
   struct CallLogItem {
-    CallLogItemType type;
     CallLogItemPayload payload;
     u256 level;
-    CallLogItem(CallLogItemType _type, u256 _level): type(_type), level(_level) {}
-    CallLogItem(CallLogItemType _type, u256 _level, CallLogItemPayload _payload): type(_type), payload(_payload), level(_level) {}
+    CallLogItem(u256 _level, CallLogItemPayload _payload): payload(_payload), level(_level) {}
   };
   
   struct OracleResult {

@@ -9,18 +9,14 @@ namespace fuzzer {
     u256 numDanger = 0;
     bytes inData;
     for (auto callLogItem : callLog) {
-      auto type = callLogItem.type;
       auto level = callLogItem.level;
-      if (type == CALL_OPCODE && !level) {
+      auto inst = callLogItem.payload.inst;
+      auto data = callLogItem.payload.data;
+      if (level == 0 && inst == Instruction::CALL) {
         inData = callLogItem.payload.data;
       }
-      if (type == CALL_OPCODE && !!level) {
-        auto inst = callLogItem.payload.inst;
-        if (inst == Instruction::DELEGATECALL) {
-          if (inData == callLogItem.payload.data) {
-            numDanger += 1;
-          }
-        }
+      if (level > 0 && inst == Instruction::DELEGATECALL && inData == data) {
+        numDanger ++;
       }
     }
     return !!numDanger;
