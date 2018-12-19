@@ -13,8 +13,6 @@ using namespace std;
 
 namespace fuzzer  {
   OracleFactory::OracleFactory() {
-    hasTranfer = false;
-    oracleResult.freezingEther = 1;
     remove("contracts/log.txt");
   }
   
@@ -60,10 +58,8 @@ namespace fuzzer  {
        * if (!oracleResult.reentrancy)
        * oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
        */
-      if (hasTranfer) {
-        oracleResult.freezingEther = 0;
-      } else if (!freezingEther(callLog)) {
-        hasTranfer = true;
+      if (!oracleResult.freezingEther) {
+        oracleResult.freezingEther += freezingEther(callLog);
       }
     }
     callLogs.clear();
