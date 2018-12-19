@@ -33,6 +33,7 @@ namespace fuzzer  {
   
   void OracleFactory::log(CallLogItem fc) {
     /* Write to log files */
+    return;
     std::ofstream outfile;
     outfile.open("contracts/log.txt", std::ios_base::app);
     outfile << fc.level << ",";

@@ -24,7 +24,8 @@ namespace fuzzer {
       int64_t timestamp;
       int64_t blockNumber;
       u160 sender;
-      Executive *executive;
+      EnvInfo *envInfo;
+      SealEngineFace *se;
       ExecutionResult invoke(Address addr, bytes data, OnOpFunc onOp);
     public:
       TargetProgram();

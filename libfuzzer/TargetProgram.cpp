@@ -27,13 +27,12 @@ namespace fuzzer {
     blockNumber = 2675000;
     Ethash::init();
     NoProof::init();
-    SealEngineFace *se = ChainParams(genesisInfo(networkName)).createSealEngine();
+    se = ChainParams(genesisInfo(networkName)).createSealEngine();
     // add value
     blockHeader.setGasLimit(maxGasLimit);
     blockHeader.setTimestamp(timestamp);
     blockHeader.setNumber(blockNumber);
-    EnvInfo envInfo(blockHeader, lastBlockHashes, 0);
-    executive = new Executive(state, envInfo, *se);
+    envInfo = new EnvInfo(blockHeader, lastBlockHashes, 0);
   }
   
   void TargetProgram::setBalance(Address addr, u256 balance) {
@@ -75,12 +74,13 @@ namespace fuzzer {
     u256 gasPrice = 0;
     Transaction t = Transaction(value, gasPrice, gas, data, state.getNonce(sender));
     t.forceSender(senderAddr);
-    executive->setResultRecipient(res);
-    executive->initialize(t);
-    executive->call(addr, senderAddr, value, gasPrice, &data, gas);
-    executive->updateBlock(blockNumber, timestamp);
-    executive->go(onOp);
-    executive->finalize();
+    Executive executive(state, *envInfo, *se);
+    executive.setResultRecipient(res);
+    executive.initialize(t);
+    executive.call(addr, senderAddr, value, gasPrice, &data, gas);
+    executive.updateBlock(blockNumber, timestamp);
+    executive.go(onOp);
+    executive.finalize();
     return res;
   }
 
@@ -97,7 +97,8 @@ namespace fuzzer {
   }
   
   TargetProgram::~TargetProgram() {
-    delete executive;
+    delete envInfo;
+    delete se;
   }
 }
 
