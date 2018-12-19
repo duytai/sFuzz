@@ -6,5 +6,9 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool dangerDelegateCall(CallLog callLog);
+  class DangerDelegateCall {
+    u256 numDanger = 0;
+    public:
+      bool analyze(CallLog callLog);
+  };
 }

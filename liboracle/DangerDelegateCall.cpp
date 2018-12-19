@@ -5,8 +5,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool dangerDelegateCall(CallLog callLog) {
-    u256 numDanger = 0;
+  bool DangerDelegateCall::analyze(CallLog callLog) {
     bytes inData;
     for (auto callLogItem : callLog) {
       auto level = callLogItem.level;
@@ -22,4 +21,3 @@ namespace fuzzer {
     return !!numDanger;
   }
 }
-

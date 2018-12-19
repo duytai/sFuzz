@@ -6,5 +6,10 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool blockNumDependency(CallLog callLog);
+  class BlockNumberDependency {
+    u256 numBlocknumber = 0;
+    u256 numSend = 0;
+    public:
+      bool analyze(CallLog callLog);
+  };
 }

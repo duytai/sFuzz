@@ -5,9 +5,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool blockNumDependency(CallLog callLog) {
-    u256 numBlocknumber = 0;
-    u256 numSend = 0;
+  bool BlockNumberDependency::analyze(CallLog callLog) {
     for (auto callLogItem : callLog) {
       auto level = callLogItem.level;
       auto inst = callLogItem.payload.inst;

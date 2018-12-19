@@ -1,6 +1,13 @@
 #pragma once
 #include <iostream>
 #include "Common.h"
+#include "GaslessSend.h"
+#include "ExceptionDisorder.h"
+#include "TimestampDependency.h"
+#include "BlockNumDependency.h"
+#include "DangerDelegateCall.h"
+#include "Reentrancy.h"
+#include "FreezingEther.h"
 
 using namespace dev;
 using namespace eth;
@@ -11,6 +18,12 @@ namespace fuzzer {
   class OracleFactory {
     CallLog callLog;
     CallLogs callLogs;
+    TimestampDependency timestampDependency;
+    BlockNumberDependency blockNumberDependency;
+    GaslessSend gaslessSend;
+    ExceptionDisorder exceptionDisorder;
+    DangerDelegateCall dangerDelegateCall;
+    FreezingEther freezingEther;
     public:
       OracleResult oracleResult;
       OracleFactory();

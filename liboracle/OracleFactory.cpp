@@ -1,11 +1,4 @@
 #include "OracleFactory.h"
-#include "GaslessSend.h"
-#include "ExceptionDisorder.h"
-#include "TimestampDependency.h"
-#include "BlockNumDependency.h"
-#include "DangerDelegateCall.h"
-#include "Reentrancy.h"
-#include "FreezingEther.h"
 
 using namespace dev;
 using namespace eth;
@@ -44,22 +37,27 @@ namespace fuzzer  {
   
   void OracleFactory::analyze() {
     for (auto callLog : callLogs) {
-      if (!oracleResult.gaslessSend)
-        oracleResult.gaslessSend += gaslessSend(callLog) ? 1 : 0;
-      if (!oracleResult.exceptionDisorder)
-        oracleResult.exceptionDisorder += exceptionDisorder(callLog) ? 1 : 0;
-      if (!oracleResult.timestampDependency)
-        oracleResult.timestampDependency += timestampDependency(callLog) ? 1 : 0;
-      if (!oracleResult.blockNumDependency)
-        oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
-      if (!oracleResult.dangerDelegateCall)
-        oracleResult.dangerDelegateCall += dangerDelegateCall(callLog) ? 1 : 0;
+      if (!oracleResult.gaslessSend) {
+        oracleResult.gaslessSend += gaslessSend.analyze(callLog) ? 1 : 0;
+      }
+      if (!oracleResult.exceptionDisorder) {
+        oracleResult.exceptionDisorder += exceptionDisorder.analyze(callLog) ? 1 : 0;
+      }
+      if (!oracleResult.timestampDependency) {
+        oracleResult.timestampDependency += timestampDependency.analyze(callLog) ? 1 : 0;
+      }
+      if (!oracleResult.blockNumDependency) {
+        oracleResult.blockNumDependency += blockNumberDependency.analyze(callLog) ? 1 : 0;
+      }
+      if (!oracleResult.dangerDelegateCall) {
+        oracleResult.dangerDelegateCall += dangerDelegateCall.analyze(callLog) ? 1 : 0;
+      }
       /*
        * if (!oracleResult.reentrancy)
        * oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
        */
       if (!oracleResult.freezingEther) {
-        oracleResult.freezingEther += freezingEther(callLog);
+        oracleResult.freezingEther += freezingEther.analyze(callLog) ? 1 : 0;
       }
     }
     callLogs.clear();

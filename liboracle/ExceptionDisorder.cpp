@@ -5,10 +5,9 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool exceptionDisorder(CallLog callLog) {
+  bool ExceptionDisorder::analyze(CallLog callLog) {
     bool rootException = false;
     bool nestedException = false;
-    u256 numDisorder = 0;
     
     for (auto callLogItem : callLog) {
       auto level = callLogItem.level;
@@ -25,8 +24,8 @@ namespace fuzzer {
         nestedException = true;
       }
     }
+    
     numDisorder += (!rootException && nestedException);
     return !!numDisorder;
   }
 }
-

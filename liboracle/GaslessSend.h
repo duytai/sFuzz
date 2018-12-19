@@ -6,5 +6,9 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool gaslessSend(CallLog callLog);
+  class GaslessSend {
+    u256 numSend = 0;
+    public:
+      bool analyze(CallLog callLog);
+  };
 }
