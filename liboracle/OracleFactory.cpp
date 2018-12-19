@@ -34,14 +34,14 @@ namespace fuzzer  {
   void OracleFactory::log(CallLogItem fc) {
     /* Write to log files */
     return;
-    std::ofstream outfile;
-    outfile.open("contracts/log.txt", std::ios_base::app);
+    stringstream outfile;
     outfile << fc.level << ",";
     outfile << instructionInfo(fc.payload.inst).name << ",";
     outfile << fc.payload.gas << ",";
     outfile << fc.payload.wei << ",";
     outfile << toHex(fc.payload.data) << ",";
     outfile << fc.payload.noted << endl;
+    cout << outfile.str();
   }
   
   void OracleFactory::analyze() {

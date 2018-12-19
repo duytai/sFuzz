@@ -191,7 +191,7 @@ void LegacyVM::caseCall()
         m_returnData = result.output.toBytes();
         /* FIXME: cheat code here */
         if (result.status != EVMC_SUCCESS) {
-            m_onOp(0, 0, Instruction::REVERT, 0, m_runGas, m_io_gas, this, m_ext);
+            m_onOp(0, 0, Instruction::INVALID, 0, m_runGas, m_io_gas, this, m_ext);
         }
         m_SPP[0] = result.status == EVMC_SUCCESS ? 1 : 0;
     }

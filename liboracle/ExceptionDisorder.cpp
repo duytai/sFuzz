@@ -18,14 +18,14 @@ namespace fuzzer {
           if (!rootException && nestedException) numDisorder ++;
           rootException = nestedException = false;
         }
-        if (inst == Instruction::REVERT) {
+        if (inst == Instruction::INVALID) {
           rootException = true;
         }
-      } else if (inst == Instruction::REVERT) {
+      } else if (inst == Instruction::INVALID) {
         nestedException = true;
       }
     }
-    
+    numDisorder += (!rootException && nestedException);
     return !!numDisorder;
   }
 }

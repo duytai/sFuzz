@@ -55,6 +55,9 @@ namespace fuzzer {
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
+      if (ext->depth > 0) {
+        cout << "";
+      }
       /* Oracle analyze data */
       switch (inst) {
         case Instruction::CALL:
@@ -72,23 +75,6 @@ namespace fuzzer {
           payload.wei = wei;
           payload.inst = inst;
           payload.data = bytes(first + inOff, first + inOff + inSize);
-          payload.noted = "addr: " + toHex(Address((u160)vm->stack()[stackSize - 2]).asBytes());
-          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
-          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
-          break;
-        }
-        case Instruction::SUICIDE:
-        case Instruction::NUMBER:
-        case Instruction::TIMESTAMP: {
-          CallLogItemPayload payload;
-          payload.inst = inst;
-          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
-          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
-          break;
-        }
-        case Instruction::REVERT: {
-          CallLogItemPayload payload;
-          payload.inst = inst;
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;
@@ -96,6 +82,14 @@ namespace fuzzer {
         default: {
           CallLogItemPayload payload;
           payload.inst = inst;
+          if (
+            inst == Instruction::SUICIDE ||
+            inst == Instruction::NUMBER ||
+            inst == Instruction::TIMESTAMP ||
+            inst == Instruction::INVALID
+          ) {
+            oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+          }
           oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;
         }
@@ -156,7 +150,7 @@ namespace fuzzer {
       uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
       /* Save Call Log */
       CallLogItemPayload payload;
-      payload.inst = Instruction::REVERT;
+      payload.inst = Instruction::INVALID;
       oracleFactory->save(CallLogItem(0, payload));
       oracleFactory->log(CallLogItem(0, payload));
     }
@@ -177,7 +171,7 @@ namespace fuzzer {
         uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
         /* Save Call Log */
         CallLogItemPayload payload;
-        payload.inst = Instruction::REVERT;
+        payload.inst = Instruction::INVALID;
         oracleFactory->save(CallLogItem(0, payload));
         oracleFactory->log(CallLogItem(0, payload));
       }
