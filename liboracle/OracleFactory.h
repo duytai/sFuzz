@@ -18,6 +18,7 @@ namespace fuzzer {
       void initialize();
       void finalize();
       void save(CallLogItem fc);
+      void log(CallLogItem fc);
       void analyze();
   };
 }

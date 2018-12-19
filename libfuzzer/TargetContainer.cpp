@@ -55,6 +55,7 @@ namespace fuzzer {
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
+      /* Oracle analyze data */
       switch (inst) {
         case Instruction::CALL:
         case Instruction::CALLCODE:
@@ -71,7 +72,9 @@ namespace fuzzer {
           payload.wei = wei;
           payload.inst = inst;
           payload.data = bytes(first + inOff, first + inOff + inSize);
+          payload.noted = "addr: " + toHex(Address((u160)vm->stack()[stackSize - 2]).asBytes());
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;
         }
         case Instruction::SUICIDE:
@@ -80,16 +83,24 @@ namespace fuzzer {
           CallLogItemPayload payload;
           payload.inst = inst;
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;
         }
         case Instruction::REVERT: {
           CallLogItemPayload payload;
           payload.inst = inst;
-          if (!pc) oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;
         }
-        default: { break; }
+        default: {
+          CallLogItemPayload payload;
+          payload.inst = inst;
+          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
+          break;
+        }
       }
+      /* Mutation analyzes data */
       switch (inst) {
         case Instruction::GT:
         case Instruction::SGT:
@@ -135,6 +146,7 @@ namespace fuzzer {
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
     oracleFactory->save(CallLogItem(0, payload));
+    oracleFactory->log(CallLogItem(0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -146,6 +158,7 @@ namespace fuzzer {
       CallLogItemPayload payload;
       payload.inst = Instruction::REVERT;
       oracleFactory->save(CallLogItem(0, payload));
+      oracleFactory->log(CallLogItem(0, payload));
     }
     for (auto func: funcs) {
       /* Update payload */
@@ -153,6 +166,7 @@ namespace fuzzer {
       payload.data = func;
       payload.inst = Instruction::CALL;
       oracleFactory->save(CallLogItem(0, payload));
+      oracleFactory->log(CallLogItem(0, payload));
       /* Call function */
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
@@ -165,6 +179,7 @@ namespace fuzzer {
         CallLogItemPayload payload;
         payload.inst = Instruction::REVERT;
         oracleFactory->save(CallLogItem(0, payload));
+        oracleFactory->log(CallLogItem(0, payload));
       }
     }
     oracleFactory->finalize();

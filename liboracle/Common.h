@@ -13,10 +13,12 @@ namespace fuzzer {
     u256 gas;
     Instruction inst;
     bytes data;
+    string noted;
     CallLogItemPayload() {
       wei = 0;
       gas = 0;
       data = bytes(0,0);
+      noted = "";
     }
   };
   struct CallLogItem {
