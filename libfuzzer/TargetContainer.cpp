@@ -53,28 +53,9 @@ namespace fuzzer {
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
-      /* TODO: Improve it later */
-      if (!ext->depth) {
-        auto addressHex = ext->myAddress.hex();
-        if (addressHex == ATTACKER_ADDRESS_HEX) return;
-      }
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
       switch (inst) {
-        case Instruction::GT:
-        case Instruction::SGT:
-        case Instruction::LT:
-        case Instruction::SLT:
-        case Instruction::EQ: {
-          vector<u256>::size_type stackSize = vm->stack().size();
-          if (stackSize >= 2) {
-            u256 left = vm->stack()[stackSize - 1];
-            u256 right = vm->stack()[stackSize - 2];
-            u256 temp = left > right ? left - right : right - left;
-            lastCompValue = abs((double)(uint64_t)temp) + 1;
-          }
-          break;
-        }
         case Instruction::CALL:
         case Instruction::CALLCODE:
         case Instruction::DELEGATECALL:
@@ -93,19 +74,9 @@ namespace fuzzer {
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
+        case Instruction::SUICIDE:
+        case Instruction::NUMBER:
         case Instruction::TIMESTAMP: {
-          CallLogItemPayload payload;
-          payload.inst = inst;
-          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
-          break;
-        }
-        case Instruction::SUICIDE: {
-          CallLogItemPayload payload;
-          payload.inst = inst;
-          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
-          break;
-        }
-        case Instruction::NUMBER: {
           CallLogItemPayload payload;
           payload.inst = inst;
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
@@ -115,6 +86,23 @@ namespace fuzzer {
           CallLogItemPayload payload;
           payload.inst = inst;
           if (!pc) oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+          break;
+        }
+        default: { break; }
+      }
+      switch (inst) {
+        case Instruction::GT:
+        case Instruction::SGT:
+        case Instruction::LT:
+        case Instruction::SLT:
+        case Instruction::EQ: {
+          vector<u256>::size_type stackSize = vm->stack().size();
+          if (stackSize >= 2) {
+            u256 left = vm->stack()[stackSize - 1];
+            u256 right = vm->stack()[stackSize - 2];
+            u256 temp = left > right ? left - right : right - left;
+            lastCompValue = abs((double)(uint64_t)temp) + 1;
+          }
           break;
         }
         default: { break; }
@@ -160,9 +148,6 @@ namespace fuzzer {
       oracleFactory->save(CallLogItem(0, payload));
     }
     for (auto func: funcs) {
-      if (!oracleFactory->oracleResult.reentrancy) {
-        program->invoke(ATTACKER_ADDRESS, CONTRACT_FUNCTION, setVictimData(func), EMPTY_ONOP);
-      }
       /* Update payload */
       CallLogItemPayload payload;
       payload.data = func;

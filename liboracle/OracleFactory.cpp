@@ -42,8 +42,10 @@ namespace fuzzer  {
         oracleResult.blockNumDependency += blockNumDependency(callLog) ? 1 : 0;
       if (!oracleResult.dangerDelegateCall)
         oracleResult.dangerDelegateCall += dangerDelegateCall(callLog) ? 1 : 0;
-      if (!oracleResult.reentrancy)
-        oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
+      /*
+       * if (!oracleResult.reentrancy)
+       * oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
+       */
       if (hasTranfer) {
         oracleResult.freezingEther = 0;
       } else if (!freezingEther(callLog)) {
