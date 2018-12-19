@@ -285,6 +285,10 @@ void Fuzzer::start() {
               showStats(mutation, container.oracleResult());
             }
           }
+          /* Analyze every 1000 test cases */
+          if (!(fuzzStat.totalExecs % 1000)) {
+            container.analyze();
+          }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {
             exit(0);
@@ -297,90 +301,73 @@ void Fuzzer::start() {
               mutation.singleWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.twoWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.fourWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.singleWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.twoWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.fourWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.singleArith(save);
               fuzzStat.stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.twoArith(save);
               fuzzStat.stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.fourArith(save);
               fuzzStat.stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.singleInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.twoInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.fourInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
 
               mutation.overwriteWithDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
               
               mutation.overwriteWithAddressDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_AO] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
                 
               mutation.havoc(tracebits, save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
               
               queues[fuzzStat.idx].wasFuzzed = true;
             } else {
               mutation.havoc(tracebits, save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              container.analyze();
               
               if (mutation.splice(queues)) {
                 mutation.havoc(tracebits, save);
                 fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
                 origHitCount = queues.size();
-                container.analyze();
               };
             }
             break;

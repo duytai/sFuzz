@@ -55,9 +55,6 @@ namespace fuzzer {
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
-      if (ext->depth > 0) {
-        cout << "";
-      }
       /* Oracle analyze data */
       switch (inst) {
         case Instruction::CALL:
