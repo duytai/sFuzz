@@ -3,7 +3,9 @@
 using namespace dev;
 using namespace eth;
 using namespace std;
-
+/*
+ * .transfer() toHex(callLogItem.payload.code) != "93505050501580156092573d"
+ */
 namespace fuzzer {
   bool GaslessSend::analyze(CallLog callLog) {
     for (auto callLogItem : callLog) {
@@ -15,9 +17,7 @@ namespace fuzzer {
         level == 1 &&
         inst == Instruction::CALL &&
         !data.size() &&
-        (gas == 2300 || gas == 0) &&
-        /* .transfer() method */
-        toHex(callLogItem.payload.code) != "93505050501580156092573d"
+        (gas == 2300 || gas == 0)
       ) {
         numSend ++;
       }
