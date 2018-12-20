@@ -10,7 +10,13 @@ namespace fuzzer {
       auto level = callLogItem.level;
       auto inst = callLogItem.payload.inst;
       auto gas = callLogItem.payload.gas;
-      if (level > 0 && inst == Instruction::CALL && gas == 2300) {
+      auto data = callLogItem.payload.data;
+      if (
+        level > 0 &&
+        inst == Instruction::CALL &&
+        !data.size() &&
+        (gas == 2300 || gas == 0)
+      ) {
         numSend ++;
       }
     }
