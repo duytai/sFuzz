@@ -9,17 +9,12 @@ using namespace std;
 
 namespace fuzzer {
   struct CallLogItemPayload {
-    u256 wei;
-    u256 gas;
+    u256 wei = 0;
+    u256 gas = 0;
+    u256 pc = 0;
     Instruction inst;
     bytes data;
-    string noted;
-    CallLogItemPayload() {
-      wei = 0;
-      gas = 0;
-      data = bytes(0,0);
-      noted = "";
-    }
+    string noted = "";
   };
   struct CallLogItem {
     CallLogItemPayload payload;

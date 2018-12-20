@@ -10,6 +10,6 @@ namespace fuzzer {
     u256 numTimestamp = 0;
     u256 numSend = 0;
     public:
-      bool analyze(CallLog callLog);
+      bool analyze(CallLog callLog, bytes code);
   };
 }

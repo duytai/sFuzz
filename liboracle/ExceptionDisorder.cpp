@@ -5,7 +5,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool ExceptionDisorder::analyze(CallLog callLog) {
+  bool ExceptionDisorder::analyze(CallLog callLog, bytes) {
     bool rootException = false;
     bool nestedException = false;
     

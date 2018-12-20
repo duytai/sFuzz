@@ -9,6 +9,6 @@ namespace fuzzer {
   class ExceptionDisorder {
     u256 numDisorder = 0;
     public:
-      bool analyze(CallLog callLog);
+      bool analyze(CallLog callLog, bytes code);
   };
 }

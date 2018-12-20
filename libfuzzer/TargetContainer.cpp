@@ -27,6 +27,7 @@ namespace fuzzer {
       exit(0);
     }
     Address addr(baseAddress);
+    oracleFactory->setCode(code);
     TargetExecutive te(oracleFactory, program, addr, ca, code);
     baseAddress ++;
     return te;
@@ -68,6 +69,7 @@ namespace fuzzer {
           auto inSize = (uint64_t) vm->stack()[sizeOffset - 1];
           auto first = vm->memory().begin();
           CallLogItemPayload payload;
+          payload.pc = pc;
           payload.gas = vm->stack()[stackSize - 1];
           payload.wei = wei;
           payload.inst = inst;
@@ -78,6 +80,7 @@ namespace fuzzer {
         }
         default: {
           CallLogItemPayload payload;
+          payload.pc = pc;
           payload.inst = inst;
           if (
             inst == Instruction::SUICIDE ||
