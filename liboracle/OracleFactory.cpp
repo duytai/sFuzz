@@ -21,10 +21,6 @@ namespace fuzzer  {
   void OracleFactory::save(CallLogItem fc) {
     callLog.push_back(fc);
   }
-
-  void OracleFactory::setCode(bytes _code) {
-    code = _code;
-  }
   
   void OracleFactory::log(CallLogItem fc) {
     /* Write to log files */
@@ -42,26 +38,26 @@ namespace fuzzer  {
   void OracleFactory::analyze() {
     for (auto callLog : callLogs) {
       if (!oracleResult.gaslessSend) {
-        oracleResult.gaslessSend += gaslessSend.analyze(callLog, code) ? 1 : 0;
+        oracleResult.gaslessSend += gaslessSend.analyze(callLog) ? 1 : 0;
       }
       if (!oracleResult.exceptionDisorder) {
-        oracleResult.exceptionDisorder += exceptionDisorder.analyze(callLog, code) ? 1 : 0;
+        oracleResult.exceptionDisorder += exceptionDisorder.analyze(callLog) ? 1 : 0;
       }
       if (!oracleResult.timestampDependency) {
-        oracleResult.timestampDependency += timestampDependency.analyze(callLog, code) ? 1 : 0;
+        oracleResult.timestampDependency += timestampDependency.analyze(callLog) ? 1 : 0;
       }
       if (!oracleResult.blockNumDependency) {
-        oracleResult.blockNumDependency += blockNumberDependency.analyze(callLog, code) ? 1 : 0;
+        oracleResult.blockNumDependency += blockNumberDependency.analyze(callLog) ? 1 : 0;
       }
       if (!oracleResult.dangerDelegateCall) {
-        oracleResult.dangerDelegateCall += dangerDelegateCall.analyze(callLog, code) ? 1 : 0;
+        oracleResult.dangerDelegateCall += dangerDelegateCall.analyze(callLog) ? 1 : 0;
       }
       /*
        * if (!oracleResult.reentrancy)
        * oracleResult.reentrancy += reentrancy(callLog) ? 1 : 0;
        */
       if (!oracleResult.freezingEther) {
-        oracleResult.freezingEther += freezingEther.analyze(callLog, code) ? 1 : 0;
+        oracleResult.freezingEther += freezingEther.analyze(callLog) ? 1 : 0;
       }
     }
     callLogs.clear();

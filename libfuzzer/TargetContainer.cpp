@@ -27,7 +27,6 @@ namespace fuzzer {
       exit(0);
     }
     Address addr(baseAddress);
-    oracleFactory->setCode(code);
     TargetExecutive te(oracleFactory, program, addr, ca, code);
     baseAddress ++;
     return te;
@@ -74,6 +73,9 @@ namespace fuzzer {
           payload.wei = wei;
           payload.inst = inst;
           payload.data = bytes(first + inOff, first + inOff + inSize);
+          /* Save next 13 bytes to detect .transfer */
+          auto temp = program->getCode(ext->myAddress);
+          payload.code = bytes(temp.begin() + pc + 1, temp.begin() + pc + 13);
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;

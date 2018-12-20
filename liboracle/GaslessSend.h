@@ -9,6 +9,6 @@ namespace fuzzer {
   class GaslessSend {
     u256 numSend = 0;
     public:
-      bool analyze(CallLog callLog, bytes code);
+      bool analyze(CallLog callLog);
   };
 }

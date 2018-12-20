@@ -24,7 +24,6 @@ namespace fuzzer {
     ExceptionDisorder exceptionDisorder;
     DangerDelegateCall dangerDelegateCall;
     FreezingEther freezingEther;
-    bytes code;
     public:
       OracleResult oracleResult;
       OracleFactory();
@@ -33,6 +32,5 @@ namespace fuzzer {
       void save(CallLogItem fc);
       void log(CallLogItem fc);
       void analyze();
-      void setCode(bytes code);
   };
 }

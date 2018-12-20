@@ -14,6 +14,7 @@ namespace fuzzer {
     u256 pc = 0;
     Instruction inst;
     bytes data;
+    bytes code;
     string noted = "";
   };
   struct CallLogItem {

@@ -47,6 +47,10 @@ namespace fuzzer {
     state.clearStorage(addr);
     state.setCode(addr, bytes{code});
   }
+    
+  bytes TargetProgram::getCode(Address addr) {
+    return state.code(addr);
+  }
   
   ExecutionResult TargetProgram::invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp) {
     switch (type) {

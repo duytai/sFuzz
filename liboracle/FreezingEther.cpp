@@ -5,7 +5,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  bool FreezingEther::analyze(CallLog callLog, bytes) {
+  bool FreezingEther::analyze(CallLog callLog) {
     for (auto callLogItem : callLog) {
       auto inst = callLogItem.payload.inst;
       auto level = callLogItem.level;
