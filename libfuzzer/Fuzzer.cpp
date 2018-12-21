@@ -14,14 +14,6 @@ using namespace fuzzer;
 
 /* Setup virgin byte to 255 */
 Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
-  fuzzStat.idx = 0;
-  fuzzStat.totalExecs = 0;
-  fuzzStat.clearScreen = false;
-  fuzzStat.queueCycle = 0;
-  fuzzStat.coveredTuples = 0;
-  fuzzStat.maxdepth = 0;
-  fuzzStat.numTest = 0;
-  fuzzStat.numException = 0;
   fill_n(fuzzStat.stageFinds, 32, 0);
 }
 
@@ -266,7 +258,9 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
-      
+      staticAnalyze(bin, [&](Instruction inst) {
+        if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
+      });
       saveIfInterest(executive, ca.randomTestcase(), 0);
       int origHitCount = queues.size();
       while (true) {

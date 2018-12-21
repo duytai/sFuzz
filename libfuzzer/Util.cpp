@@ -204,5 +204,18 @@ namespace fuzzer {
     if (value > 0) cout << cRED + text  + cRST ;
     if (!value) cout << cGRN + text  + cRST;
   }
+  
+  void staticAnalyze(bytes code, function<void(Instruction)> cb) {
+    uint64_t pc = 0;
+    while (pc < code.size()) {
+      auto inst = (Instruction) code[pc];
+      if (inst >= Instruction::PUSH1 && inst <= Instruction::PUSH32) {
+        auto jumpNum = code[pc] - (uint64_t) Instruction::PUSH1 + 1;
+        pc += jumpNum;
+      }
+      cb(inst);
+      pc ++;
+    }
+  }
 }
 

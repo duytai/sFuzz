@@ -28,16 +28,17 @@ namespace fuzzer {
     ReportMode reportMode;
   };
   struct FuzzStat {
-    int idx;
-    int maxdepth;
-    bool clearScreen;
-    int totalExecs;
-    int queueCycle;
+    int idx = 0;
+    int maxdepth = 0;
+    bool clearScreen = false;
+    int totalExecs = 0;
+    int queueCycle = 0;
     int stageFinds[32];
-    int coveredTuples;
-    double lastNewPath;
-    int numTest;
-    int numException;
+    int coveredTuples = 0;
+    double lastNewPath = 0;
+    int numTest = 0;
+    int numException = 0;
+    int numJumpis = 0;
   };
   class Fuzzer {
     unordered_set<uint64_t> tracebits;

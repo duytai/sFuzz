@@ -128,4 +128,6 @@ namespace fuzzer {
   struct ExtraData {
     bytes data;
   };
+  /* Static analyze */
+  void staticAnalyze(bytes code, function<void(Instruction)>);
 }
