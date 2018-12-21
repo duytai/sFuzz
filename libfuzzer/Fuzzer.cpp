@@ -34,11 +34,20 @@ u8 Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
   for (auto it : uniqExceptions) newExceptions += it.second.size();
   return newExceptions - orginExceptions;
 }
-/* Detect new branch by comparing tracebits to virginbits */
-u8 Fuzzer::hasNewBits(unordered_set<uint64_t> singleTracebits) {
+
+/* Detect new bits by comparing tracebits to virginbits */
+u8 Fuzzer::hasNewBits(unordered_set<uint64_t> _tracebits) {
   auto originSize = tracebits.size();
-  for (auto it : singleTracebits) tracebits.insert(it);
+  for (auto it : _tracebits) tracebits.insert(it);
   auto newSize = tracebits.size();
+  return newSize - originSize;
+}
+
+/* Detect new branch */
+u8 Fuzzer::hasNewBranches(unordered_set<uint64_t> _branches) {
+  auto originSize = branches.size();
+  for (auto it : _branches) branches.insert(it);
+  auto newSize = branches.size();
   return newSize - originSize;
 }
 
@@ -73,6 +82,8 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples), 15);
   auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
   auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
+  auto numBranches = padStr(to_string(branches.size()), 15);
+  auto coverage = padStr(to_string((int) ((float) branches.size() / (fuzzStat.numJumpis * 2) * 100)) + " %", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(fuzzStat.stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(fuzzStat.stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -113,9 +124,9 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV2 bV2 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
   printf(bH " stage execs : %s" bH "      tuples : %s" bH "\n", stageExec.c_str(), coveredTupleStr.c_str());
-  printf(bH " total execs : %s" bH " except type : %s" bH "\n", allExecs.c_str(), padStr("_", 15).c_str());
+  printf(bH " total execs : %s" bH "    branches : %s" bH "\n", allExecs.c_str(), numBranches.c_str());
   printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerTupe.c_str());
-  printf(bH "  cycle prog : %s" bH " uniq except : %s" bH "\n", cycleProgress.c_str(), padStr("_", 15).c_str());
+  printf(bH "  cycle prog : %s" bH "    coverage : %s" bH "\n", cycleProgress.c_str(), coverage.c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bV2 bV2 bRTR "\n");
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
@@ -140,8 +151,8 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
 void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
-  if (timer.elapsed() < 5) {
-    stats << "Time, Total Execs, Speed, Cycle Done, Tuples, Exception Type, Uniq Exception, BF-1-Tuple, BF-1-Execs, BF-2-Tuple, BF-2-Execs, BF-4-Tuple, BF-4-Execs, BYF-1-Tuple, BYF-1-Execs, BYF-2-Tuple, BYF-2-Execs, BYF-4-Tuple, BYF-4-Execs, AR-8-Tuple, AR-8-Execs, AR-16-Tuple, AR-16-Execs, AR-32-Tuple, AR-32-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, KI-8-Tuple, KI-8-Execs, Dict-1-Tuple, Dict-1-Execs, Dict-1-Tuple, Dict-1-Execs, Havoc-1-Tuple, Havoc-1-Execs , Max Depth, Gasless, Disorder, Reentrancy, Timestamp, Number, Delegate, Freeze" << endl;
+  if (timer.elapsed() < fuzzParam.csvInterval) {
+    stats << "duration, execution, speed, cycle, tuple, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, branches, coverage" << endl;
   }
   cout << "** Write stats: " << timer.elapsed() << "" << endl;
   stats << timer.elapsed() << ",";
@@ -191,6 +202,8 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   stats << oracleResult.blockNumDependency << ",";
   stats << oracleResult.dangerDelegateCall << ",";
   stats << oracleResult.freezingEther << ",";
+  stats << branches.size() << ",";
+  stats << (int) ((float) branches.size() / (fuzzStat.numJumpis * 2) * 100) << ",";
   stats << endl;
   stats.close();
 }
@@ -234,6 +247,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
   if (hasNewExceptions(item.res.uniqExceptions)) {
     writeException(revisedData);
   }
+  hasNewBranches(item.res.branches);
   return item;
 }
 
@@ -271,18 +285,21 @@ void Fuzzer::start() {
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {
             showMap.insert(make_pair(dur, 1));
-            if (fuzzParam.reportMode == CSV_FILE) {
-              if (dur % 5 == 0) writeStats(mutation, container.oracleResult());
-            } else if (fuzzParam.reportMode == TERMINAL) {
+            if (fuzzParam.reporter == CSV_FILE) {
+              if (dur % fuzzParam.csvInterval == 0)
+                writeStats(mutation, container.oracleResult());
+            } else if (fuzzParam.reporter == TERMINAL) {
               showStats(mutation, container.oracleResult());
             }
           }
           /* Analyze every 1000 test cases */
-          if (!(fuzzStat.totalExecs % 1000)) {
+          if (!(fuzzStat.totalExecs % 500)) {
             container.analyze();
           }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {
+            container.analyze();
+            writeStats(mutation, container.oracleResult());
             exit(0);
           }
           return item;

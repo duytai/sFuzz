@@ -13,7 +13,7 @@ using namespace std;
 
 namespace fuzzer {
   enum FuzzMode { RANDOM, AFL };
-  enum ReportMode { TERMINAL, CSV_FILE };
+  enum Reporter { TERMINAL, CSV_FILE };
   struct ContractInfo {
     string abiJson;
     string bin;
@@ -24,8 +24,9 @@ namespace fuzzer {
   struct FuzzParam {
     vector<ContractInfo> contractInfo;
     FuzzMode mode;
+    Reporter reporter;
     int duration;
-    ReportMode reportMode;
+    int csvInterval;
   };
   struct FuzzStat {
     int idx = 0;
@@ -42,6 +43,7 @@ namespace fuzzer {
   };
   class Fuzzer {
     unordered_set<uint64_t> tracebits;
+    unordered_set<uint64_t> branches;
     vector<FuzzItem> queues;
     unordered_map<string, unordered_set<u64>> uniqExceptions;
     Timer timer;
@@ -52,6 +54,7 @@ namespace fuzzer {
     public:
       Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(unordered_set<uint64_t> tracebits);
+      u8 hasNewBranches(unordered_set<uint64_t> branches);
       u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, int depth);
       void start();

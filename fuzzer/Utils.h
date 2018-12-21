@@ -74,7 +74,7 @@ string compileSolFiles(string folder) {
   return ret.str();
 }
 
-string fuzzJsonFiles(string contracts, string assets, int duration, int mode) {
+string fuzzJsonFiles(string contracts, string assets, int duration, int mode, int reporter) {
   stringstream ret;
   forEachFile(contracts, ".json", [&](directory_entry file) {
     auto filePath = file.path().string();
@@ -85,6 +85,7 @@ string fuzzJsonFiles(string contracts, string assets, int duration, int mode) {
     ret << " --assets " + assets;
     ret << " --duration " + to_string(duration);
     ret << " --mode " + to_string(mode);
+    ret << " --reporter " + to_string(reporter);
     ret << endl;
   });
   return ret.str();

@@ -6,11 +6,12 @@
 using namespace std;
 using namespace fuzzer;
 
-static int DEFAULT_MODE = 1; // AFL
-static int DEFAULT_DURATION = 300; // 5 mins
+static int DEFAULT_MODE = AFL;
+static int DEFAULT_DURATION = 120; // 2 mins
+static int DEFAULT_REPORTER = CSV_FILE;
+static int DEFAULT_CSV_INTERVAL = 5; // 5 sec
 static string DEFAULT_CONTRACTS_FOLDER = "contracts/";
 static string DEFAULT_ASSETS_FOLDER = "assets/";
-static ReportMode reportMode = TERMINAL;
 
 int main(int argc, char* argv[]) {
   /* Run EVM silently */
@@ -20,6 +21,7 @@ int main(int argc, char* argv[]) {
   /* Program options */
   int mode = DEFAULT_MODE;
   int duration = DEFAULT_DURATION;
+  int reporter = DEFAULT_REPORTER;
   string contractsFolder = DEFAULT_CONTRACTS_FOLDER;
   string assetsFolder = DEFAULT_ASSETS_FOLDER;
   string jsonFile = "";
@@ -35,6 +37,7 @@ int main(int argc, char* argv[]) {
     ("file,f", po::value(&jsonFile), "fuzz a contract")
     ("name,n", po::value(&contractName), "contract name")
     ("mode,m", po::value(&mode), "choose mode: 0 - Random | 1 - AFL ")
+    ("reporter,r", po::value(&reporter), "choose reporter: 0 - TERMINAL | 1 - CSV")
     ("duration,d", po::value(&duration), "fuzz duration");
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
@@ -46,7 +49,7 @@ int main(int argc, char* argv[]) {
     fuzzMe << "#!/bin/bash" << endl;
     fuzzMe << compileSolFiles(contractsFolder);
     fuzzMe << compileSolFiles(assetsFolder);
-    fuzzMe << fuzzJsonFiles(contractsFolder, assetsFolder, duration, mode);
+    fuzzMe << fuzzJsonFiles(contractsFolder, assetsFolder, duration, mode, reporter);
     fuzzMe.close();
     showGenerate();
     return 0;
@@ -57,9 +60,10 @@ int main(int argc, char* argv[]) {
     auto contractInfo = parseAssets(assetsFolder);
     contractInfo.push_back(parseJson(jsonFile, contractName, true));
     fuzzParam.contractInfo = contractInfo;
-    fuzzParam.mode = !mode ? RANDOM : AFL;
+    fuzzParam.mode = (FuzzMode) mode;
     fuzzParam.duration = duration;
-    fuzzParam.reportMode = reportMode;
+    fuzzParam.reporter = (Reporter) reporter;
+    fuzzParam.csvInterval = DEFAULT_CSV_INTERVAL;
     Fuzzer fuzzer(fuzzParam);
     cout << ">> Fuzz " << contractName << endl;
     fuzzer.start();
