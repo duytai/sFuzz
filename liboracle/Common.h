@@ -24,15 +24,21 @@ namespace fuzzer {
   };
   
   struct OracleResult {
-    u256 gaslessSend;
-    u256 exceptionDisorder;
-    u256 timestampDependency;
-    u256 blockNumDependency;
-    u256 dangerDelegateCall;
-    u256 reentrancy;
-    u256 freezingEther;
+    u256 gaslessSend = 0;
+    u256 exceptionDisorder = 0;
+    u256 timestampDependency = 0;
+    u256 blockNumDependency = 0;
+    u256 dangerDelegateCall = 0;
+    u256 reentrancy = 0;
+    u256 freezingEther = 0;
+    u256 integerUnderflow = 0;
   };
   
   using CallLogs = vector<vector<CallLogItem>>;
   using CallLog = vector<CallLogItem>;
+  
+  class Oracle {
+  public:
+    virtual bool analyze(CallLog callLog) = 0;
+  };
 }

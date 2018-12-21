@@ -6,7 +6,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  class DangerDelegateCall {
+  class DangerDelegateCall : public Oracle {
     u256 numDanger = 0;
     public:
       bool analyze(CallLog callLog);

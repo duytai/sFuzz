@@ -6,7 +6,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  class BlockNumberDependency {
+  class BlockNumberDependency : public Oracle {
     u256 numBlocknumber = 0;
     u256 numSend = 0;
     public:

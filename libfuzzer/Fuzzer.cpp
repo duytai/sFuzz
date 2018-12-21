@@ -61,7 +61,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  int numLines = 21, i = 0, expCout = 0;;
+  int numLines = 22, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -145,6 +145,9 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printfWithColor(oracleResult.dangerDelegateCall, " Delegate");
   printfWithColor(oracleResult.freezingEther, " Freeze");
   printf("    " bH "\n");
+  printf(bH " ");
+  printfWithColor(oracleResult.integerUnderflow, " Integer-Underflow");
+  printf("%s" bH "\n", padStr(" ", 47).c_str());
   printf(bBL bV50 bV5 bV2 bV20 bV2 bV2 bBR "\n");
 }
 
