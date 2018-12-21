@@ -52,7 +52,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  int numLines = 21, i = 0;
+  int numLines = 21, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -70,11 +70,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto cyclePercentage = (int)((float)(fuzzStat.idx + 1) / queues.size() * 100);
   auto cycleProgress = padStr(to_string(fuzzStat.idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(fuzzStat.queueCycle), 15);
-  int expCout = 0;
-  for (auto exp: uniqExceptions) expCout+= exp.second.size();
-  auto exceptionCount = padStr(to_string(expCout), 15);
   auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples), 15);
-  auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 15);
   auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
   auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
@@ -106,6 +102,9 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
+  for (auto exp: uniqExceptions) expCout+= exp.second.size();
+  auto exceptionCount = padStr(to_string(expCout), 5);
+  auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto contract = mainContract();
   printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contract.contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
@@ -114,15 +113,15 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV2 bV2 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
   printf(bH " stage execs : %s" bH "      tuples : %s" bH "\n", stageExec.c_str(), coveredTupleStr.c_str());
-  printf(bH " total execs : %s" bH " except type : %s" bH "\n", allExecs.c_str(), typeExceptionCount.c_str());
+  printf(bH " total execs : %s" bH " except type : %s" bH "\n", allExecs.c_str(), padStr("_", 15).c_str());
   printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerTupe.c_str());
-  printf(bH "  cycle prog : %s" bH " uniq except : %s" bH "\n", cycleProgress.c_str(), exceptionCount.c_str());
+  printf(bH "  cycle prog : %s" bH " uniq except : %s" bH "\n", cycleProgress.c_str(), padStr("_", 15).c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bV2 bV2 bRTR "\n");
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
   printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
-  printf(bH "  known ints : %s" bH "                    " bH "\n", knownInts.c_str());
-  printf(bH "  dictionary : %s" bH "                    " bH "\n", dictionary.c_str());
+  printf(bH "  known ints : %s" bH " except type : %s" bH "\n", knownInts.c_str(), typeExceptionCount.c_str());
+  printf(bH "  dictionary : %s" bH " uniq except : %s" bH "\n", dictionary.c_str(), exceptionCount.c_str());
   printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
   printf(bLTR bV5 cGRN " oracle yields " cRST bV bV20 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
