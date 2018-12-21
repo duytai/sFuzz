@@ -45,10 +45,12 @@ ContractInfo parseJson(string jsonFile, string contractName, bool isMain) {
   return contractInfo;
 }
 
-string toContractName(directory_entry jsonFile) {
-  string filePath = jsonFile.path().string();
-  string fileName = jsonFile.path().filename().string();
-  string fileNameWithoutExtension = fileName.substr(0, fileName.length() - 9);
+string toContractName(directory_entry file) {
+  string filePath = file.path().string();
+  string fileName = file.path().filename().string();
+  string fileNameWithoutExtension = fileName.find(".") != string::npos
+  ? fileName.substr(0, fileName.find("."))
+  : fileName;
   string contractName = fileNameWithoutExtension.find("_0x") != string::npos
   ? fileNameWithoutExtension.substr(0, fileNameWithoutExtension.find("_0x"))
   : fileNameWithoutExtension;
@@ -76,11 +78,28 @@ string compileSolFiles(string folder) {
 
 string fuzzJsonFiles(string contracts, string assets, int duration, int mode, int reporter) {
   stringstream ret;
+  /* search for json file */
+  unordered_set<string> contractNames;
   forEachFile(contracts, ".json", [&](directory_entry file) {
     auto filePath = file.path().string();
     auto contractName = toContractName(file);
+    contractNames.insert(contractName);
     ret << "./fuzzer";
     ret << " --file " + filePath;
+    ret << " --name " + contractName;
+    ret << " --assets " + assets;
+    ret << " --duration " + to_string(duration);
+    ret << " --mode " + to_string(mode);
+    ret << " --reporter " + to_string(reporter);
+    ret << endl;
+  });
+  /* search for sol file */
+  forEachFile(contracts, ".sol", [&](directory_entry file) {
+    auto filePath = file.path().string();
+    auto contractName = toContractName(file);
+    if (contractNames.count(contractName)) return;
+    ret << "./fuzzer";
+    ret << " --file " + filePath + ".json";
     ret << " --name " + contractName;
     ret << " --assets " + assets;
     ret << " --duration " + to_string(duration);
