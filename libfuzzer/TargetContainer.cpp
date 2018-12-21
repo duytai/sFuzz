@@ -49,7 +49,9 @@ namespace fuzzer {
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
     u64 lastpc = 0;
+    u64 branchId = 0;
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
+    unordered_set<uint64_t> branches;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, double> predicates;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
@@ -117,9 +119,12 @@ namespace fuzzer {
       if (inst == Instruction::JUMPCI) {
         jumpDest1 = (u64) vm->stack().back();
         jumpDest2 = pc + 1;
+        branchId = pow(pc, 2);
       }
       if (prevInst == Instruction::JUMPCI) {
         tracebits.insert(pc ^ prevLocation);
+        branchId = abs(pow(pc, 2) - branchId);
+        branches.insert(branchId);
         prevLocation = pc >> 1;
         /* Calculate branch distance */
         if (lastCompValue != 0) {
@@ -181,6 +186,6 @@ namespace fuzzer {
     oracleFactory->finalize();
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
-    return TargetContainerResult(tracebits, cksum, predicates, uniqExceptions);
+    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);
   }
 }
