@@ -1,8 +1,6 @@
 #pragma once
-#include <iostream>
 #include <vector>
-#include <boost/algorithm/string.hpp>
-#include <libdevcore/FixedHash.h>
+#include "Common.h"
 
 using namespace dev;
 using namespace std;

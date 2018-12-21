@@ -1,6 +1,4 @@
-#include <iostream>
 #include <set>
-#include <libevm/Instruction.h>
 #include "Dictionary.h"
 
 using namespace std;

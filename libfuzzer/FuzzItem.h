@@ -1,7 +1,6 @@
 #pragma once
-#include <iostream>
 #include "TargetContainer.h"
-#include <libdevcore/Common.h>
+#include "Common.h"
 
 using namespace std;
 using namespace dev;

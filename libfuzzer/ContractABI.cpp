@@ -1,10 +1,4 @@
-#include <iostream>
-#include <boost/algorithm/string.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include <regex>
-#include <libdevcore/SHA3.h>
-#include <libdevcore/FixedHash.h>
 #include "ContractABI.h"
 
 using namespace std;

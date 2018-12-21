@@ -1,19 +1,8 @@
-#include <libdevcore/CommonIO.h>
-#include <libdevcore/SHA3.h>
-#include <libethashseal/Ethash.h>
-#include <libethashseal/GenesisInfo.h>
-#include <libethcore/SealEngine.h>
-#include <libethereum/Block.h>
-#include <libethereum/ChainParams.h>
-#include <libethereum/Executive.h>
-#include <libethereum/LastBlockHashesFace.h>
-#include <libevm/VMFactory.h>
 #include "TargetProgram.h"
 #include "Util.h"
 
 using namespace dev;
 using namespace eth;
-
 
 namespace fuzzer {
   TargetProgram::TargetProgram(): state(State(0)) {

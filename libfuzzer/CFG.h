@@ -1,9 +1,6 @@
 #pragma once
-#include <iostream>
-#include <libdevcore/Common.h>
-#include <libevm/Instruction.h>
-#include <libdevcore/FixedHash.h>
 #include <map>
+#include "Common.h"
 
 using namespace std;
 using namespace dev;

@@ -1,9 +1,7 @@
 #pragma once
-#include <iostream>
 #include <vector>
-#include <libdevcore/FixedHash.h>
-#include <libevm/LegacyVM.h>
 #include <fstream>
+#include "Common.h"
 
 #define unlikely(_x)  __builtin_expect(!!(_x), 0)
 #define likely(_x)   __builtin_expect(!!(_x), 1)

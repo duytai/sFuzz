@@ -1,8 +1,8 @@
+#include <ctime>
 #include "Mutation.h"
 #include "Dictionary.h"
 #include "Util.h"
 #include "FuzzItem.h"
-#include <ctime>
 
 using namespace std;
 using namespace fuzzer;

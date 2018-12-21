@@ -1,7 +1,5 @@
 #pragma once
-#include <iostream>
-#include <libethashseal/Ethash.h>
-#include <libethereum/LastBlockHashesFace.h>
+#include "Common.h"
 
 using namespace std;
 using namespace dev;

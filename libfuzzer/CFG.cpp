@@ -1,8 +1,4 @@
 #include "CFG.h"
-#include <libdevcore/Common.h>
-#include <libevm/Instruction.h>
-#include <libdevcore/CommonIO.h>
-#include "Util.h"
 
 using namespace std;
 using namespace dev;
@@ -125,7 +121,7 @@ namespace fuzzer {
       }
     }
     vector<bytes> stageCodes = {
-//      bytes(code.begin(), code.begin() + pos),
+      bytes(code.begin(), code.begin() + pos),
       bytes(code.begin() + pos, code.end()),
     };
     for (auto stageCode : stageCodes) {

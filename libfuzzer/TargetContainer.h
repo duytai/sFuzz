@@ -1,14 +1,8 @@
 #pragma once
-#include <iostream>
 #include <vector>
 #include <map>
-#include <libdevcore/CommonIO.h>
-#include <libethereum/Block.h>
-#include <libethereum/ChainParams.h>
-#include <libethereum/Executive.h>
-#include <libethashseal/GenesisInfo.h>
-#include <libethereum/LastBlockHashesFace.h>
 #include <liboracle/OracleFactory.h>
+#include "Common.h"
 #include "TargetProgram.h"
 #include "ContractABI.h"
 

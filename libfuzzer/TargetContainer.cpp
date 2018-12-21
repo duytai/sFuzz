@@ -1,8 +1,7 @@
-#include <libevm/LegacyVM.h>
+#include <math.h>
 #include "TargetContainer.h"
 #include "Util.h"
 #include "ContractABI.h"
-#include <math.h>
 
 using namespace dev;
 using namespace eth;

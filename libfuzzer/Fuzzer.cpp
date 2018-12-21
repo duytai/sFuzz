@@ -1,7 +1,6 @@
 #include <thread>
 #include <unistd.h>
 #include <fstream>
-#include "boost/filesystem.hpp"
 #include "Fuzzer.h"
 #include "Mutation.h"
 #include "Util.h"
