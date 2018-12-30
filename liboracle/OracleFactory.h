@@ -8,6 +8,7 @@
 #include "DangerDelegateCall.h"
 #include "FreezingEther.h"
 #include "IntegerOverflow.h"
+#include "IntegerUnderflow.h"
 
 using namespace dev;
 using namespace eth;
@@ -25,6 +26,7 @@ namespace fuzzer {
     DangerDelegateCall dangerDelegateCall;
     FreezingEther freezingEther;
     IntegerOverflow integerOverflow;
+    IntegerUnderflow integerUnderflow;
     public:
       OracleResult oracleResult;
       OracleFactory();

@@ -16,6 +16,7 @@ namespace fuzzer {
     bytes data;
     bytes code;
     bool isOverflow = false;
+    bool isUnderflow = false;
     string noted = "";
   };
   struct CallLogItem {
@@ -33,6 +34,7 @@ namespace fuzzer {
     u256 reentrancy = 0;
     u256 freezingEther = 0;
     u256 integerOverflow = 0;
+    u256 integerUnderflow = 0;
   };
   
   using CallLogs = vector<vector<CallLogItem>>;

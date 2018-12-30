@@ -147,7 +147,8 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf("    " bH "\n");
   printf(bH " ");
   printfWithColor(oracleResult.integerOverflow, " Integer-Overflow");
-  printf("%s" bH "\n", padStr(" ", 48).c_str());
+  printfWithColor(oracleResult.integerUnderflow, " Integer-Underflow");
+  printf("%s" bH "\n", padStr(" ", 30).c_str());
   printf(bBL bV50 bV5 bV2 bV20 bV2 bV2 bBR "\n");
 }
 
