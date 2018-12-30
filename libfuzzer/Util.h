@@ -123,6 +123,7 @@ namespace fuzzer {
   string padStr(string str, int len);
   bytes setVictimData(bytes data);
   bytes u256ToBytes(u256 v);
+  bytes u512ToBytes(u512 v);
   void printfWithColor(u256 value, string text);
   /* Data struct */
   struct ExtraData {

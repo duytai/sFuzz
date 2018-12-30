@@ -191,6 +191,15 @@ namespace fuzzer {
     return ret;
   }
   
+  bytes u512ToBytes(u512 value) {
+    bytes ret;
+    for (int i = 0; i < 64; i += 1) {
+      byte b = (byte) (value >> ((64 - i - 1) * 8)) & 0xFF;
+      ret.push_back(b);
+    }
+    return ret;
+  }
+  
   bytes u256ToBytes(u256 value) {
     bytes ret;
     for (int i = 0; i < 32; i += 1) {

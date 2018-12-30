@@ -15,6 +15,7 @@ namespace fuzzer {
     Instruction inst;
     bytes data;
     bytes code;
+    bool isOverflow = false;
     string noted = "";
   };
   struct CallLogItem {

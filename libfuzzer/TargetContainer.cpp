@@ -89,8 +89,17 @@ namespace fuzzer {
             inst == Instruction::SUICIDE ||
             inst == Instruction::NUMBER ||
             inst == Instruction::TIMESTAMP ||
-            inst == Instruction::INVALID
+            inst == Instruction::INVALID ||
+            inst == Instruction::ADD
           ) {
+            if (inst == Instruction::ADD) {
+              vector<u256>::size_type stackSize = vm->stack().size();
+              auto left = vm->stack()[stackSize - 1];
+              auto right = vm->stack()[stackSize - 2];
+              auto total256 = left + right;
+              auto total512 = (u512) left + (u512) right;
+              payload.isOverflow = total512 != total256;
+            }
             oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           }
           oracleFactory->log(CallLogItem(ext->depth + 1, payload));
