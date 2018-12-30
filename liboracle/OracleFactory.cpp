@@ -22,19 +22,6 @@ namespace fuzzer  {
     callLog.push_back(fc);
   }
   
-  void OracleFactory::log(CallLogItem fc) {
-    /* Write to log files */
-    return;
-    stringstream outfile;
-    outfile << fc.level << ",";
-    outfile << instructionInfo(fc.payload.inst).name << ",";
-    outfile << fc.payload.gas << ",";
-    outfile << fc.payload.wei << ",";
-    outfile << toHex(fc.payload.data) << ",";
-    outfile << fc.payload.noted << endl;
-    cout << outfile.str();
-  }
-  
   void OracleFactory::analyze() {
     for (auto callLog : callLogs) {
       if (!oracleResult.gaslessSend) {

@@ -78,7 +78,6 @@ namespace fuzzer {
           auto temp = program->getCode(ext->myAddress);
           payload.code = bytes(temp.begin() + pc + 1, temp.begin() + pc + 13);
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
-          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;
         }
         default: {
@@ -106,7 +105,6 @@ namespace fuzzer {
             }
             oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           }
-          oracleFactory->log(CallLogItem(ext->depth + 1, payload));
           break;
         }
       }
@@ -159,7 +157,6 @@ namespace fuzzer {
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
     oracleFactory->save(CallLogItem(0, payload));
-    oracleFactory->log(CallLogItem(0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -171,7 +168,6 @@ namespace fuzzer {
       CallLogItemPayload payload;
       payload.inst = Instruction::INVALID;
       oracleFactory->save(CallLogItem(0, payload));
-      oracleFactory->log(CallLogItem(0, payload));
     }
     for (auto func: funcs) {
       /* Update payload */
@@ -179,7 +175,6 @@ namespace fuzzer {
       payload.data = func;
       payload.inst = Instruction::CALL;
       oracleFactory->save(CallLogItem(0, payload));
-      oracleFactory->log(CallLogItem(0, payload));
       /* Call function */
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
@@ -192,7 +187,6 @@ namespace fuzzer {
         CallLogItemPayload payload;
         payload.inst = Instruction::INVALID;
         oracleFactory->save(CallLogItem(0, payload));
-        oracleFactory->log(CallLogItem(0, payload));
       }
     }
     oracleFactory->finalize();
