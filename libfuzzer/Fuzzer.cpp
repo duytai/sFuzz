@@ -146,8 +146,8 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printfWithColor(oracleResult.freezingEther, " Freeze");
   printf("    " bH "\n");
   printf(bH " ");
-  printfWithColor(oracleResult.integerUnderflow, " Integer-Underflow");
-  printf("%s" bH "\n", padStr(" ", 47).c_str());
+  printfWithColor(oracleResult.integerOverflow, " Integer-Overflow");
+  printf("%s" bH "\n", padStr(" ", 48).c_str());
   printf(bBL bV50 bV5 bV2 bV20 bV2 bV2 bBR "\n");
 }
 

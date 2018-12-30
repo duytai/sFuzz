@@ -52,8 +52,8 @@ namespace fuzzer  {
       if (!oracleResult.dangerDelegateCall) {
         oracleResult.dangerDelegateCall += dangerDelegateCall.analyze(callLog) ? 1 : 0;
       }
-      if (!oracleResult.integerUnderflow) {
-        oracleResult.integerUnderflow += integerUnderflow.analyze(callLog) ? 1 : 0;
+      if (!oracleResult.integerOverflow) {
+        oracleResult.integerOverflow += integerOverflow.analyze(callLog) ? 1 : 0;
       }
       if (!oracleResult.freezingEther) {
         oracleResult.freezingEther += freezingEther.analyze(callLog) ? 1 : 0;

@@ -6,7 +6,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  class IntegerUnderflow : public Oracle {
+  class IntegerOverflow : public Oracle {
     public:
       bool analyze(CallLog callLog);
   };

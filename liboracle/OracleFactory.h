@@ -7,7 +7,7 @@
 #include "BlockNumDependency.h"
 #include "DangerDelegateCall.h"
 #include "FreezingEther.h"
-#include "IntegerUnderflow.h"
+#include "IntegerOverflow.h"
 
 using namespace dev;
 using namespace eth;
@@ -24,7 +24,7 @@ namespace fuzzer {
     ExceptionDisorder exceptionDisorder;
     DangerDelegateCall dangerDelegateCall;
     FreezingEther freezingEther;
-    IntegerUnderflow integerUnderflow;
+    IntegerOverflow integerOverflow;
     public:
       OracleResult oracleResult;
       OracleFactory();
