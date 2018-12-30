@@ -6,6 +6,7 @@
 #include "Util.h"
 #include "ContractABI.h"
 #include "Dictionary.h"
+#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -237,7 +238,7 @@ void Fuzzer::writeException(bytes data) {
 FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData);
-  item.res = te.exec(revisedData);
+  item.res = te.exec(revisedData, fuzzParam.logger);
   item.wasFuzzed = false;
   fuzzStat.totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
@@ -268,13 +269,14 @@ void Fuzzer::start() {
       /* Load Attacker agent contract */
       auto data = ca.randomTestcase();
       auto revisedData = ContractABI::postprocessTestData(data);
-      executive.deploy(revisedData);
+      executive.deploy(revisedData, EMPTY_ONOP);
       addressDict.fromAddress(executive.addr.asBytes());
     } else {
       auto contractName = contractInfo.contractName;
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
+      fuzzParam.logger = new Logger(contractName);
       staticAnalyze(bin, [&](Instruction inst) {
         if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
       });

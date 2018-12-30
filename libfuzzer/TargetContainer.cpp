@@ -31,8 +31,7 @@ namespace fuzzer {
     return te;
   }
   
-  void TargetExecutive::deploy(bytes data) {
-    OnOpFunc onOp = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
+  void TargetExecutive::deploy(bytes data, OnOpFunc onOp) {
     ca.updateTestData(data);
     program->deploy(addr, bytes{code});
     program->setBalance(addr, DEFAULT_BALANCE);
@@ -40,10 +39,11 @@ namespace fuzzer {
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
   }
   
-  TargetContainerResult TargetExecutive::exec(bytes data) {
+  TargetContainerResult TargetExecutive::exec(bytes data, Logger* logger) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
     double lastCompValue = 0;
+    u64 functionCounter = 0;
     u64 prevLocation = 0;
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
@@ -145,6 +145,17 @@ namespace fuzzer {
         }
       }
       prevInst = inst;
+      /* log to file */
+      stringstream data;
+      vector<u256>::size_type stackSize = vm->stack().size();
+      data << functionCounter << "|";
+      data << pc << "|";
+      data << instructionInfo(inst).name << "|";
+      for (int64_t i = 0; i < (int64_t) stackSize; i ++) {
+        data << toHex(u256ToBytes(vm->stack()[i])) << "|";
+      }
+      data << endl;
+      logger->log(data.str());
     };
     /* Decode and call functions */
     ca.updateTestData(data);
@@ -157,6 +168,7 @@ namespace fuzzer {
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
     oracleFactory->save(CallLogItem(0, payload));
+    functionCounter ++;
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -176,6 +188,7 @@ namespace fuzzer {
       payload.inst = Instruction::CALL;
       oracleFactory->save(CallLogItem(0, payload));
       /* Call function */
+      functionCounter ++;
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;

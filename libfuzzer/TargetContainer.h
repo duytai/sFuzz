@@ -5,6 +5,7 @@
 #include "Common.h"
 #include "TargetProgram.h"
 #include "ContractABI.h"
+#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -46,8 +47,8 @@ namespace fuzzer {
         this->program = program;
         this->oracleFactory = oracleFactory;
       }
-      TargetContainerResult exec(bytes data);
-      void deploy(bytes data);
+      TargetContainerResult exec(bytes data, Logger* logger);
+      void deploy(bytes data, OnOpFunc onOp);
   };
   
   class TargetContainer {

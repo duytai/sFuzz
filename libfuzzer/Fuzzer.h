@@ -25,6 +25,7 @@ namespace fuzzer {
     vector<ContractInfo> contractInfo;
     FuzzMode mode;
     Reporter reporter;
+    Logger* logger;
     int duration;
     int csvInterval;
   };
