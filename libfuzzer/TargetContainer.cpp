@@ -39,7 +39,7 @@ namespace fuzzer {
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
   }
   
-  TargetContainerResult TargetExecutive::exec(bytes data, Logger* logger) {
+  TargetContainerResult TargetExecutive::exec(bytes data, Logger*) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
     double lastCompValue = 0;
@@ -146,6 +146,7 @@ namespace fuzzer {
       }
       prevInst = inst;
       /* log to file */
+      /*
       stringstream data;
       vector<u256>::size_type stackSize = vm->stack().size();
       data << functionCounter << "|";
@@ -156,6 +157,7 @@ namespace fuzzer {
       }
       data << endl;
       logger->log(data.str());
+      */
     };
     /* Decode and call functions */
     ca.updateTestData(data);
