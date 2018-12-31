@@ -5,7 +5,6 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  void Logger::log(string content) {
-    outfile << content;
+  void Logger::log(string) {
   }
 }
