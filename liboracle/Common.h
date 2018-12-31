@@ -14,10 +14,9 @@ namespace fuzzer {
     u256 pc = 0;
     Instruction inst;
     bytes data;
-    bytes code;
+    bytes testData;
     bool isOverflow = false;
     bool isUnderflow = false;
-    string noted = "";
   };
   struct CallLogItem {
     CallLogItemPayload payload;
@@ -41,7 +40,9 @@ namespace fuzzer {
   using CallLog = vector<CallLogItem>;
   
   class Oracle {
-  public:
-    virtual bool analyze(CallLog callLog) = 0;
+    protected:
+      bytes testData;
+    public:
+      virtual bool analyze(CallLog callLog) = 0;
   };
 }

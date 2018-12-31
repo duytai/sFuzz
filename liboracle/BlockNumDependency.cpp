@@ -13,6 +13,9 @@ namespace fuzzer {
         if (inst == Instruction::NUMBER) numBlocknumber ++;
         if (inst == Instruction::CALL) numSend ++;
       }
+      if (!!numBlocknumber && !!numSend) {
+        testData = callLogItem.payload.testData;
+      }g
     }
     return !!numBlocknumber && !!numSend;
   }

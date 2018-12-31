@@ -74,9 +74,7 @@ namespace fuzzer {
           payload.wei = wei;
           payload.inst = inst;
           payload.data = bytes(first + inOff, first + inOff + inSize);
-          /* Save next 13 bytes to detect .transfer */
-          auto temp = program->getCode(ext->myAddress);
-          payload.code = bytes(temp.begin() + pc + 1, temp.begin() + pc + 13);
+          payload.testData = data;
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
@@ -84,6 +82,7 @@ namespace fuzzer {
           CallLogItemPayload payload;
           payload.pc = pc;
           payload.inst = inst;
+          payload.testData = data;
           if (
             inst == Instruction::SUICIDE ||
             inst == Instruction::NUMBER ||
@@ -169,6 +168,7 @@ namespace fuzzer {
     CallLogItemPayload payload;
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
+    payload.testData = data;
     oracleFactory->save(CallLogItem(0, payload));
     functionCounter ++;
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
@@ -181,6 +181,7 @@ namespace fuzzer {
       /* Save Call Log */
       CallLogItemPayload payload;
       payload.inst = Instruction::INVALID;
+      payload.testData = data;
       oracleFactory->save(CallLogItem(0, payload));
     }
     for (auto func: funcs) {
@@ -188,6 +189,7 @@ namespace fuzzer {
       CallLogItemPayload payload;
       payload.data = func;
       payload.inst = Instruction::CALL;
+      payload.testData = data;
       oracleFactory->save(CallLogItem(0, payload));
       /* Call function */
       functionCounter ++;
@@ -201,6 +203,7 @@ namespace fuzzer {
         /* Save Call Log */
         CallLogItemPayload payload;
         payload.inst = Instruction::INVALID;
+        payload.testData = data;
         oracleFactory->save(CallLogItem(0, payload));
       }
     }
