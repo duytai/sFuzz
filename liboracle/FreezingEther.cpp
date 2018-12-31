@@ -15,7 +15,7 @@ namespace fuzzer {
           numTransfer ++;
         }
       }
-      if (!numTransfer && !!numDelegatecall) {
+      if (!numTransfer && !!numDelegatecall && !testData.size()) {
         testData = callLogItem.payload.testData;
       }
     }

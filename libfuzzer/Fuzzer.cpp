@@ -213,24 +213,34 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   stats.close();
 }
 
-void Fuzzer::writeTestcase(bytes data) {
+void Fuzzer::writeVulnerability(bytes data, string prefix) {
+  auto contract = mainContract();
+  ContractABI ca(contract.abiJson);
+  ca.updateTestData(data);
+  string ret = ca.toStandardJson();
+  ofstream test(contract.contractName + "/" + prefix + ".json");
+  test << ret;
+  test.close();
+}
+
+void Fuzzer::writeTestcase(bytes data, string prefix) {
   auto contract = mainContract();
   ContractABI ca(contract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numTest ++;
   string ret = ca.toStandardJson();
-  ofstream test(contract.contractName + "/__TEST__" + to_string(fuzzStat.numTest) + "__.json");
+  ofstream test(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
   test << ret;
   test.close();
 }
 
-void Fuzzer::writeException(bytes data) {
+void Fuzzer::writeException(bytes data, string prefix) {
   auto contract = mainContract();
   ContractABI ca(contract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numException ++;
   string ret = ca.toStandardJson();
-  ofstream exp(contract.contractName + "/__EXCEPTION__" + to_string(fuzzStat.numException) + "__.json");
+  ofstream exp(contract.contractName + "/" + prefix + to_string(fuzzStat.numException) + "__.json");
   exp << ret;
   exp.close();
 }
@@ -247,10 +257,10 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
     queues.push_back(item);
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
-    writeTestcase(revisedData);
+    writeTestcase(revisedData, "__TEST__");
   }
   if (hasNewExceptions(item.res.uniqExceptions)) {
-    writeException(revisedData);
+    writeException(revisedData, "__EXCEPTION__");
   }
   hasNewBranches(item.res.branches);
   return item;
@@ -300,7 +310,10 @@ void Fuzzer::start() {
           }
           /* Analyze every 1000 test cases */
           if (!(fuzzStat.totalExecs % 500)) {
-            container.analyze();
+            auto data = container.analyze();
+            for (auto it : data) {
+              writeVulnerability(get<1>(it), get<0>(it));
+            }
           }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {

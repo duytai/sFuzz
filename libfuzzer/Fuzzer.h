@@ -59,8 +59,9 @@ namespace fuzzer {
       u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, int depth);
       void start();
-      void writeTestcase(bytes data);
-      void writeException(bytes data);
+      void writeTestcase(bytes data, string prefix);
+      void writeException(bytes data, string prefix);
+      void writeVulnerability(bytes data, string prefix);
       void showStats(Mutation mutation, OracleResult oracleResult);
   };
 }

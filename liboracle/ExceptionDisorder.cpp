@@ -23,7 +23,7 @@ namespace fuzzer {
       } else if (inst == Instruction::INVALID) {
         nestedException = true;
       }
-      if (!rootException && nestedException) {
+      if (!rootException && nestedException && !testData.size()) {
         testData = callLogItem.payload.testData;
       }
     }

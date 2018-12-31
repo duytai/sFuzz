@@ -44,5 +44,6 @@ namespace fuzzer {
       bytes testData;
     public:
       virtual bool analyze(CallLog callLog) = 0;
+      bytes getTestData() { return testData; }
   };
 }
