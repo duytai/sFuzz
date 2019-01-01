@@ -145,16 +145,18 @@ namespace fuzzer {
       }
       prevInst = inst;
       /* log to file */
-      stringstream data;
-      vector<u256>::size_type stackSize = vm->stack().size();
-      data << functionCounter << "|";
-      data << pc << "|";
-      data << instructionInfo(inst).name << "|";
-      for (int64_t i = 0; i < (int64_t) stackSize; i ++) {
-        data << toHex(u256ToBytes(vm->stack()[i])) << "|";
+      if (logger->isEnabled()) {
+        stringstream data;
+        vector<u256>::size_type stackSize = vm->stack().size();
+        data << functionCounter << "|";
+        data << pc << "|";
+        data << instructionInfo(inst).name << "|";
+        for (int64_t i = 0; i < (int64_t) stackSize; i ++) {
+          data << toHex(u256ToBytes(vm->stack()[i])) << "|";
+        }
+        data << endl;
+        logger->log(data.str());
       }
-      data << endl;
-      logger->log(data.str());
     };
     /* Decode and call functions */
     ca.updateTestData(data);

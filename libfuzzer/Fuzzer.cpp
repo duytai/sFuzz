@@ -287,7 +287,7 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
-      fuzzParam.logger = new Logger(contractName);
+      fuzzParam.logger = new Logger(contractName, fuzzParam.log);
       staticAnalyze(bin, [&](Instruction inst) {
         if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
       });

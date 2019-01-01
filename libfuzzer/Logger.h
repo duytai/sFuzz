@@ -10,10 +10,13 @@ namespace fuzzer {
     uint64_t counter = 0;
     stringstream data;
     string contractName;
+    bool enable = false;
     public:
-      Logger(string _contractName) {
+      Logger(string _contractName, bool _enable) {
         contractName = _contractName;
+        enable = _enable;
       };
+      bool isEnabled() { return enable; }
       void writeOut(bool isInteresting);
       void log(string content);
       void clear();

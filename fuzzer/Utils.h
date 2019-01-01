@@ -76,7 +76,7 @@ string compileSolFiles(string folder) {
   return ret.str();
 }
 
-string fuzzJsonFiles(string contracts, string assets, int duration, int mode, int reporter) {
+string fuzzJsonFiles(string contracts, string assets, int duration, int mode, int reporter, int logOption) {
   stringstream ret;
   /* search for json file */
   unordered_set<string> contractNames;
@@ -91,6 +91,7 @@ string fuzzJsonFiles(string contracts, string assets, int duration, int mode, in
     ret << " --duration " + to_string(duration);
     ret << " --mode " + to_string(mode);
     ret << " --reporter " + to_string(reporter);
+    ret << " --log " + to_string(logOption);
     ret << endl;
   });
   /* search for sol file */
@@ -105,6 +106,7 @@ string fuzzJsonFiles(string contracts, string assets, int duration, int mode, in
     ret << " --duration " + to_string(duration);
     ret << " --mode " + to_string(mode);
     ret << " --reporter " + to_string(reporter);
+    ret << " --log " + to_string(logOption);
     ret << endl;
   });
   return ret.str();
