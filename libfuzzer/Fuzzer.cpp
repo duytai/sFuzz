@@ -258,7 +258,8 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
     writeTestcase(revisedData, "__TEST__");
-  }
+    fuzzParam.logger->writeOut(true);
+  } else fuzzParam.logger->clear();
   if (hasNewExceptions(item.res.uniqExceptions)) {
     writeException(revisedData, "__EXCEPTION__");
   }

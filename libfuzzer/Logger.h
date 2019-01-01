@@ -7,12 +7,15 @@ using namespace std;
 
 namespace fuzzer {
   class Logger {
-    ofstream outfile;
+    uint64_t counter = 0;
+    stringstream data;
+    string contractName;
     public:
-      Logger() {};
-      Logger(string contractName) {
-        outfile.open(contractName + "/log.txt", std::ios_base::app);
+      Logger(string _contractName) {
+        contractName = _contractName;
       };
+      void writeOut(bool isInteresting);
       void log(string content);
+      void clear();
   };
 }
