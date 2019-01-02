@@ -229,9 +229,14 @@ void Fuzzer::writeTestcase(bytes data, string prefix) {
   ca.updateTestData(data);
   fuzzStat.numTest ++;
   string ret = ca.toStandardJson();
+  // write decoded data
   ofstream test(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
   test << ret;
   test.close();
+  // write full data
+  ofstream fullTest(contract.contractName + "/" + prefix + toString(fuzzStat.numTest) + "__.bin");
+  fullTest << toHex(data) << endl;
+  fullTest.close();
 }
 
 void Fuzzer::writeException(bytes data, string prefix) {

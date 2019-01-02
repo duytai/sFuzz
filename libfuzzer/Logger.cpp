@@ -17,7 +17,7 @@ namespace fuzzer {
     ofstream outfile;
     counter ++;
     string filename = contractName + "/log" + (isInteresting ? "_i_" : "_");
-    filename = filename + to_string(counter) + ".json";
+    filename = filename + to_string(counter) + ".txt";
     outfile.open(filename, std::ios_base::out);
     outfile << data.str() << endl;
     data.str("");
