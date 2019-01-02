@@ -5,7 +5,7 @@ namespace fuzzer {
     for (auto callLogItem : callLog) {
       auto isUnderflow = callLogItem.payload.isUnderflow;
       if (isUnderflow) {
-        testData = callLogItem.payload.testData;
+//        testData = callLogItem.payload.testData;
         return true;
       }
     }

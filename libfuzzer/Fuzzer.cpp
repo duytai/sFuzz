@@ -316,10 +316,7 @@ void Fuzzer::start() {
           }
           /* Analyze every 1000 test cases */
           if (!(fuzzStat.totalExecs % 500)) {
-            auto data = container.analyze();
-            for (auto it : data) {
-              writeVulnerability(get<1>(it), get<0>(it));
-            }
+            container.analyze();
           }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {

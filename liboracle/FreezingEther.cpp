@@ -15,9 +15,9 @@ namespace fuzzer {
           numTransfer ++;
         }
       }
-      if (!numTransfer && !!numDelegatecall && !testData.size()) {
-        testData = callLogItem.payload.testData;
-      }
+//      if (!numTransfer && !!numDelegatecall && !testData.size()) {
+//        testData = callLogItem.payload.testData;
+//      }
     }
     return !numTransfer && !!numDelegatecall;
   }
