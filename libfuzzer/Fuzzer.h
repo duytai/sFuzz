@@ -12,7 +12,7 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  enum FuzzMode { RANDOM, AFL };
+  enum FuzzMode { RANDOM, AFL, HAVOC_COMPLEX, HAVOC_SIMPLE };
   enum Reporter { TERMINAL, CSV_FILE };
   struct ContractInfo {
     string abiJson;

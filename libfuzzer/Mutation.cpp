@@ -453,7 +453,7 @@ double Mutation::calculateScore(const FuzzItem& item, unordered_set<uint64_t> tr
 /*
  * TODO: If found more, do more havoc
  */
-void Mutation::havoc(unordered_set<uint64_t> tracebits, OnMutateFunc cb) {
+void Mutation::havoc(unordered_set<uint64_t> tracebits, OnMutateFunc cb, bool isComplex) {
   stageShort = "havoc";
   stageName = "havoc";
   stageMax = HAVOC_MIN;
@@ -668,6 +668,7 @@ void Mutation::havoc(unordered_set<uint64_t> tracebits, OnMutateFunc cb) {
       /* Restore to original state */
       data = origin;
     }
+    if (!isComplex) break;
     idx++;
     if (idx > (int)workingQueue.size() - 1) {
       if (candidateQueue.size() > 0) {
