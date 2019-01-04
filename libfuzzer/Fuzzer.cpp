@@ -62,8 +62,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-//  return;
-  int numLines = 22, i = 0, expCout = 0;;
+  int numLines = 25, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -137,21 +136,17 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "  dictionary : %s" bH " uniq except : %s" bH "\n", dictionary.c_str(), exceptionCount.c_str());
   printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
-  printf(bLTR bV5 cGRN " oracle yields " cRST bV bV20 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
-  printf(bH " ");
-  printfWithColor(oracleResult.gaslessSend, " Gasless");
-  printfWithColor(oracleResult.exceptionDisorder, " Disorder");
-  printfWithColor(oracleResult.reentrancy, " Reentrancy");
-  printfWithColor(oracleResult.timestampDependency, " Timestamp");
-  printfWithColor(oracleResult.blockNumDependency, " Number");
-  printfWithColor(oracleResult.dangerDelegateCall, " Delegate");
-  printfWithColor(oracleResult.freezingEther, " Freeze");
-  printf("    " bH "\n");
-  printf(bH " ");
-  printfWithColor(oracleResult.integerOverflow, " Integer-Overflow");
-  printfWithColor(oracleResult.integerUnderflow, " Integer-Underflow");
-  printf("%s" bH "\n", padStr(" ", 30).c_str());
-  printf(bBL bV50 bV5 bV2 bV20 bV2 bV2 bBR "\n");
+  printf(bLTR bV5 cGRN " oracle yields " cRST bV bV10 bV5 bV bTTR bV2 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
+  auto toResult = [](u256 val){
+    if (val > 0) return "found";
+    return "none ";
+  };
+  printf(bH "            gasless send : %s " bH " dangerous delegateCall : %s " bH "\n", toResult(oracleResult.gaslessSend), toResult(oracleResult.dangerDelegateCall));
+  printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(oracleResult.exceptionDisorder), toResult(oracleResult.freezingEther));
+  printf(bH "              reentrancy : %s " bH "       integer overflow : %s " bH "\n", toResult(oracleResult.reentrancy), toResult(oracleResult.integerOverflow));
+  printf(bH "    timestamp dependency : %s " bH "      integer underflow : %s " bH "\n", toResult(oracleResult.timestampDependency), toResult(oracleResult.integerUnderflow));
+  printf(bH " block Number dependency : %s " bH "%s" bH "\n", toResult(oracleResult.integerUnderflow), padStr(" ", 32).c_str());
+  printf(bBL bV20 bV2 bV10 bV5 bV2 bV bBTR bV10 bV5 bV20 bV2 bV2 bBR "\n");
 }
 
 void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
