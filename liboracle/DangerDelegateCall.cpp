@@ -16,9 +16,10 @@ namespace fuzzer {
       }
       if (level > 0 && inst == Instruction::DELEGATECALL && inData == data) {
         numDanger ++;
-//        if (!testData.size()) {
-//          testData = callLogItem.payload.testData;
-//        }
+        /* Detect test case */
+        if (!testData.size()) {
+          testData = callLogItem.payload.testData;
+        }
       }
     }
     return !!numDanger;

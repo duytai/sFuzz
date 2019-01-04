@@ -15,9 +15,10 @@ namespace fuzzer {
           numTransfer ++;
         }
       }
-//      if (!numTransfer && !!numDelegatecall && !testData.size()) {
-//        testData = callLogItem.payload.testData;
-//      }
+      /* Detect test case */
+      if (!numTransfer && !!numDelegatecall && !testData.size()) {
+        testData = callLogItem.payload.testData;
+      }
     }
     return !numTransfer && !!numDelegatecall;
   }

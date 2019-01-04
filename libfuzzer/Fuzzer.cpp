@@ -141,11 +141,11 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
     if (val > 0) return "found";
     return "none ";
   };
-  printf(bH "            gasless send : %s " bH " dangerous delegateCall : %s " bH "\n", toResult(oracleResult.gaslessSend), toResult(oracleResult.dangerDelegateCall));
+  printf(bH "            gasless send : %s " bH " dangerous delegatecall : %s " bH "\n", toResult(oracleResult.gaslessSend), toResult(oracleResult.dangerDelegateCall));
   printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(oracleResult.exceptionDisorder), toResult(oracleResult.freezingEther));
   printf(bH "              reentrancy : %s " bH "       integer overflow : %s " bH "\n", toResult(oracleResult.reentrancy), toResult(oracleResult.integerOverflow));
   printf(bH "    timestamp dependency : %s " bH "      integer underflow : %s " bH "\n", toResult(oracleResult.timestampDependency), toResult(oracleResult.integerUnderflow));
-  printf(bH " block Number dependency : %s " bH "%s" bH "\n", toResult(oracleResult.integerUnderflow), padStr(" ", 32).c_str());
+  printf(bH " block number dependency : %s " bH "%s" bH "\n", toResult(oracleResult.integerUnderflow), padStr(" ", 32).c_str());
   printf(bBL bV20 bV2 bV10 bV5 bV2 bV bBTR bV10 bV5 bV20 bV2 bV2 bBR "\n");
 }
 
@@ -312,11 +312,17 @@ void Fuzzer::start() {
           }
           /* Analyze every 1000 test cases */
           if (!(fuzzStat.totalExecs % 500)) {
-            container.analyze();
+            auto data = container.analyze();
+            for (auto it : data) {
+              writeVulnerability(get<1>(it), get<0>(it));
+            }
           }
           /* Stop program */
           if (timer.elapsed() > fuzzParam.duration) {
-            container.analyze();
+            auto data = container.analyze();
+            for (auto it : data) {
+              writeVulnerability(get<1>(it), get<0>(it));
+            }
             writeStats(mutation, container.oracleResult());
             exit(0);
           }

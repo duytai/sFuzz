@@ -13,8 +13,10 @@ namespace fuzzer {
         if (inst == Instruction::TIMESTAMP) numTimestamp ++;
         if (inst == Instruction::CALL) numSend ++;
       }
-//      if (!!numSend && !!numTimestamp && !testData.size())
-//        testData = callLogItem.payload.testData;
+      /* Detect test case */
+      if (!!numSend && !!numTimestamp && !testData.size()) {
+        testData = callLogItem.payload.testData;
+      }
     }
     return !!numSend && !!numTimestamp;
   }
