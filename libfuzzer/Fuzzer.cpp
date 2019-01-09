@@ -145,7 +145,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(oracleResult.exceptionDisorder), toResult(oracleResult.freezingEther));
   printf(bH "              reentrancy : %s " bH "       integer overflow : %s " bH "\n", toResult(oracleResult.reentrancy), toResult(oracleResult.integerOverflow));
   printf(bH "    timestamp dependency : %s " bH "      integer underflow : %s " bH "\n", toResult(oracleResult.timestampDependency), toResult(oracleResult.integerUnderflow));
-  printf(bH " block number dependency : %s " bH "%s" bH "\n", toResult(oracleResult.integerUnderflow), padStr(" ", 32).c_str());
+  printf(bH " block number dependency : %s " bH "%s" bH "\n", toResult(oracleResult.blockNumDependency), padStr(" ", 32).c_str());
   printf(bBL bV20 bV2 bV10 bV5 bV2 bV bBTR bV10 bV5 bV20 bV2 bV2 bBR "\n");
 }
 

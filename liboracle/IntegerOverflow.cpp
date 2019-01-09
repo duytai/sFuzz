@@ -2,14 +2,24 @@
 
 namespace fuzzer {
   bool IntegerOverflow::analyze(CallLog callLog) {
+    bool isOverflow = false;
+    bool isException = false;
     for (auto callLogItem : callLog) {
-      auto isOverflow = callLogItem.payload.isOverflow;
-      if (isOverflow) {
-        /* Detect test case */
+      auto inst = callLogItem.payload.inst;
+      auto level = callLogItem.level;
+      if (!level && inst == Instruction::CALL) {
+        if (isOverflow && !isException) return true;
+        isOverflow = false;
+        isException = false;
+      }
+      if (callLogItem.payload.isOverflow) {
         testData = callLogItem.payload.testData;
-        return true;
+        isOverflow = true;
+      }
+      if (inst == Instruction::INVALID) {
+        isException = true;
       }
     }
-    return false;
+    return isOverflow && !isException;
   }
 }
