@@ -29,6 +29,7 @@ namespace fuzzer {
     bool log;
     int duration;
     int csvInterval;
+    string attackerName;
   };
   struct FuzzStat {
     int idx = 0;

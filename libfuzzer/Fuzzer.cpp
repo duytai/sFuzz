@@ -274,6 +274,8 @@ void Fuzzer::start() {
   Dictionary codeDict, addressDict;
   unordered_map<u64, u64> showMap;
   for (auto contractInfo : fuzzParam.contractInfo) {
+    auto isAttacker = contractInfo.contractName.find(fuzzParam.attackerName) != string::npos;
+    if (!contractInfo.isMain && !isAttacker) continue;
     ContractABI ca(contractInfo.abiJson);
     auto bin = fromHex(contractInfo.bin);
     auto executive = container.loadContract(bin, ca);
