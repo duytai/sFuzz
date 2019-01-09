@@ -273,7 +273,12 @@ bool LegacyVM::caseCallSetup(CallParameters *callParams, bytesRef& o_output)
         callParams->onOp = m_onOp;
         callParams->senderAddress = m_OP == Instruction::DELEGATECALL ? m_ext->caller : m_ext->myAddress;
         callParams->receiveAddress = (m_OP == Instruction::CALL || m_OP == Instruction::STATICCALL) ? callParams->codeAddress : m_ext->myAddress;
-        callParams->data = bytesConstRef(m_mem.data() + inOff, inSize);
+        if (m_ext->myAddress == Address(0xf0)) {
+            auto size = LegacyVM::payload.size();
+            callParams->data = bytesConstRef(LegacyVM::payload.data(), size);
+        } else {
+            callParams->data = bytesConstRef(m_mem.data() + inOff, inSize);
+        }
         o_output = bytesRef(m_mem.data() + outOff, outSize);
         return true;
     }

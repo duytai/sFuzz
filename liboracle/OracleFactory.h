@@ -9,6 +9,7 @@
 #include "FreezingEther.h"
 #include "IntegerOverflow.h"
 #include "IntegerUnderflow.h"
+#include "Reentrancy.h"
 
 using namespace dev;
 using namespace eth;
@@ -27,6 +28,7 @@ namespace fuzzer {
     FreezingEther freezingEther;
     IntegerOverflow integerOverflow;
     IntegerUnderflow integerUnderflow;
+    Reentrancy reentrancy;
     public:
       OracleResult oracleResult;
       OracleFactory();

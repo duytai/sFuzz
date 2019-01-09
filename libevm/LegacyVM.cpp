@@ -36,6 +36,7 @@ template <class S> S modWorkaround(S const& _a, S const& _b)
     return (S)(s512(_a) % s512(_b));
 }
 
+bytes LegacyVM::payload = bytes(0, 0);
 
 //
 // for decoding destinations of JUMPTO, JUMPV, JUMPSUB and JUMPSUBV

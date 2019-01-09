@@ -43,6 +43,7 @@ public:
         reverse(stack.begin(), stack.end());
         return stack;
     };
+    static bytes payload;
 
 private:
 

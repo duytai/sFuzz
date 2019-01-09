@@ -73,6 +73,12 @@ namespace fuzzer  {
           result.push_back(make_tuple("freezing_ether", freezingEther.getTestData()));
         }
       }
+      if (!oracleResult.reentrancy) {
+        oracleResult.reentrancy += reentrancy.analyze(callLog) ? 1 : 0;
+        if (oracleResult.reentrancy) {
+          result.push_back(make_tuple("reentrancy", reentrancy.getTestData()));
+        }
+      }
     }
     callLogs.clear();
     return result;

@@ -70,6 +70,7 @@ namespace fuzzer {
     Executive executive(state, *envInfo, *se);
     executive.setResultRecipient(res);
     executive.initialize(t);
+    LegacyVM::payload = data;
     executive.call(addr, senderAddr, value, gasPrice, &data, gas);
     executive.updateBlock(blockNumber, timestamp);
     executive.go(onOp);
