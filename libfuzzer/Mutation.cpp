@@ -453,233 +453,210 @@ double Mutation::calculateScore(const FuzzItem& item, unordered_set<uint64_t> tr
 /*
  * TODO: If found more, do more havoc
  */
-void Mutation::havoc(unordered_set<uint64_t> tracebits, OnMutateFunc cb, bool isComplex) {
+void Mutation::havoc(OnMutateFunc cb) {
   stageShort = "havoc";
   stageName = "havoc";
   stageMax = HAVOC_MIN;
   stageCur = 0;
   
   auto dict = get<0>(dicts);
-  auto fuzzItemComparator = [](const tuple<FuzzItem, uint64_t>& lhs, const tuple<FuzzItem, uint64_t>& rhs) {
-    return get<1>(lhs) < get<1>(rhs);
-  };
-  set<tuple<FuzzItem, double>, decltype(fuzzItemComparator)> workingQueue(fuzzItemComparator);
-  set<tuple<FuzzItem, double>, decltype(fuzzItemComparator)> candidateQueue(fuzzItemComparator);
-  workingQueue.insert(make_tuple(curFuzzItem, calculateScore(curFuzzItem, tracebits)));
-  while (workingQueue.size() > 0) {
-    auto lowScore = get<1>(*workingQueue.rbegin());
-    /* loop over working queue and update to candidate queue */
-    for (auto it = workingQueue.begin(); it != workingQueue.end(); it ++) {
-      auto origin = get<0>(*it).data;
-      bytes data = origin;
-      for (int i = 0; i < HAVOC_MIN; i += 1) {
-        u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
-        for (u32 j = 0; j < useStacking; j += 1) {
-          u32 val = UR(15 + ((dict.extras.size() + 0) ? 2 : 0));
-          dataSize = data.size();
-          byte *out_buf = data.data();
-          switch (val) {
-            case 0: {
-              /* Flip a single bit somewhere. Spooky! */
-              u32 pos = UR(dataSize << 3);
-              data[pos >> 3] ^= (128 >> (pos & 7));
-              break;
-            }
-            case 1: {
-              /* Set byte to interesting value. */
-              data[UR(dataSize)] = INTERESTING_8[UR(sizeof(INTERESTING_8))];
-              break;
-            }
-            case 2: {
-              /* Set word to interesting value, randomly choosing endian. */
-              if (dataSize < 2) break;
-              if (UR(2)) {
-                *(u16*)(out_buf + UR(dataSize - 1)) = INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)];
-              } else {
-                *(u16*)(out_buf + UR(dataSize - 1)) = swap16(INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)]);
-              }
-              break;
-            }
-            case 3: {
-              /* Set dword to interesting value, randomly choosing endian. */
-              if (dataSize < 4) break;
-              if (UR(2)) {
-                *(u32*)(out_buf + UR(dataSize - 3)) = INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)];
-              } else {
-                *(u32*)(out_buf + UR(dataSize - 3)) = swap32(INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)]);
-              }
-              break;
-            }
-            case 4: {
-              /* Randomly subtract from byte. */
-              out_buf[UR(dataSize)] -= 1 + UR(ARITH_MAX);
-              break;
-            }
-            case 5: {
-              /* Randomly add to byte. */
-              out_buf[UR(dataSize)] += 1 + UR(ARITH_MAX);
-              break;
-            }
-            case 6: {
-              /* Randomly subtract from word, random endian. */
-              if (dataSize < 2) break;
-              if (UR(2)) {
-                u32 pos = UR(dataSize - 1);
-                *(u16*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
-              } else {
-                u32 pos = UR(dataSize - 1);
-                u16 num = 1 + UR(ARITH_MAX);
-                *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) - num);
-              }
-              break;
-            }
-            case 7: {
-              /* Randomly add to word, random endian. */
-              if (dataSize < 2) break;
-              if (UR(2)) {
-                u32 pos = UR(dataSize - 1);
-                *(u16*)(out_buf + pos) += 1 + UR(ARITH_MAX);
-              } else {
-                u32 pos = UR(dataSize - 1);
-                u16 num = 1 + UR(ARITH_MAX);
-                *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) + num);
-              }
-              break;
-            }
-            case 8: {
-              /* Randomly subtract from dword, random endian. */
-              if (dataSize < 4) break;
-              if (UR(2)) {
-                u32 pos = UR(dataSize - 3);
-                *(u32*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
-              } else {
-                u32 pos = UR(dataSize - 3);
-                u32 num = 1 + UR(ARITH_MAX);
-                *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) - num);
-              }
-              break;
-            }
-            case 9: {
-              /* Randomly add to dword, random endian. */
-              if (dataSize < 4) break;
-              if (UR(2)) {
-                u32 pos = UR(dataSize - 3);
-                *(u32*)(out_buf + pos) += 1 + UR(ARITH_MAX);
-              } else {
-                u32 pos = UR(dataSize - 3);
-                u32 num = 1 + UR(ARITH_MAX);
-                *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) + num);
-              }
-              break;
-            }
-            case 10: {
-              /* Just set a random byte to a random value. Because,
-               why not. We use XOR with 1-255 to eliminate the
-               possibility of a no-op. */
-              out_buf[UR(dataSize)] ^= 1 + UR(255);
-              break;
-            }
-            case 11 ... 12: {
-              /* Delete bytes. We're making this a bit more likely
-               than insertion (the next option) in hopes of keeping
-               files reasonably small. */
-              if (dataSize < 2) break;
-              u32 delLen = chooseBlockLen(dataSize - 1);
-              u32 delFrom = UR(dataSize - delLen + 1);
-              data.erase(data.begin() + delFrom, data.begin() + delFrom + delLen);
-              break;
-            }
-            case 13: {
-              /* Clone bytes (75%) or insert a block of constant bytes (25%). */
-              if (dataSize + HAVOC_BLK_XL < MAX_FILE) {
-                u8  actuallyClone = UR(4);
-                u32 cloneFrom, cloneTo, cloneLen;
-                if (actuallyClone) {
-                  cloneLen = chooseBlockLen(dataSize);
-                  cloneFrom = UR(dataSize - cloneLen + 1);
-                } else {
-                  cloneLen = chooseBlockLen(HAVOC_BLK_XL);
-                  cloneFrom = 0;
-                }
-                cloneTo = UR(dataSize);
-                bytes newData = bytes(dataSize + cloneLen);
-                byte* new_buf = newData.data();
-                /* Head */
-                memcpy(new_buf, out_buf, cloneTo);
-                /* Inserted part */
-                if (actuallyClone)
-                  memcpy(new_buf + cloneTo, out_buf + cloneFrom, cloneLen);
-                else
-                  memset(new_buf + cloneTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], cloneLen);
-                /* Tail */
-                memcpy(new_buf + cloneTo + cloneLen, out_buf + cloneTo, dataSize - cloneTo);
-                data = newData;
-              }
-              break;
-            }
-            case 14: {
-              /* Overwrite bytes with a randomly selected chunk (75%) or fixed
-               bytes (25%). */
-              u32 copyFrom, copyTo, copyLen;
-              if (dataSize < 2) break;
-              copyLen = chooseBlockLen(dataSize - 1);
-              copyFrom = UR(dataSize - copyLen + 1);
-              copyTo = UR(dataSize - copyLen + 1);
-              if (UR(4)) {
-                if (copyFrom != copyTo)
-                  memmove(out_buf + copyTo, out_buf + copyFrom, copyLen);
-              } else {
-                memset(out_buf + copyTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], copyLen);
-              }
-              break;
-            }
-            case 15: {
-              /* No auto extras or odds in our favor. Use the dictionary. */
-              u32 useExtra = UR(dict.extras.size());
-              u32 extraLen = dict.extras[useExtra].data.size();
-              byte *extraBuf = dict.extras[useExtra].data.data();
-              u32 insertAt;
-              if (extraLen > (u32)dataSize) break;
-              insertAt = UR(dataSize - extraLen + 1);
-              memcpy(out_buf + insertAt, extraBuf, extraLen);
-              break;
-            }
-            case 16: {
-              u32 useExtra, extraLen, insertAt = UR(dataSize + 1);
-              useExtra = UR(dict.extras.size());
-              extraLen = dict.extras[useExtra].data.size();
-              byte *extraBuf = dict.extras[useExtra].data.data();
-              if (dataSize + extraLen >= MAX_FILE) break;
-              bytes newData = bytes(dataSize + extraLen, 0);
-              byte* new_buf = newData.data();
-              /* Head */
-              memcpy(new_buf, out_buf, insertAt);
-              /* Inserted part */
-              memcpy(new_buf + insertAt, extraBuf, extraLen);
-              /* Tail */
-              memcpy(new_buf + insertAt + extraLen, out_buf + insertAt, dataSize - insertAt);
-              data = newData;
-              break;
-            }
+  auto origin = curFuzzItem.data;
+  bytes data = origin;
+  for (int i = 0; i < HAVOC_MIN; i += 1) {
+    u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
+    for (u32 j = 0; j < useStacking; j += 1) {
+      u32 val = UR(15 + ((dict.extras.size() + 0) ? 2 : 0));
+      dataSize = data.size();
+      byte *out_buf = data.data();
+      switch (val) {
+        case 0: {
+          /* Flip a single bit somewhere. Spooky! */
+          u32 pos = UR(dataSize << 3);
+          data[pos >> 3] ^= (128 >> (pos & 7));
+          break;
+        }
+        case 1: {
+          /* Set byte to interesting value. */
+          data[UR(dataSize)] = INTERESTING_8[UR(sizeof(INTERESTING_8))];
+          break;
+        }
+        case 2: {
+          /* Set word to interesting value, randomly choosing endian. */
+          if (dataSize < 2) break;
+          if (UR(2)) {
+            *(u16*)(out_buf + UR(dataSize - 1)) = INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)];
+          } else {
+            *(u16*)(out_buf + UR(dataSize - 1)) = swap16(INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)]);
           }
+          break;
         }
-        auto item = cb(data);
-        stageCur ++;
-        double score = calculateScore(item, tracebits);
-        if (score > lowScore) {
-          candidateQueue.insert(make_tuple(item, score));
+        case 3: {
+          /* Set dword to interesting value, randomly choosing endian. */
+          if (dataSize < 4) break;
+          if (UR(2)) {
+            *(u32*)(out_buf + UR(dataSize - 3)) = INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)];
+          } else {
+            *(u32*)(out_buf + UR(dataSize - 3)) = swap32(INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)]);
+          }
+          break;
         }
-        /* Restore to original state */
-        data = origin;
+        case 4: {
+          /* Randomly subtract from byte. */
+          out_buf[UR(dataSize)] -= 1 + UR(ARITH_MAX);
+          break;
+        }
+        case 5: {
+          /* Randomly add to byte. */
+          out_buf[UR(dataSize)] += 1 + UR(ARITH_MAX);
+          break;
+        }
+        case 6: {
+          /* Randomly subtract from word, random endian. */
+          if (dataSize < 2) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 1);
+            *(u16*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 1);
+            u16 num = 1 + UR(ARITH_MAX);
+            *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) - num);
+          }
+          break;
+        }
+        case 7: {
+          /* Randomly add to word, random endian. */
+          if (dataSize < 2) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 1);
+            *(u16*)(out_buf + pos) += 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 1);
+            u16 num = 1 + UR(ARITH_MAX);
+            *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) + num);
+          }
+          break;
+        }
+        case 8: {
+          /* Randomly subtract from dword, random endian. */
+          if (dataSize < 4) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 3);
+            *(u32*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 3);
+            u32 num = 1 + UR(ARITH_MAX);
+            *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) - num);
+          }
+          break;
+        }
+        case 9: {
+          /* Randomly add to dword, random endian. */
+          if (dataSize < 4) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 3);
+            *(u32*)(out_buf + pos) += 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 3);
+            u32 num = 1 + UR(ARITH_MAX);
+            *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) + num);
+          }
+          break;
+        }
+        case 10: {
+          /* Just set a random byte to a random value. Because,
+           why not. We use XOR with 1-255 to eliminate the
+           possibility of a no-op. */
+          out_buf[UR(dataSize)] ^= 1 + UR(255);
+          break;
+        }
+        case 11 ... 12: {
+          /* Delete bytes. We're making this a bit more likely
+           than insertion (the next option) in hopes of keeping
+           files reasonably small. */
+          if (dataSize < 2) break;
+          u32 delLen = chooseBlockLen(dataSize - 1);
+          u32 delFrom = UR(dataSize - delLen + 1);
+          data.erase(data.begin() + delFrom, data.begin() + delFrom + delLen);
+          break;
+        }
+        case 13: {
+          /* Clone bytes (75%) or insert a block of constant bytes (25%). */
+          if (dataSize + HAVOC_BLK_XL < MAX_FILE) {
+            u8  actuallyClone = UR(4);
+            u32 cloneFrom, cloneTo, cloneLen;
+            if (actuallyClone) {
+              cloneLen = chooseBlockLen(dataSize);
+              cloneFrom = UR(dataSize - cloneLen + 1);
+            } else {
+              cloneLen = chooseBlockLen(HAVOC_BLK_XL);
+              cloneFrom = 0;
+            }
+            cloneTo = UR(dataSize);
+            bytes newData = bytes(dataSize + cloneLen);
+            byte* new_buf = newData.data();
+            /* Head */
+            memcpy(new_buf, out_buf, cloneTo);
+            /* Inserted part */
+            if (actuallyClone)
+              memcpy(new_buf + cloneTo, out_buf + cloneFrom, cloneLen);
+            else
+              memset(new_buf + cloneTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], cloneLen);
+            /* Tail */
+            memcpy(new_buf + cloneTo + cloneLen, out_buf + cloneTo, dataSize - cloneTo);
+            data = newData;
+          }
+          break;
+        }
+        case 14: {
+          /* Overwrite bytes with a randomly selected chunk (75%) or fixed
+           bytes (25%). */
+          u32 copyFrom, copyTo, copyLen;
+          if (dataSize < 2) break;
+          copyLen = chooseBlockLen(dataSize - 1);
+          copyFrom = UR(dataSize - copyLen + 1);
+          copyTo = UR(dataSize - copyLen + 1);
+          if (UR(4)) {
+            if (copyFrom != copyTo)
+              memmove(out_buf + copyTo, out_buf + copyFrom, copyLen);
+          } else {
+            memset(out_buf + copyTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], copyLen);
+          }
+          break;
+        }
+        case 15: {
+          /* No auto extras or odds in our favor. Use the dictionary. */
+          u32 useExtra = UR(dict.extras.size());
+          u32 extraLen = dict.extras[useExtra].data.size();
+          byte *extraBuf = dict.extras[useExtra].data.data();
+          u32 insertAt;
+          if (extraLen > (u32)dataSize) break;
+          insertAt = UR(dataSize - extraLen + 1);
+          memcpy(out_buf + insertAt, extraBuf, extraLen);
+          break;
+        }
+        case 16: {
+          u32 useExtra, extraLen, insertAt = UR(dataSize + 1);
+          useExtra = UR(dict.extras.size());
+          extraLen = dict.extras[useExtra].data.size();
+          byte *extraBuf = dict.extras[useExtra].data.data();
+          if (dataSize + extraLen >= MAX_FILE) break;
+          bytes newData = bytes(dataSize + extraLen, 0);
+          byte* new_buf = newData.data();
+          /* Head */
+          memcpy(new_buf, out_buf, insertAt);
+          /* Inserted part */
+          memcpy(new_buf + insertAt, extraBuf, extraLen);
+          /* Tail */
+          memcpy(new_buf + insertAt + extraLen, out_buf + insertAt, dataSize - insertAt);
+          data = newData;
+          break;
+        }
       }
     }
-    if (!isComplex) break;
-    workingQueue.clear();
-    for (auto it = candidateQueue.begin(); it != candidateQueue.end(); it ++) {
-      workingQueue.insert(*it);
-    }
-    stageMax += HAVOC_MIN * workingQueue.size();
-    candidateQueue.clear();
+    cb(data);
+    stageCur ++;
+    /* Restore to original state */
+    data = origin;
   }
   stageCycles[STAGE_HAVOC] += stageMax;
 }

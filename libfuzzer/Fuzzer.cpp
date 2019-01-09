@@ -387,18 +387,18 @@ void Fuzzer::start() {
               fuzzStat.stageFinds[STAGE_EXTRAS_AO] += queues.size() - origHitCount;
               origHitCount = queues.size();
                 
-              mutation.havoc(tracebits, save, true);
+              mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
               
               queues[fuzzStat.idx].wasFuzzed = true;
             } else {
-              mutation.havoc(tracebits, save, true);
+              mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
               
               if (mutation.splice(queues)) {
-                mutation.havoc(tracebits, save, true);
+                mutation.havoc(save);
                 fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
                 origHitCount = queues.size();
               };
@@ -412,13 +412,13 @@ void Fuzzer::start() {
             break;
           }
           case HAVOC_COMPLEX: {
-            mutation.havoc(tracebits, save, true);
+            mutation.havoc(save);
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
             break;
           }
           case HAVOC_SIMPLE: {
-            mutation.havoc(tracebits, save, false);
+            mutation.havoc(save);
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
             break;
