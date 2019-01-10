@@ -465,7 +465,7 @@ void Mutation::havoc(OnMutateFunc cb) {
   for (int i = 0; i < HAVOC_MIN; i += 1) {
     u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
     for (u32 j = 0; j < useStacking; j += 1) {
-      u32 val = UR(15 + ((dict.extras.size() + 0) ? 2 : 0));
+      u32 val = UR(11 + ((dict.extras.size() + 0) ? 2 : 0));
       dataSize = data.size();
       byte *out_buf = data.data();
       switch (val) {
@@ -569,45 +569,7 @@ void Mutation::havoc(OnMutateFunc cb) {
           out_buf[UR(dataSize)] ^= 1 + UR(255);
           break;
         }
-        case 11 ... 12: {
-          /* Delete bytes. We're making this a bit more likely
-           than insertion (the next option) in hopes of keeping
-           files reasonably small. */
-          if (dataSize < 2) break;
-          u32 delLen = chooseBlockLen(dataSize - 1);
-          u32 delFrom = UR(dataSize - delLen + 1);
-          data.erase(data.begin() + delFrom, data.begin() + delFrom + delLen);
-          break;
-        }
-        case 13: {
-          /* Clone bytes (75%) or insert a block of constant bytes (25%). */
-          if (dataSize + HAVOC_BLK_XL < MAX_FILE) {
-            u8  actuallyClone = UR(4);
-            u32 cloneFrom, cloneTo, cloneLen;
-            if (actuallyClone) {
-              cloneLen = chooseBlockLen(dataSize);
-              cloneFrom = UR(dataSize - cloneLen + 1);
-            } else {
-              cloneLen = chooseBlockLen(HAVOC_BLK_XL);
-              cloneFrom = 0;
-            }
-            cloneTo = UR(dataSize);
-            bytes newData = bytes(dataSize + cloneLen);
-            byte* new_buf = newData.data();
-            /* Head */
-            memcpy(new_buf, out_buf, cloneTo);
-            /* Inserted part */
-            if (actuallyClone)
-              memcpy(new_buf + cloneTo, out_buf + cloneFrom, cloneLen);
-            else
-              memset(new_buf + cloneTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], cloneLen);
-            /* Tail */
-            memcpy(new_buf + cloneTo + cloneLen, out_buf + cloneTo, dataSize - cloneTo);
-            data = newData;
-          }
-          break;
-        }
-        case 14: {
+        case 11: {
           /* Overwrite bytes with a randomly selected chunk (75%) or fixed
            bytes (25%). */
           u32 copyFrom, copyTo, copyLen;
@@ -623,7 +585,7 @@ void Mutation::havoc(OnMutateFunc cb) {
           }
           break;
         }
-        case 15: {
+        case 12: {
           /* No auto extras or odds in our favor. Use the dictionary. */
           u32 useExtra = UR(dict.extras.size());
           u32 extraLen = dict.extras[useExtra].data.size();
@@ -632,23 +594,6 @@ void Mutation::havoc(OnMutateFunc cb) {
           if (extraLen > (u32)dataSize) break;
           insertAt = UR(dataSize - extraLen + 1);
           memcpy(out_buf + insertAt, extraBuf, extraLen);
-          break;
-        }
-        case 16: {
-          u32 useExtra, extraLen, insertAt = UR(dataSize + 1);
-          useExtra = UR(dict.extras.size());
-          extraLen = dict.extras[useExtra].data.size();
-          byte *extraBuf = dict.extras[useExtra].data.data();
-          if (dataSize + extraLen >= MAX_FILE) break;
-          bytes newData = bytes(dataSize + extraLen, 0);
-          byte* new_buf = newData.data();
-          /* Head */
-          memcpy(new_buf, out_buf, insertAt);
-          /* Inserted part */
-          memcpy(new_buf + insertAt, extraBuf, extraLen);
-          /* Tail */
-          memcpy(new_buf + insertAt + extraLen, out_buf + insertAt, dataSize - insertAt);
-          data = newData;
           break;
         }
       }
