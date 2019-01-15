@@ -49,6 +49,8 @@ namespace fuzzer {
     u64 jumpDest2 = 0;
     u64 lastpc = 0;
     u64 branchId = 0;
+    u64 functionSig = 0;
+    u64 recordJumpiFrom = 0;
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> branches;
     unordered_set<uint64_t> tracebits;
@@ -120,27 +122,31 @@ namespace fuzzer {
             u256 right = vm->stack()[stackSize - 2];
             u256 temp = left > right ? left - right : right - left;
             lastCompValue = abs((double)(uint64_t)temp) + 1;
+            /* EQ call == function signature */
+            if (left == functionSig) recordJumpiFrom = pc + 4;
           }
           break;
         }
         default: { break; }
       }
-      if (inst == Instruction::JUMPCI) {
-        jumpDest1 = (u64) vm->stack().back();
-        jumpDest2 = pc + 1;
-        branchId = pow(pc, 2);
-      }
-      if (prevInst == Instruction::JUMPCI) {
-        tracebits.insert(pc ^ prevLocation);
-        branchId = abs(pow(pc, 2) - branchId);
-        branches.insert(branchId);
-        prevLocation = pc >> 1;
-        /* Calculate branch distance */
-        if (lastCompValue != 0) {
-          double distance = 1 - pow(1.001, -lastCompValue);
-          /* Save predicate for uncovered branches */
-          u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
-          predicates[jumpDest ^ prevLocation] = distance;
+      if (pc > recordJumpiFrom) {
+        if (inst == Instruction::JUMPCI) {
+          jumpDest1 = (u64) vm->stack().back();
+          jumpDest2 = pc + 1;
+          branchId = pow(pc, 2);
+        }
+        if (prevInst == Instruction::JUMPCI) {
+          tracebits.insert(pc ^ prevLocation);
+          branchId = abs(pow(pc, 2) - branchId);
+          branches.insert(branchId);
+          prevLocation = pc >> 1;
+          /* Calculate branch distance */
+          if (lastCompValue != 0) {
+            double distance = 1 - pow(1.001, -lastCompValue);
+            /* Save predicate for uncovered branches */
+            u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
+            predicates[jumpDest ^ prevLocation] = distance;
+          }
         }
       }
       prevInst = inst;
@@ -171,6 +177,9 @@ namespace fuzzer {
     payload.testData = data;
     oracleFactory->save(CallLogItem(0, payload));
     functionCounter ++;
+    /* Record all jumpis in constructor */
+    recordJumpiFrom = 0;
+    prevLocation = 0;
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -193,6 +202,10 @@ namespace fuzzer {
       oracleFactory->save(CallLogItem(0, payload));
       /* Call function */
       functionCounter ++;
+      /* Ignore JUMPI untill program reaches inside function */
+      recordJumpiFrom = 1000000000;
+      functionSig = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
+      prevLocation = functionSig;
       res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
