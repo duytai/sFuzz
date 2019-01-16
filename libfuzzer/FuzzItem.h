@@ -8,15 +8,23 @@ using namespace eth;
 
 namespace fuzzer {
   struct FuzzItem {
-    FuzzItem(bytes data) {
-      this->data = data;
-      this->wasFuzzed = false;
-      this->depth = 0;
-    }
+    vector<uint64_t> orders;
     bytes data;
     TargetContainerResult res;
-    bool wasFuzzed;
-    int depth;
+    bool wasFuzzed = false;
+    uint64_t depth = 0;
+    uint64_t totalFuncs = 0;
+    FuzzItem(bytes _data, vector<uint64_t> _orders, uint64_t _totalFuncs) {
+      data = _data;
+      totalFuncs = _totalFuncs;
+      orders = _orders;
+    }
+    static vector<uint64_t> fixedOrders(uint64_t totalFuncs) {
+      vector<uint64_t> orders;
+      for (uint64_t i = 0; i < totalFuncs; i ++)
+        orders.push_back(i);
+      return orders;
+    }
   };
-  using OnMutateFunc = function<FuzzItem (bytes b)>;
+  using OnMutateFunc = function<FuzzItem (bytes b, vector<uint64_t>)>;
 }

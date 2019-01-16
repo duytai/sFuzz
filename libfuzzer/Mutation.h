@@ -19,6 +19,7 @@ namespace fuzzer {
     void flipbit(int pos);
     public:
       Mutation(FuzzItem item, Dicts dicts);
+      vector<FuzzItem> mixCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);

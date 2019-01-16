@@ -84,6 +84,7 @@ namespace fuzzer {
   static int STAGE_EXTRAS_AO = 14;
   static int STAGE_HAVOC = 15;
   static int STAGE_RANDOM = 16;
+  static int STAGE_ORDER = 17;
   static int HAVOC_STACK_POW2 = 7;
   static int HAVOC_CYCLES_INIT = 1024;
   static int HAVOC_CYCLES = 256;

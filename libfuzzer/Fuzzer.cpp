@@ -1,5 +1,3 @@
-#include <thread>
-#include <unistd.h>
 #include <fstream>
 #include "Fuzzer.h"
 #include "Mutation.h"
@@ -62,7 +60,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  int numLines = 25, i = 0, expCout = 0;;
+  int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -108,6 +106,8 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto havoc = padStr(hav1, 30);
   auto random1 = to_string(fuzzStat.stageFinds[STAGE_RANDOM]) + "/" + to_string(mutation.stageCycles[STAGE_RANDOM]);
   auto random = padStr(random1, 30);
+  auto callOrder1 = to_string(mutation.stageCycles[STAGE_ORDER]);
+  auto callOrder = padStr(callOrder1, 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
     return !item.wasFuzzed;
@@ -136,6 +136,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "  dictionary : %s" bH " uniq except : %s" bH "\n", dictionary.c_str(), exceptionCount.c_str());
   printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
+  printf(bH "  call order : %s" bH "                    " bH "\n", callOrder.c_str());
   printf(bLTR bV5 cGRN " oracle yields " cRST bV bV10 bV5 bV bTTR bV2 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
   auto toResult = [](u256 val){
     if (val > 0) return "found";
@@ -246,10 +247,10 @@ void Fuzzer::writeException(bytes data, string prefix) {
   exp.close();
 }
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, int depth) {
+FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth) {
   auto revisedData = ContractABI::postprocessTestData(data);
-  FuzzItem item(revisedData);
-  item.res = te.exec(revisedData, fuzzParam.logger);
+  FuzzItem item(revisedData, orders, totalFuncs);
+  item.res = te.exec(revisedData, orders, fuzzParam.logger);
   item.wasFuzzed = false;
   fuzzStat.totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
@@ -294,13 +295,15 @@ void Fuzzer::start() {
       staticAnalyze(bin, [&](Instruction inst) {
         if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
       });
-      saveIfInterest(executive, ca.randomTestcase(), 0);
+      auto totalFuncs = ca.totalFuncs();
+      auto orders = FuzzItem::fixedOrders(totalFuncs);
+      saveIfInterest(executive, ca.randomTestcase(), orders, totalFuncs, 0);
       int origHitCount = queues.size();
       while (true) {
         FuzzItem curItem = queues[fuzzStat.idx];
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
-        auto save = [&](bytes data) {
-          auto item = saveIfInterest(executive, data, curItem.depth);
+        auto save = [&](bytes data, vector<uint64_t> orders) {
+          auto item = saveIfInterest(executive, data, orders, totalFuncs, curItem.depth);
           /* Show every one second */
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {
@@ -336,6 +339,7 @@ void Fuzzer::start() {
               mutation.singleWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
               origHitCount = queues.size();
+              showStats(mutation, container.oracleResult());
 
               mutation.twoWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;

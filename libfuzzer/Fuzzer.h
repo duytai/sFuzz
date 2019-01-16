@@ -33,7 +33,7 @@ namespace fuzzer {
   };
   struct FuzzStat {
     int idx = 0;
-    int maxdepth = 0;
+    uint64_t maxdepth = 0;
     bool clearScreen = false;
     int totalExecs = 0;
     int queueCycle = 0;
@@ -59,7 +59,7 @@ namespace fuzzer {
       u8 hasNewBits(unordered_set<uint64_t> tracebits);
       u8 hasNewBranches(unordered_set<uint64_t> branches);
       u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
-      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, int depth);
+      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth);
       void start();
       void writeTestcase(bytes data, string prefix);
       void writeException(bytes data, string prefix);

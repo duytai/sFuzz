@@ -64,6 +64,7 @@ namespace fuzzer {
       void updateTestData(bytes data);
       /* Standard Json */
       string toStandardJson();
+      uint64_t totalFuncs();
       Accounts decodeAccounts();
       FakeBlock decodeBlock();
       static bytes encodeTuple(vector<TypeDef> tds);

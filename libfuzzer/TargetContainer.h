@@ -47,7 +47,7 @@ namespace fuzzer {
         this->program = program;
         this->oracleFactory = oracleFactory;
       }
-      TargetContainerResult exec(bytes data, Logger* logger);
+      TargetContainerResult exec(bytes data, vector<uint64_t> orders, Logger* logger);
       void deploy(bytes data, OnOpFunc onOp);
   };
   

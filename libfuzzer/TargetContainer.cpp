@@ -39,11 +39,10 @@ namespace fuzzer {
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
   }
   
-  TargetContainerResult TargetExecutive::exec(bytes data, Logger* logger) {
+  TargetContainerResult TargetExecutive::exec(bytes data, vector<uint64_t> orders, Logger* logger) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
     double lastCompValue = 0;
-    u64 functionCounter = 0;
     u64 prevLocation = 0;
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
@@ -154,7 +153,6 @@ namespace fuzzer {
       if (logger->isEnabled()) {
         stringstream data;
         vector<u256>::size_type stackSize = vm->stack().size();
-        data << functionCounter << "|";
         data << pc << "|";
         data << instructionInfo(inst).name << "|";
         for (int64_t i = 0; i < (int64_t) stackSize; i ++) {
@@ -176,7 +174,6 @@ namespace fuzzer {
     payload.data = ca.encodeConstructor();
     payload.testData = data;
     oracleFactory->save(CallLogItem(0, payload));
-    functionCounter ++;
     /* Record all jumpis in constructor */
     recordJumpiFrom = 0;
     prevLocation = 0;
@@ -193,15 +190,14 @@ namespace fuzzer {
       payload.testData = data;
       oracleFactory->save(CallLogItem(0, payload));
     }
-    for (auto func: funcs) {
+    for (auto funcIdx : orders) {
       /* Update payload */
       CallLogItemPayload payload;
+      auto func = funcs[funcIdx];
       payload.data = func;
       payload.inst = Instruction::CALL;
       payload.testData = data;
       oracleFactory->save(CallLogItem(0, payload));
-      /* Call function */
-      functionCounter ++;
       /* Ignore JUMPI untill program reaches inside function */
       recordJumpiFrom = 1000000000;
       functionSig = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));

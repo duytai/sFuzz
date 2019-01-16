@@ -37,6 +37,12 @@ namespace fuzzer {
     return ret;
   }
   
+  uint64_t ContractABI::totalFuncs() {
+    return count_if(fds.begin(), fds.end(), [](FuncDef fd) {
+      return fd.name != "";
+    });
+  }
+  
   string ContractABI::toStandardJson() {
     stringstream os;
     pt::ptree funcs;
