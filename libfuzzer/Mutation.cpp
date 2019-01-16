@@ -486,6 +486,18 @@ double Mutation::calculateScore(const FuzzItem& item, unordered_set<uint64_t> tr
   return score;
 }
 
+FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb) {
+  /* 50% wont change */
+  if (UR(2) > 0) return cb(data, orders);
+  vector<uint64_t> newOrders;
+  bool isFirst = true;
+  while (UR(orders.size() + 1) > 0 || isFirst) {
+    /* 80% add, 20% ignore */
+    newOrders.push_back(orders[UR(orders.size())]);
+    isFirst = false;
+  }
+  return cb(data, newOrders);
+}
 /*
  * TODO: If found more, do more havoc
  */
@@ -634,8 +646,7 @@ void Mutation::havoc(OnMutateFunc cb) {
         }
       }
     }
-    cb(data, curFuzzItem.orders);
-    mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+    havocCallOrders(data, curFuzzItem.orders, cb);
     stageCur ++;
     /* Restore to original state */
     data = origin;
