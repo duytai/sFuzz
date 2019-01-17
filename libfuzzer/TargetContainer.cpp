@@ -144,14 +144,15 @@ namespace fuzzer {
           tracebits.insert(pc ^ prevLocation);
           branchId = abs(pow(pc, 2) - branchId);
           branches.insert(branchId);
-          prevLocation = pc >> 1;
           /* Calculate branch distance */
           if (lastCompValue != 0) {
             /* Save predicate for uncovered branches */
             u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
             predicates[jumpDest ^ prevLocation] = (double)(cpp_dec_float_100(lastCompValue) / cpp_dec_float_100(lastCompValue + 1));
             lastCompValue = 0;
+            //cout << "pos: " << (jumpDest ^ prevLocation) << endl;
           }
+          prevLocation = pc >> 1;
         }
         prevInst = inst;
       }

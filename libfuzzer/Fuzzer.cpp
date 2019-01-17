@@ -60,6 +60,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
+  return;
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -278,6 +279,16 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     for (auto &it : queues) updateScore(it);
   }
   updateScore(item);
+  vector<uint64_t> keys;
+  vector<double> values;
+  for (auto it : item.res.predicates) keys.push_back(it.first);
+  for (auto it : item.res.predicates) values.push_back(it.second);
+  cout << "scores: " << item.score << endl;
+  cout << "tracebits: " << tracebits << endl;
+  cout << "item.tracebits" << item.res.tracebits << endl;
+  cout << "item.predicates.keys" << keys << endl;
+  cout << "item.predicates.values" << values << endl;
+  cout << "---" << endl;
   return item;
 }
 
@@ -430,7 +441,7 @@ void Fuzzer::start() {
             break;
           }
           case HAVOC_COMPLEX: {
-            mutation.havoc(save);
+            mutation.newHavoc(save);
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
             break;

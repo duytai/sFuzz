@@ -39,6 +39,7 @@ namespace fuzzer {
       void overwriteWithAutoDictionary(OnMutateFunc cb);
       void random(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
+      void newHavoc(OnMutateFunc cb);
       bool splice(vector<FuzzItem> items);
       int dataSize;
       int stageMax;

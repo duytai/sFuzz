@@ -489,6 +489,160 @@ FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutate
   }
   return cb(data, newOrders);
 }
+
+void Mutation::newHavoc(OnMutateFunc cb) {
+  stageShort = "heuristic";
+  stageName = "heuristic";
+  stageMax = HAVOC_MIN;
+  stageCur = 0;
+  
+  auto dict = get<0>(dicts);
+  auto origin = curFuzzItem.data;
+  bytes data = origin;
+  for (int i = 0; i < HAVOC_MIN; i += 1) {
+    u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
+    for (u32 j = 0; j < useStacking; j += 1) {
+      u32 val = UR(11 + ((dict.extras.size() + 0) ? 2 : 0));
+      dataSize = data.size();
+      byte *out_buf = data.data();
+      switch (val) {
+        case 0: {
+          /* Flip a single bit somewhere. Spooky! */
+          u32 pos = UR(dataSize << 3);
+          data[pos >> 3] ^= (128 >> (pos & 7));
+          break;
+        }
+        case 1: {
+          /* Set byte to interesting value. */
+          data[UR(dataSize)] = INTERESTING_8[UR(sizeof(INTERESTING_8))];
+          break;
+        }
+        case 2: {
+          /* Set word to interesting value, randomly choosing endian. */
+          if (dataSize < 2) break;
+          if (UR(2)) {
+            *(u16*)(out_buf + UR(dataSize - 1)) = INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)];
+          } else {
+            *(u16*)(out_buf + UR(dataSize - 1)) = swap16(INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)]);
+          }
+          break;
+        }
+        case 3: {
+          /* Set dword to interesting value, randomly choosing endian. */
+          if (dataSize < 4) break;
+          if (UR(2)) {
+            *(u32*)(out_buf + UR(dataSize - 3)) = INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)];
+          } else {
+            *(u32*)(out_buf + UR(dataSize - 3)) = swap32(INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)]);
+          }
+          break;
+        }
+        case 4: {
+          /* Randomly subtract from byte. */
+          out_buf[UR(dataSize)] -= 1 + UR(ARITH_MAX);
+          break;
+        }
+        case 5: {
+          /* Randomly add to byte. */
+          out_buf[UR(dataSize)] += 1 + UR(ARITH_MAX);
+          break;
+        }
+        case 6: {
+          /* Randomly subtract from word, random endian. */
+          if (dataSize < 2) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 1);
+            *(u16*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 1);
+            u16 num = 1 + UR(ARITH_MAX);
+            *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) - num);
+          }
+          break;
+        }
+        case 7: {
+          /* Randomly add to word, random endian. */
+          if (dataSize < 2) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 1);
+            *(u16*)(out_buf + pos) += 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 1);
+            u16 num = 1 + UR(ARITH_MAX);
+            *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) + num);
+          }
+          break;
+        }
+        case 8: {
+          /* Randomly subtract from dword, random endian. */
+          if (dataSize < 4) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 3);
+            *(u32*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 3);
+            u32 num = 1 + UR(ARITH_MAX);
+            *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) - num);
+          }
+          break;
+        }
+        case 9: {
+          /* Randomly add to dword, random endian. */
+          if (dataSize < 4) break;
+          if (UR(2)) {
+            u32 pos = UR(dataSize - 3);
+            *(u32*)(out_buf + pos) += 1 + UR(ARITH_MAX);
+          } else {
+            u32 pos = UR(dataSize - 3);
+            u32 num = 1 + UR(ARITH_MAX);
+            *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) + num);
+          }
+          break;
+        }
+        case 10: {
+          /* Just set a random byte to a random value. Because,
+           why not. We use XOR with 1-255 to eliminate the
+           possibility of a no-op. */
+          out_buf[UR(dataSize)] ^= 1 + UR(255);
+          break;
+        }
+        case 11: {
+          /* Overwrite bytes with a randomly selected chunk (75%) or fixed
+           bytes (25%). */
+          u32 copyFrom, copyTo, copyLen;
+          if (dataSize < 2) break;
+          copyLen = chooseBlockLen(dataSize - 1);
+          copyFrom = UR(dataSize - copyLen + 1);
+          copyTo = UR(dataSize - copyLen + 1);
+          if (UR(4)) {
+            if (copyFrom != copyTo)
+              memmove(out_buf + copyTo, out_buf + copyFrom, copyLen);
+          } else {
+            memset(out_buf + copyTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], copyLen);
+          }
+          break;
+        }
+        case 12: {
+          /* No auto extras or odds in our favor. Use the dictionary. */
+          u32 useExtra = UR(dict.extras.size());
+          u32 extraLen = dict.extras[useExtra].data.size();
+          byte *extraBuf = dict.extras[useExtra].data.data();
+          u32 insertAt;
+          if (extraLen > (u32)dataSize) break;
+          insertAt = UR(dataSize - extraLen + 1);
+          memcpy(out_buf + insertAt, extraBuf, extraLen);
+          break;
+        }
+      }
+    }
+    auto item = havocCallOrders(data, curFuzzItem.orders, cb);
+    exit(1);
+    stageCur ++;
+    /* Restore to original state */
+    data = origin;
+  }
+  stageCycles[STAGE_HAVOC] += stageMax;
+}
 /*
  * TODO: If found more, do more havoc
  */
