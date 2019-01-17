@@ -279,16 +279,16 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     for (auto &it : queues) updateScore(it);
   }
   updateScore(item);
-  vector<uint64_t> keys;
-  vector<double> values;
-  for (auto it : item.res.predicates) keys.push_back(it.first);
-  for (auto it : item.res.predicates) values.push_back(it.second);
-  cout << "scores: " << item.score << endl;
-  cout << "tracebits: " << tracebits << endl;
-  cout << "item.tracebits" << item.res.tracebits << endl;
-  cout << "item.predicates.keys" << keys << endl;
-  cout << "item.predicates.values" << values << endl;
-  cout << "---" << endl;
+  //vector<uint64_t> keys;
+  //vector<double> values;
+  //for (auto it : item.res.predicates) keys.push_back(it.first);
+  //for (auto it : item.res.predicates) values.push_back(it.second);
+  //cout << "scores: " << item.score << endl;
+  //cout << "tracebits: " << tracebits << endl;
+  //cout << "item.tracebits" << item.res.tracebits << endl;
+  //cout << "item.predicates.keys" << keys << endl;
+  //cout << "item.predicates.values" << values << endl;
+  //cout << "---" << endl;
   return item;
 }
 
