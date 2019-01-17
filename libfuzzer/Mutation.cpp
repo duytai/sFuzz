@@ -477,15 +477,6 @@ void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
   stageCycles[STAGE_EXTRAS_AO] += stageMax;
 }
 
-/* Calculate score */
-double Mutation::calculateScore(const FuzzItem& item, unordered_set<uint64_t> tracebits) {
-  double score = 0;
-  for (auto it : item.res.predicates) {
-    if (!tracebits.count(it.first)) score += 1/ it.second;
-  }
-  return score;
-}
-
 FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb) {
   /* 50% wont change */
   if (UR(2) > 0) return cb(data, orders);

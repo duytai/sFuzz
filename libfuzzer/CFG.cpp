@@ -11,7 +11,7 @@ namespace fuzzer {
     for (auto pc : opStat.jumpdests) cfgStat.jumpdests[pc] = 0;
     return cfgStat;
   }
-  
+
   OpStat CFG::staticAnalyze(bytes code) {
     OpStat opStat;
     uint64_t pc = 0;
@@ -29,7 +29,7 @@ namespace fuzzer {
     }
     return opStat;
   }
-  
+
   void CFG::simulate(bytes code, vector<u256> stack, uint64_t pc, CFGStat& cfgStat) {
     auto codeSize = code.size();
     while (pc < codeSize) {
@@ -109,7 +109,7 @@ namespace fuzzer {
       pc ++;
     }
   }
-  
+
   CFG::CFG(bytes code) {
     uint64_t pos = 0;
     for (uint64_t i = 0; i < code.size() - 1; i ++) {

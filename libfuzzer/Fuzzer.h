@@ -65,5 +65,6 @@ namespace fuzzer {
       void writeException(bytes data, string prefix);
       void writeVulnerability(bytes data, string prefix);
       void showStats(Mutation mutation, OracleResult oracleResult);
+      void updateScore(FuzzItem &item);
   };
 }

@@ -40,7 +40,6 @@ namespace fuzzer {
       void random(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       bool splice(vector<FuzzItem> items);
-      double calculateScore(const FuzzItem& item, unordered_set<uint64_t> tracebits);
       int dataSize;
       int stageMax;
       int stageCur;

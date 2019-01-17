@@ -246,6 +246,13 @@ void Fuzzer::writeException(bytes data, string prefix) {
   exp << ret;
   exp.close();
 }
+/* Calculate score */
+void Fuzzer::updateScore(FuzzItem& item) {
+  item.score.clear();
+  for (auto it : item.res.predicates) {
+    if (!tracebits.count(it.first)) item.score.push_back(it.second);
+  }
+}
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth) {
   auto revisedData = ContractABI::postprocessTestData(data);
@@ -256,7 +263,6 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
   if (hasNewBits(item.res.tracebits)) {
     if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
     item.depth = depth + 1;
-    queues.push_back(item);
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
     writeTestcase(revisedData, "__TEST__");
@@ -266,6 +272,12 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     writeException(revisedData, "__EXCEPTION__");
   }
   hasNewBranches(item.res.branches);
+  /* New testcase */
+  if (item.depth > depth) {
+    queues.push_back(item);
+    for (auto &it : queues) updateScore(it);
+  }
+  updateScore(item);
   return item;
 }
 

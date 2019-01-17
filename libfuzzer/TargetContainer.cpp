@@ -2,11 +2,13 @@
 #include "TargetContainer.h"
 #include "Util.h"
 #include "ContractABI.h"
+#include <boost/multiprecision/cpp_dec_float.hpp>
 
 using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
+using namespace boost::multiprecision;
 
 namespace fuzzer {
   TargetContainer::TargetContainer() {
@@ -42,7 +44,7 @@ namespace fuzzer {
   TargetContainerResult TargetExecutive::exec(bytes data, vector<uint64_t> orders, Logger* logger) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
-    double lastCompValue = 0;
+    u256 lastCompValue = 0;
     u64 prevLocation = 0;
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
@@ -119,15 +121,19 @@ namespace fuzzer {
           if (stackSize >= 2) {
             u256 left = vm->stack()[stackSize - 1];
             u256 right = vm->stack()[stackSize - 2];
-            u256 temp = left > right ? left - right : right - left;
-            lastCompValue = abs((double)(uint64_t)temp) + 1;
             /* EQ call == function signature */
-            if (left == functionSig) recordJumpiFrom = pc + 4;
+            if (left == functionSig && right == functionSig) recordJumpiFrom = pc + 4;
+            /* calculate if command inside a function */
+            if (pc > recordJumpiFrom) {
+              u256 temp = left > right ? left - right : right - left;
+              lastCompValue = temp + 1;
+            }
           }
           break;
         }
         default: { break; }
       }
+      /* calculate if command inside a function */
       if (pc > recordJumpiFrom) {
         if (inst == Instruction::JUMPCI) {
           jumpDest1 = (u64) vm->stack().back();
@@ -141,14 +147,14 @@ namespace fuzzer {
           prevLocation = pc >> 1;
           /* Calculate branch distance */
           if (lastCompValue != 0) {
-            double distance = 1 - pow(1.001, -lastCompValue);
             /* Save predicate for uncovered branches */
             u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
-            predicates[jumpDest ^ prevLocation] = distance;
+            predicates[jumpDest ^ prevLocation] = (double)(cpp_dec_float_100(lastCompValue) / cpp_dec_float_100(lastCompValue + 1));
+            lastCompValue = 0;
           }
         }
+        prevInst = inst;
       }
-      prevInst = inst;
       /* log to file */
       if (logger->isEnabled()) {
         stringstream data;
