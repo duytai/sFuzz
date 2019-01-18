@@ -149,9 +149,9 @@ namespace fuzzer {
             /* Save predicate for uncovered branches */
             u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
             predicates[jumpDest ^ prevLocation] = (double)(cpp_dec_float_100(lastCompValue) / cpp_dec_float_100(lastCompValue + 1));
-            //cout << ">> cover: " << (pc ^ prevLocation) << endl;
-            //cout << ">> uncover: " << (jumpDest ^ prevLocation) << endl;
-            //cout << ">> comp: " << lastCompValue << endl;
+//            cout << ">> cover: " << (pc ^ prevLocation) << endl;
+//            cout << "++ uncover: " << (jumpDest ^ prevLocation) << endl;
+//            cout << "** comp: " << lastCompValue << endl;
             lastCompValue = 0;
           }
           prevLocation = pc >> 1;

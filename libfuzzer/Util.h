@@ -47,6 +47,7 @@ namespace fuzzer {
   typedef int32_t  s32;
   typedef int64_t  s64;
     
+  static double DEFAULT_SCORE = 1000000000;
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
   static int REFRESH_RATE = 1000;
   static u256 MAX_GAS = 100000000000;

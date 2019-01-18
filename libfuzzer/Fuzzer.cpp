@@ -71,7 +71,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  return;
+//  return;
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -271,7 +271,7 @@ void Fuzzer::updateAllPredicates() {
 void Fuzzer::updateScore(FuzzItem& item) {
   item.score.clear();
   for (auto branch : predicates) {
-    double value = 1000000000;
+    double value = DEFAULT_SCORE;
     if (item.res.predicates.count(branch) > 0) {
       value = item.res.predicates[branch];
     }
@@ -308,25 +308,28 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     /* update predicates */
   }
   updateScore(item);
-  vector<uint64_t> pred_keys, score_keys;
-  vector<double> pred_values, score_values;
-  for (auto it : item.res.predicates) {
-    pred_keys.push_back(it.first);
-    pred_values.push_back(it.second);
-  }
-  for (auto it : item.score) {
-    score_keys.push_back(it.first);
-    score_values.push_back(it.second);
-  }
-  //cout << "tracebits: " << tracebits << endl;
-  //cout << "predicates: " << predicates << endl;
-  //cout << "item.tracebits: " << item.res.tracebits << endl;
-  //cout << "item.predicates.keys: " << pred_keys << endl;
-  //cout << "item.predicates.values: " << pred_values << endl;
-  //cout << "item.score.keys: " << score_keys << endl;
-  //cout << "item.score.values: " << score_values << endl;
-  //cout << "x: " << u256("0x" + toHex(bytes(item.data.begin() + 96, item.data.begin() + 128))) << endl;
-  //cout << "----" << endl;
+//  vector<uint64_t> pred_keys, score_keys;
+//  vector<double> pred_values, score_values;
+//  for (auto it : item.res.predicates) {
+//    pred_keys.push_back(it.first);
+//    pred_values.push_back(it.second);
+//  }
+//  for (auto it : item.score) {
+//    score_keys.push_back(it.first);
+//    score_values.push_back(it.second);
+//  }
+//  cout << "tracebits: " << tracebits << endl;
+//  cout << "predicates: " << predicates << endl;
+//  cout << "item.tracebits: " << item.res.tracebits << endl;
+//  cout << "item.predicates.keys: " << pred_keys << endl;
+//  cout << "item.predicates.values: " << pred_values << endl;
+//  cout << "item.score.keys: " << score_keys << endl;
+//  cout << "item.score.values: " << score_values << endl;
+//  cout << "x: " << u256("0x" + toHex(bytes(item.data.begin() + 96, item.data.begin() + 128))) << endl;
+//  cout << "----" << endl;
+//  if (queues.size() == 3) {
+//    exit(1);
+//  }
   return item;
 }
 

@@ -31,10 +31,20 @@ namespace fuzzer {
   using OnMutateFunc = function<FuzzItem (bytes b, vector<uint64_t>)>;
   struct SubFuzzItem {
     FuzzItem item;
-    double score;
-    SubFuzzItem(FuzzItem _item, double _score) : item(_item), score(_score) {};
+    uint64_t branch = 0;
+    uint64_t stageCur = 0;
+    SubFuzzItem(FuzzItem _item, uint64_t _branch, uint64_t _stageCur)
+      :item(_item), branch(_branch), stageCur(_stageCur) {};
     bool operator <(const SubFuzzItem& other) const {
-      return score < other.score;
+      /* Compare main branch */
+      if (item.score.at(branch) < other.item.score.at(branch)) return true;
+      /* Compare other branch */
+      for (auto it : item.score) {
+        if (it.first != branch) {
+          if (item.score.at(it.first) < other.item.score.at(it.first)) return true;
+        }
+      }
+      return stageCur < other.stageCur;
     }
   };
 }
