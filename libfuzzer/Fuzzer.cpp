@@ -41,6 +41,17 @@ u8 Fuzzer::hasNewBits(unordered_set<uint64_t> _tracebits) {
   auto newSize = tracebits.size();
   return newSize - originSize;
 }
+/* Detect all uncover branches of predicates */
+u8 Fuzzer::hasNewPredicates(unordered_map<uint64_t, double> _pred) {
+  auto originSize = predicates.size();
+  for (auto it : _pred) {
+    if (!tracebits.count(it.first)) {
+      predicates.insert(it.first);
+    }
+  }
+  auto newSize = predicates.size();
+  return newSize - originSize;
+}
 
 /* Detect new branch */
 u8 Fuzzer::hasNewBranches(unordered_set<uint64_t> _branches) {
@@ -247,11 +258,24 @@ void Fuzzer::writeException(bytes data, string prefix) {
   exp << ret;
   exp.close();
 }
+
+void Fuzzer::updateAllScore() {
+  for (auto &it : queues) updateScore(it);
+}
+
+void Fuzzer::updateAllPredicates() {
+  predicates.clear();
+  for (auto it : queues) hasNewPredicates(it.res.predicates);
+}
 /* Calculate score */
 void Fuzzer::updateScore(FuzzItem& item) {
   item.score.clear();
-  for (auto it : item.res.predicates) {
-    if (!tracebits.count(it.first)) item.score.push_back(it.second);
+  for (auto branch : predicates) {
+    double value = 1000000000;
+    if (item.res.predicates.count(branch) > 0) {
+      value = item.res.predicates[branch];
+    }
+    item.score.insert(pair<uint64_t, double>(branch, value));
   }
 }
 /* Save data if interest */
@@ -273,22 +297,35 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     writeException(revisedData, "__EXCEPTION__");
   }
   hasNewBranches(item.res.branches);
+  hasNewPredicates(item.res.predicates);
   /* New testcase */
   if (item.depth > depth) {
+    /* update score */
     queues.push_back(item);
-    for (auto &it : queues) updateScore(it);
+    updateAllPredicates(); /* must do before updating score */
+    updateAllScore();
+    /* update predicates */
   }
   updateScore(item);
-  //vector<uint64_t> keys;
-  //vector<double> values;
-  //for (auto it : item.res.predicates) keys.push_back(it.first);
-  //for (auto it : item.res.predicates) values.push_back(it.second);
-  //cout << "scores: " << item.score << endl;
+  vector<uint64_t> pred_keys, score_keys;
+  vector<double> pred_values, score_values;
+  for (auto it : item.res.predicates) {
+    pred_keys.push_back(it.first);
+    pred_values.push_back(it.second);
+  }
+  for (auto it : item.score) {
+    score_keys.push_back(it.first);
+    score_values.push_back(it.second);
+  }
   //cout << "tracebits: " << tracebits << endl;
-  //cout << "item.tracebits" << item.res.tracebits << endl;
-  //cout << "item.predicates.keys" << keys << endl;
-  //cout << "item.predicates.values" << values << endl;
-  //cout << "---" << endl;
+  //cout << "predicates: " << predicates << endl;
+  //cout << "item.tracebits: " << item.res.tracebits << endl;
+  //cout << "item.predicates.keys: " << pred_keys << endl;
+  //cout << "item.predicates.values: " << pred_values << endl;
+  //cout << "item.score.keys: " << score_keys << endl;
+  //cout << "item.score.values: " << score_values << endl;
+  //cout << "x: " << u256("0x" + toHex(bytes(item.data.begin() + 96, item.data.begin() + 128))) << endl;
+  //cout << "----" << endl;
   return item;
 }
 

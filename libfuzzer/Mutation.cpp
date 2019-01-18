@@ -635,8 +635,7 @@ void Mutation::newHavoc(OnMutateFunc cb) {
         }
       }
     }
-    auto item = havocCallOrders(data, curFuzzItem.orders, cb);
-    exit(1);
+    havocCallOrders(data, curFuzzItem.orders, cb);
     stageCur ++;
     /* Restore to original state */
     data = origin;

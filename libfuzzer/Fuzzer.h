@@ -46,6 +46,7 @@ namespace fuzzer {
   };
   class Fuzzer {
     unordered_set<uint64_t> tracebits;
+    unordered_set<uint64_t> predicates;
     unordered_set<uint64_t> branches;
     vector<FuzzItem> queues;
     unordered_map<string, unordered_set<u64>> uniqExceptions;
@@ -57,6 +58,7 @@ namespace fuzzer {
     public:
       Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(unordered_set<uint64_t> tracebits);
+      u8 hasNewPredicates(unordered_map<uint64_t, double> predicates);
       u8 hasNewBranches(unordered_set<uint64_t> branches);
       u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth);
@@ -66,5 +68,7 @@ namespace fuzzer {
       void writeVulnerability(bytes data, string prefix);
       void showStats(Mutation mutation, OracleResult oracleResult);
       void updateScore(FuzzItem &item);
+      void updateAllScore();
+      void updateAllPredicates();
   };
 }
