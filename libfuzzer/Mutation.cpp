@@ -490,12 +490,21 @@ FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutate
   return cb(data, newOrders);
 }
 
+void Mutation::addCandidate(unordered_map<uint64_t, set<SubFuzzItem>>& candidates, FuzzItem& item) {
+  for (auto it : item.score) {
+    candidates[it.first].insert(SubFuzzItem(item, it.second));
+  }
+}
+
 void Mutation::newHavoc(OnMutateFunc cb) {
   stageShort = "heuristic";
   stageName = "heuristic";
   stageMax = HAVOC_MIN;
   stageCur = 0;
-  
+  /* keep top score */
+  unordered_map<uint64_t, set<SubFuzzItem>> candidates;
+  Mutation::addCandidate(candidates, curFuzzItem);
+  /* end */
   auto dict = get<0>(dicts);
   auto origin = curFuzzItem.data;
   bytes data = origin;
@@ -635,12 +644,29 @@ void Mutation::newHavoc(OnMutateFunc cb) {
         }
       }
     }
-    havocCallOrders(data, curFuzzItem.orders, cb);
+    auto item = havocCallOrders(data, curFuzzItem.orders, cb);
+    if (item.isInteresting) {
+      stageCycles[STAGE_HAVOC] += stageMax;
+      return;
+    }
+    Mutation::addCandidate(candidates, item);
     stageCur ++;
     /* Restore to original state */
     data = origin;
   }
-  stageCycles[STAGE_HAVOC] += stageMax;
+  for (auto it : candidates) {
+    cout << it.first << " => " << endl;
+    for (auto i : it.second) {
+      auto score = i.item.score;
+      cout << "  [" << endl;
+      for (auto ii : score) {
+        cout << "    " << ii.first << " => " << ii.second << endl;
+      }
+      cout << "  ]" << endl;
+    }
+  }
+  exit(1);
+  //stageCycles[STAGE_HAVOC] += stageMax;
 }
 /*
  * TODO: If found more, do more havoc

@@ -13,6 +13,7 @@ namespace fuzzer {
     bytes data;
     TargetContainerResult res;
     bool wasFuzzed = false;
+    bool isInteresting = false;
     uint64_t depth = 0;
     uint64_t totalFuncs = 0;
     FuzzItem(bytes _data, vector<uint64_t> _orders, uint64_t _totalFuncs) {
@@ -28,4 +29,12 @@ namespace fuzzer {
     }
   };
   using OnMutateFunc = function<FuzzItem (bytes b, vector<uint64_t>)>;
+  struct SubFuzzItem {
+    FuzzItem item;
+    double score;
+    SubFuzzItem(FuzzItem _item, double _score) : item(_item), score(_score) {};
+    bool operator <(const SubFuzzItem& other) const {
+      return score < other.score;
+    }
+  };
 }

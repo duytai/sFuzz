@@ -288,6 +288,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
   if (hasNewBits(item.res.tracebits)) {
     if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
     item.depth = depth + 1;
+    item.isInteresting = true;
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
     writeTestcase(revisedData, "__TEST__");
@@ -299,7 +300,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
   hasNewBranches(item.res.branches);
   hasNewPredicates(item.res.predicates);
   /* New testcase */
-  if (item.depth > depth) {
+  if (item.isInteresting) {
     /* update score */
     queues.push_back(item);
     updateAllPredicates(); /* must do before updating score */
