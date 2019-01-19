@@ -48,6 +48,7 @@ namespace fuzzer {
   typedef int64_t  s64;
     
   static u256 DEFAULT_SCORE = u256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
+  static u512 DEFAULT_MIN_SCORE = u512("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
   static int REFRESH_RATE = 1000;
   static u256 MAX_GAS = 100000000000;

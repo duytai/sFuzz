@@ -490,6 +490,26 @@ FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutate
   return cb(data, newOrders);
 }
 
+u512 Mutation::minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates) {
+  u512 minSum = 0;
+  for (auto it : candidates) {
+    auto temp = *(it.second.begin());
+    auto m = (u512) temp.item.score[it.first];
+    minSum = minSum + m;
+  }
+//  for (auto it : candidates) {
+//    cout << it.first << " => " << endl;
+//    for (auto i : it.second) {
+//      cout << "    [" << endl;
+//      for (auto ii : i.item.score) {
+//        cout << "    " << ii.first << " => " << ii.second << endl;
+//      }
+//      cout << "    ]" << endl;
+//    }
+//  }
+  return minSum;
+}
+
 void Mutation::addCandidate(unordered_map<uint64_t, set<SubFuzzItem>>& candidates, FuzzItem& item, uint64_t stageCur) {
   for (auto it : item.score) {
     candidates[it.first].insert(SubFuzzItem(item, it.first, stageCur));
@@ -506,7 +526,7 @@ void Mutation::newHavoc(OnMutateFunc cb) {
   vector<FuzzItem> subQueues = {curFuzzItem};
   auto dict = get<0>(dicts);
   uint64_t idx = 0;
-  uint64_t cycle = 0;
+  u512 minScore = DEFAULT_MIN_SCORE;
   while (true) {
     auto fuzzItem = subQueues[idx];
     auto origin = fuzzItem.data;
@@ -659,10 +679,13 @@ void Mutation::newHavoc(OnMutateFunc cb) {
       /* Restore to original state */
       data = origin;
     } // --> end MIN_HAVOC
+    auto temp = Mutation::minScore(candidates);
+    if (temp < minScore) {
+      minScore = temp;
+    } else return;
     stageCycles[STAGE_HAVOC] += HAVOC_MIN;
     idx = (idx + 1) % subQueues.size();
     if (idx == 0) {
-      if (++cycle > 100) return;
       subQueues.clear();
       for (auto it : candidates) {
         auto temp = *(it.second.begin());
