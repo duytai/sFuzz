@@ -343,7 +343,7 @@ void Mutation::twoInterest(OnMutateFunc cb) {
         mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
         stageCur ++;
       } else stageMax --;
-      
+
       if ((u16)INTERESTING_16[j] != swap16(INTERESTING_16[j]) &&
           !couldBeBitflip(orig ^ swap16(INTERESTING_16[j])) &&
           !couldBeArith(orig, swap16(INTERESTING_16[j]), 2) &&
@@ -450,7 +450,7 @@ void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
   stageShort = "ext_AO";
   stageName = "address (over)";
   auto dict = get<1>(dicts);
-  
+
   stageMax = (dataSize / 32) * dict.extras.size();
   stageCur = 0;
   /* Start fuzzing */
@@ -490,16 +490,6 @@ FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutate
   return cb(data, newOrders);
 }
 
-//double Mutation::minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates) {
-//  double minScore = DEFAULT_SCORE;
-//  for (auto it : candidates) {
-//    auto temp = *(it.second.begin());
-//    auto branchScore = temp.item.score[temp.branch];
-//    if (branchScore < minScore) minScore = branchScore;
-//  }
-//  return minScore;
-//}
-
 void Mutation::addCandidate(unordered_map<uint64_t, set<SubFuzzItem>>& candidates, FuzzItem& item, uint64_t stageCur) {
   for (auto it : item.score) {
     candidates[it.first].insert(SubFuzzItem(item, it.first, stageCur));
@@ -516,6 +506,7 @@ void Mutation::newHavoc(OnMutateFunc cb) {
   vector<FuzzItem> subQueues = {curFuzzItem};
   auto dict = get<0>(dicts);
   uint64_t idx = 0;
+  uint64_t cycle = 0;
   while (true) {
     auto fuzzItem = subQueues[idx];
     auto origin = fuzzItem.data;
@@ -671,8 +662,7 @@ void Mutation::newHavoc(OnMutateFunc cb) {
     stageCycles[STAGE_HAVOC] += HAVOC_MIN;
     idx = (idx + 1) % subQueues.size();
     if (idx == 0) {
-      /* Found approx answer */
-      if (stageCur > 5000) return;
+      if (++cycle > 100) return;
       subQueues.clear();
       for (auto it : candidates) {
         auto temp = *(it.second.begin());
@@ -691,7 +681,7 @@ void Mutation::havoc(OnMutateFunc cb) {
   stageName = "havoc";
   stageMax = HAVOC_MIN;
   stageCur = 0;
-  
+
   auto dict = get<0>(dicts);
   auto origin = curFuzzItem.data;
   bytes data = origin;

@@ -14,6 +14,7 @@ namespace fuzzer {
     TargetContainerResult res;
     bool wasFuzzed = false;
     bool isInteresting = false;
+    bool hasUncovered = false;
     uint64_t depth = 0;
     uint64_t totalFuncs = 0;
     FuzzItem(bytes _data, vector<uint64_t> _orders, uint64_t _totalFuncs) {
@@ -38,12 +39,6 @@ namespace fuzzer {
     bool operator <(const SubFuzzItem& other) const {
       /* Compare main branch */
       if (item.score.at(branch) < other.item.score.at(branch)) return true;
-      /* Compare other branch */
-      for (auto it : item.score) {
-        if (it.first != branch) {
-          if (item.score.at(it.first) < other.item.score.at(it.first)) return true;
-        }
-      }
       return stageCur < other.stageCur;
     }
   };

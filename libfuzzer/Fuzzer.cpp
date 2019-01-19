@@ -71,13 +71,13 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-  return;
+//  return;
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
   }
-  
+
   double duration = timer.elapsed();
   double fromLastNewPath = timer.elapsed() - fuzzStat.lastNewPath;
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
@@ -270,10 +270,12 @@ void Fuzzer::updateAllPredicates() {
 /* Calculate score */
 void Fuzzer::updateScore(FuzzItem& item) {
   item.score.clear();
+  item.hasUncovered = false;
   for (auto branch : predicates) {
     u256 value = DEFAULT_SCORE;
     if (item.res.predicates.count(branch) > 0) {
       value = item.res.predicates[branch];
+      item.hasUncovered = true;
     }
     item.score.insert(pair<uint64_t, u256>(branch, value));
   }
@@ -430,21 +432,21 @@ void Fuzzer::start() {
               mutation.overwriteWithDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+
               mutation.overwriteWithAddressDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_AO] += queues.size() - origHitCount;
               origHitCount = queues.size();
-                
+
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+
               queues[fuzzStat.idx].wasFuzzed = true;
             } else {
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              
+
               if (mutation.splice(queues)) {
                 mutation.havoc(save);
                 fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
@@ -460,8 +462,13 @@ void Fuzzer::start() {
             break;
           }
           case HAVOC_COMPLEX: {
-            if (!predicates.size()) exit(1);
-            mutation.newHavoc(save);
+            if (!predicates.size()) {
+              cout << "Found all possible branches" << endl;
+              exit(1);
+            }
+            if (curItem.hasUncovered) {
+              mutation.newHavoc(save);
+            }
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
             break;
