@@ -680,12 +680,12 @@ void Mutation::newHavoc(OnMutateFunc cb) {
       data = origin;
     } // --> end MIN_HAVOC
     auto temp = Mutation::minScore(candidates);
-    if (temp < minScore) {
-      minScore = temp;
-    } else return;
     stageCycles[STAGE_HAVOC] += HAVOC_MIN;
     idx = (idx + 1) % subQueues.size();
     if (idx == 0) {
+      if (temp < minScore) {
+        minScore = temp;
+      } else return;
       subQueues.clear();
       for (auto it : candidates) {
         auto temp = *(it.second.begin());
