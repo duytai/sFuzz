@@ -490,15 +490,15 @@ FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutate
   return cb(data, newOrders);
 }
 
-double Mutation::minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates) {
-  double minScore = DEFAULT_SCORE;
-  for (auto it : candidates) {
-    auto temp = *(it.second.begin());
-    auto branchScore = temp.item.score[temp.branch];
-    if (branchScore < minScore) minScore = branchScore;
-  }
-  return minScore;
-}
+//double Mutation::minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates) {
+//  double minScore = DEFAULT_SCORE;
+//  for (auto it : candidates) {
+//    auto temp = *(it.second.begin());
+//    auto branchScore = temp.item.score[temp.branch];
+//    if (branchScore < minScore) minScore = branchScore;
+//  }
+//  return minScore;
+//}
 
 void Mutation::addCandidate(unordered_map<uint64_t, set<SubFuzzItem>>& candidates, FuzzItem& item, uint64_t stageCur) {
   for (auto it : item.score) {
@@ -513,7 +513,6 @@ void Mutation::newHavoc(OnMutateFunc cb) {
   stageCur = 0;
   /* keep top score */
   unordered_map<uint64_t, set<SubFuzzItem>> candidates;
-  Mutation::addCandidate(candidates, curFuzzItem, stageCur);
   vector<FuzzItem> subQueues = {curFuzzItem};
   auto dict = get<0>(dicts);
   uint64_t idx = 0;
@@ -521,6 +520,7 @@ void Mutation::newHavoc(OnMutateFunc cb) {
     auto fuzzItem = subQueues[idx];
     auto origin = fuzzItem.data;
     auto data = fuzzItem.data;
+    Mutation::addCandidate(candidates, curFuzzItem, stageCur);
     for (int i = 0; i < HAVOC_MIN; i += 1) {
       u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
       for (u32 j = 0; j < useStacking; j += 1) {
@@ -670,17 +670,9 @@ void Mutation::newHavoc(OnMutateFunc cb) {
     } // --> end MIN_HAVOC
     stageCycles[STAGE_HAVOC] += HAVOC_MIN;
     idx = (idx + 1) % subQueues.size();
-    /* End subQueues */
     if (idx == 0) {
-      auto minScore = Mutation::minScore(candidates);
-      /* Can not find approx answer */
-      if (minScore > 1) {
-        return;
-      }
       /* Found approx answer */
-      if (stageCur > 5000 && minScore <= 1) {
-        return;
-      }
+      if (stageCur > 5000) return;
       subQueues.clear();
       for (auto it : candidates) {
         auto temp = *(it.second.begin());

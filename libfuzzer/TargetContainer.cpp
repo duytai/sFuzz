@@ -55,7 +55,7 @@ namespace fuzzer {
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> branches;
     unordered_set<uint64_t> tracebits;
-    unordered_map<uint64_t, double> predicates;
+    unordered_map<uint64_t, u256> predicates;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
@@ -148,7 +148,7 @@ namespace fuzzer {
           if (lastCompValue != 0) {
             /* Save predicate for uncovered branches */
             u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
-            predicates[jumpDest ^ prevLocation] = (double)(cpp_dec_float_100(lastCompValue) / cpp_dec_float_100(lastCompValue + 1));
+            predicates[jumpDest ^ prevLocation] = lastCompValue;
 //            cout << ">> cover: " << (pc ^ prevLocation) << endl;
 //            cout << "++ uncover: " << (jumpDest ^ prevLocation) << endl;
 //            cout << "** comp: " << lastCompValue << endl;

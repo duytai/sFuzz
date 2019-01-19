@@ -42,7 +42,6 @@ namespace fuzzer {
       void newHavoc(OnMutateFunc cb);
       bool splice(vector<FuzzItem> items);
       static void addCandidate(unordered_map<uint64_t, set<SubFuzzItem>>& candidates, FuzzItem& item, uint64_t stageCur);
-      static double minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates);
       int dataSize;
       int stageMax;
       int stageCur;

@@ -58,7 +58,7 @@ namespace fuzzer {
     public:
       Fuzzer(FuzzParam fuzzParam);
       u8 hasNewBits(unordered_set<uint64_t> tracebits);
-      u8 hasNewPredicates(unordered_map<uint64_t, double> predicates);
+      u8 hasNewPredicates(unordered_map<uint64_t, u256> predicates);
       u8 hasNewBranches(unordered_set<uint64_t> branches);
       u8 hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth);

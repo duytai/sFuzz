@@ -47,7 +47,7 @@ namespace fuzzer {
   typedef int32_t  s32;
   typedef int64_t  s64;
     
-  static double DEFAULT_SCORE = 1000000000;
+  static u256 DEFAULT_SCORE = u256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
   static int REFRESH_RATE = 1000;
   static u256 MAX_GAS = 100000000000;
@@ -133,4 +133,21 @@ namespace fuzzer {
   };
   /* Static analyze */
   void staticAnalyze(bytes code, function<void(Instruction)>);
+  template<typename TK, typename TV>
+  std::vector<TK> extract_keys(std::unordered_map<TK, TV> const& input_map) {
+    std::vector<TK> retval;
+    for (auto const& element : input_map) {
+      retval.push_back(element.first);
+    }
+    return retval;
+  }
+  
+  template<typename TK, typename TV>
+  std::vector<TV> extract_values(std::unordered_map<TK, TV> const& input_map) {
+    std::vector<TV> retval;
+    for (auto const& element : input_map) {
+      retval.push_back(element.second);
+    }
+    return retval;
+  }
 }

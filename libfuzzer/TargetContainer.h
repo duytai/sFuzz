@@ -14,7 +14,7 @@ using namespace std;
 namespace fuzzer {
   struct TargetContainerResult {
     TargetContainerResult() {}
-    TargetContainerResult(unordered_set<uint64_t> tracebits,unordered_set<uint64_t> branches, double cksum, unordered_map<uint64_t, double> predicates, unordered_map<string, unordered_set<uint64_t>> uniqExceptions) {
+    TargetContainerResult(unordered_set<uint64_t> tracebits,unordered_set<uint64_t> branches, double cksum, unordered_map<uint64_t, u256> predicates, unordered_map<string, unordered_set<uint64_t>> uniqExceptions) {
       this->tracebits = tracebits;
       this->cksum = cksum;
       this->predicates = predicates;
@@ -28,7 +28,7 @@ namespace fuzzer {
     /* Contains checksum of tracebits */
     double cksum;
     /* Save predicates */
-    unordered_map<uint64_t, double> predicates;
+    unordered_map<uint64_t, u256> predicates;
     /* Exception path */
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
   };
