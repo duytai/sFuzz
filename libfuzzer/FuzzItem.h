@@ -12,9 +12,9 @@ namespace fuzzer {
     unordered_map<uint64_t, double> score;
     bytes data;
     TargetContainerResult res;
-    bool wasFuzzed = false;
     bool isInteresting = false;
     bool hasUncovered = false;
+    uint64_t fuzzedCount = 0;
     uint64_t depth = 0;
     uint64_t totalFuncs = 0;
     FuzzItem(bytes _data, vector<uint64_t> _orders, uint64_t _totalFuncs) {

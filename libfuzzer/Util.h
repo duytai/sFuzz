@@ -46,7 +46,8 @@ namespace fuzzer {
   typedef int16_t  s16;
   typedef int32_t  s32;
   typedef int64_t  s64;
-    
+  
+  static uint64_t MAX_FUZZED_COUNT = 4;
   static u256 DEFAULT_SCORE = u256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
   static u512 DEFAULT_MIN_SCORE = u512("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
   static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");

@@ -505,6 +505,7 @@ u512 Mutation::minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates) {
 //        cout << "    " << ii.first << " => " << ii.second << endl;
 //      }
 //      cout << "    ]" << endl;
+//      break;
 //    }
 //  }
   return minSum;
@@ -668,21 +669,20 @@ void Mutation::newHavoc(OnMutateFunc cb) {
           }
         } // -> end switch
       } // --> end stack
+      stageCycles[STAGE_HAVOC] ++;
+      stageCur ++;
       auto item = havocCallOrders(data, curFuzzItem.orders, cb);
       if (item.isInteresting) {
-        stageCycles[STAGE_HAVOC] += i;
         stageMax = stageMax - (HAVOC_MIN - i);
         return;
       }
-      stageCur ++;
       Mutation::addCandidate(candidates, item, stageCur);
       /* Restore to original state */
       data = origin;
     } // --> end MIN_HAVOC
-    auto temp = Mutation::minScore(candidates);
-    stageCycles[STAGE_HAVOC] += HAVOC_MIN;
     idx = (idx + 1) % subQueues.size();
     if (idx == 0) {
+      auto temp = Mutation::minScore(candidates);
       if (temp < minScore) {
         minScore = temp;
       } else return;

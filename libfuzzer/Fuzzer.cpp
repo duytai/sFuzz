@@ -17,7 +17,7 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
 }
 
 /* Detect new exception */
-u8 Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
+bool Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
   int orginExceptions = 0;
   int newExceptions = 0;
   for (auto it : uniqExceptions) orginExceptions += it.second.size();
@@ -35,14 +35,14 @@ u8 Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
 }
 
 /* Detect new bits by comparing tracebits to virginbits */
-u8 Fuzzer::hasNewBits(unordered_set<uint64_t> _tracebits) {
+bool Fuzzer::hasNewBits(unordered_set<uint64_t> _tracebits) {
   auto originSize = tracebits.size();
   for (auto it : _tracebits) tracebits.insert(it);
   auto newSize = tracebits.size();
   return newSize - originSize;
 }
 /* Detect all uncover branches of predicates */
-u8 Fuzzer::hasNewPredicates(unordered_map<uint64_t, u256> _pred) {
+bool Fuzzer::hasNewPredicates(unordered_map<uint64_t, u256> _pred) {
   auto originSize = predicates.size();
   for (auto it : _pred) {
     if (!tracebits.count(it.first)) {
@@ -54,7 +54,7 @@ u8 Fuzzer::hasNewPredicates(unordered_map<uint64_t, u256> _pred) {
 }
 
 /* Detect new branch */
-u8 Fuzzer::hasNewBranches(unordered_set<uint64_t> _branches) {
+bool Fuzzer::hasNewBranches(unordered_set<uint64_t> _branches) {
   auto originSize = branches.size();
   for (auto it : _branches) branches.insert(it);
   auto newSize = branches.size();
@@ -122,7 +122,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto callOrder = padStr(callOrder1, 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
-    return !item.wasFuzzed;
+    return !item.fuzzedCount;
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
@@ -258,6 +258,18 @@ void Fuzzer::writeException(bytes data, string prefix) {
   exp << ret;
   exp.close();
 }
+/*
+ * - fuzzedCount < MAX_FUZZED_COUNT
+ * - hasUncovered == true
+ */
+bool Fuzzer::hasInterestingFuzzedCount() {
+  for (auto it : queues) {
+    if (it.fuzzedCount < MAX_FUZZED_COUNT && it.hasUncovered) {
+      return true;
+    }
+  }
+  return false;
+}
 
 void Fuzzer::updateAllScore() {
   for (auto &it : queues) updateScore(it);
@@ -285,7 +297,6 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData, orders, totalFuncs);
   item.res = te.exec(revisedData, orders, fuzzParam.logger);
-  item.wasFuzzed = false;
   fuzzStat.totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
     if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
@@ -379,7 +390,7 @@ void Fuzzer::start() {
         };
         switch (fuzzParam.mode) {
           case AFL: {
-            if (!curItem.wasFuzzed) {
+            if (!curItem.fuzzedCount) {
               mutation.singleWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
               origHitCount = queues.size();
@@ -440,8 +451,6 @@ void Fuzzer::start() {
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();
-
-              queues[fuzzStat.idx].wasFuzzed = true;
             } else {
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
@@ -453,12 +462,14 @@ void Fuzzer::start() {
                 origHitCount = queues.size();
               };
             }
+            queues[fuzzStat.idx].fuzzedCount ++;
             break;
           }
           case RANDOM: {
             mutation.random(save);
             fuzzStat.stageFinds[STAGE_RANDOM] += queues.size() - origHitCount;
             origHitCount = queues.size();
+            queues[fuzzStat.idx].fuzzedCount ++;
             break;
           }
           case HAVOC_COMPLEX: {
@@ -467,7 +478,15 @@ void Fuzzer::start() {
               exit(1);
             }
             if (curItem.hasUncovered) {
-              mutation.newHavoc(save);
+              if (hasInterestingFuzzedCount()) {
+                if (curItem.fuzzedCount < MAX_FUZZED_COUNT) {
+                  mutation.havoc(save);
+                  queues[fuzzStat.idx].fuzzedCount ++;
+                }
+              } else {
+                mutation.newHavoc(save);
+                queues[fuzzStat.idx].fuzzedCount ++;
+              }
             }
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
@@ -477,6 +496,7 @@ void Fuzzer::start() {
             mutation.havoc(save);
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
+            queues[fuzzStat.idx].fuzzedCount ++;
             break;
           }
         }
