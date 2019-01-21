@@ -497,17 +497,6 @@ u512 Mutation::minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates) {
     auto m = (u512) temp.item.score[it.first];
     minSum = minSum + m;
   }
-//  for (auto it : candidates) {
-//    cout << it.first << " => " << endl;
-//    for (auto i : it.second) {
-//      cout << "    [" << endl;
-//      for (auto ii : i.item.score) {
-//        cout << "    " << ii.first << " => " << ii.second << endl;
-//      }
-//      cout << "    ]" << endl;
-//      break;
-//    }
-//  }
   return minSum;
 }
 
@@ -527,6 +516,7 @@ void Mutation::newHavoc(OnMutateFunc cb) {
   vector<FuzzItem> subQueues = {curFuzzItem};
   auto dict = get<0>(dicts);
   uint64_t idx = 0;
+  uint64_t numDups = 0;
   u512 minScore = DEFAULT_MIN_SCORE;
   while (true) {
     auto fuzzItem = subQueues[idx];
@@ -685,7 +675,9 @@ void Mutation::newHavoc(OnMutateFunc cb) {
       auto temp = Mutation::minScore(candidates);
       if (temp < minScore) {
         minScore = temp;
-      } else return;
+        numDups = 0;
+      } else numDups ++;
+      if (numDups > 5) return;
       subQueues.clear();
       for (auto it : candidates) {
         auto temp = *(it.second.begin());
