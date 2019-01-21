@@ -475,6 +475,7 @@ void Fuzzer::start() {
           case HAVOC_COMPLEX: {
             if (!predicates.size()) {
               cout << "Found all possible branches" << endl;
+              writeStats(mutation, container.oracleResult());
               exit(1);
             }
             if (curItem.hasUncovered) {
