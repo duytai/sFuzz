@@ -34,6 +34,8 @@ namespace fuzzer {
   struct FuzzStat {
     int idx = 0;
     uint64_t maxdepth = 0;
+    uint64_t randomHavoc = 0;
+    uint64_t heuristicHavoc = 0;
     bool clearScreen = false;
     int totalExecs = 0;
     int queueCycle = 0;
