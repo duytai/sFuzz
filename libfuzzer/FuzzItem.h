@@ -13,7 +13,6 @@ namespace fuzzer {
     bytes data;
     TargetContainerResult res;
     bool isInteresting = false;
-    bool hasUncovered = false;
     uint64_t fuzzedCount = 0;
     uint64_t depth = 0;
     uint64_t totalFuncs = 0;

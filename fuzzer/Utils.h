@@ -69,7 +69,7 @@ string compileSolFiles(string folder) {
   forEachFile(folder, ".sol", [&](directory_entry file) {
     string filePath = file.path().string();
     ret << "solc";
-    ret << " --combined-json abi,bin,bin-runtime " + filePath;
+    ret << " --combined-json abi,bin,bin-runtime,srcmap,srcmap-runtime " + filePath;
     ret << " > " + filePath + ".json";
     ret << endl;
   });

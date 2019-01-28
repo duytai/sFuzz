@@ -264,7 +264,7 @@ void Fuzzer::writeException(bytes data, string prefix) {
  */
 bool Fuzzer::hasInterestingFuzzedCount() {
   for (auto it : queues) {
-    if (it.fuzzedCount < MAX_FUZZED_COUNT && it.hasUncovered) {
+    if (it.fuzzedCount < MAX_FUZZED_COUNT) {
       return true;
     }
   }
@@ -282,12 +282,10 @@ void Fuzzer::updateAllPredicates() {
 /* Calculate score */
 void Fuzzer::updateScore(FuzzItem& item) {
   item.score.clear();
-  item.hasUncovered = false;
   for (auto branch : predicates) {
     u256 value = DEFAULT_SCORE;
     if (item.res.predicates.count(branch) > 0) {
       value = item.res.predicates[branch];
-      item.hasUncovered = true;
     }
     item.score.insert(pair<uint64_t, u256>(branch, value));
   }
@@ -473,21 +471,14 @@ void Fuzzer::start() {
             break;
           }
           case HAVOC_COMPLEX: {
-            if (!predicates.size()) {
-              cout << "Found all possible branches" << endl;
-              writeStats(mutation, container.oracleResult());
-              exit(1);
-            }
-            if (curItem.hasUncovered) {
-              if (hasInterestingFuzzedCount()) {
-                if (curItem.fuzzedCount < MAX_FUZZED_COUNT) {
-                  mutation.havoc(save);
-                  queues[fuzzStat.idx].fuzzedCount ++;
-                }
-              } else {
-                mutation.newHavoc(save);
+            if (hasInterestingFuzzedCount()) {
+              if (curItem.fuzzedCount < MAX_FUZZED_COUNT) {
+                mutation.havoc(save);
                 queues[fuzzStat.idx].fuzzedCount ++;
               }
+            } else {
+              mutation.newHavoc(save);
+              queues[fuzzStat.idx].fuzzedCount ++;
             }
             fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
             origHitCount = queues.size();
