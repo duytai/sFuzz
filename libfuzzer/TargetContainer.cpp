@@ -38,7 +38,7 @@ namespace fuzzer {
     program->deploy(addr, bytes{code});
     program->setBalance(addr, DEFAULT_BALANCE);
     program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
-    program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
   }
   
   TargetContainerResult TargetExecutive::exec(bytes data, vector<uint64_t> orders, Logger* logger) {
@@ -178,7 +178,7 @@ namespace fuzzer {
     /* Record all jumpis in constructor */
     recordJumpiFrom = 0;
     prevLocation = 0;
-    auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), onOp);
+    auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
       os << res.excepted;
@@ -195,6 +195,7 @@ namespace fuzzer {
       /* Update payload */
       CallLogItemPayload payload;
       auto func = funcs[funcIdx];
+      auto fd = ca.fds[funcIdx];
       payload.data = func;
       payload.inst = Instruction::CALL;
       payload.testData = data;
@@ -203,7 +204,7 @@ namespace fuzzer {
       recordJumpiFrom = 1000000000;
       functionSig = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
       prevLocation = functionSig;
-      res = program->invoke(addr, CONTRACT_FUNCTION, func, onOp);
+      res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
         os << res.excepted;

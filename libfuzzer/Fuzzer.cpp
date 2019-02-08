@@ -71,7 +71,6 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-//  return;
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;

@@ -19,7 +19,7 @@ namespace fuzzer {
       u160 sender;
       EnvInfo *envInfo;
       SealEngineFace *se;
-      ExecutionResult invoke(Address addr, bytes data, OnOpFunc onOp);
+      ExecutionResult invoke(Address addr, bytes data, bool payable, OnOpFunc onOp);
     public:
       TargetProgram();
       ~TargetProgram();
@@ -28,6 +28,6 @@ namespace fuzzer {
       void setBalance(Address addr, u256 balance);
       void deploy(Address addr, bytes code);
       void updateEnv(Accounts accounts, FakeBlock block);
-      ExecutionResult invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp);
+      ExecutionResult invoke(Address addr, ContractCall type, bytes data, bool payable, OnOpFunc onOp);
   };
 }

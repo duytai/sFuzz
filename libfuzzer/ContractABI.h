@@ -42,9 +42,10 @@ namespace fuzzer {
   
   struct FuncDef {
     string name;
+    bool payable;
     vector<TypeDef> tds;
     FuncDef(){};
-    FuncDef(string name, vector<TypeDef> tds);
+    FuncDef(string name, vector<TypeDef> tds, bool payable);
   };
   
   class ContractABI {
@@ -67,6 +68,7 @@ namespace fuzzer {
       uint64_t totalFuncs();
       Accounts decodeAccounts();
       FakeBlock decodeBlock();
+      bool isPayable(string name);
       static bytes encodeTuple(vector<TypeDef> tds);
       static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);

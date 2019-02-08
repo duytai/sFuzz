@@ -5,9 +5,10 @@ using namespace std;
 namespace pt = boost::property_tree;
 
 namespace fuzzer {
-  FuncDef::FuncDef(string name, vector<TypeDef> tds) {
+  FuncDef::FuncDef(string name, vector<TypeDef> tds, bool payable) {
     this->name = name;
     this->tds = tds;
+    this->payable = payable;
   }
   
   FakeBlock ContractABI::decodeBlock() {
@@ -112,9 +113,9 @@ namespace fuzzer {
    * msg.sender address can not be 0 (32 - 64)
    */
   bytes ContractABI::postprocessTestData(bytes data) {
-    auto first = data.begin() + 44;
-    auto last = data.begin() + 64;
-    auto sender = u256("0x" + toHex(bytes(first, last)));
+    auto sender = u256("0x" + toHex(bytes(data.begin() + 44, data.begin() + 64)));
+    auto balance = u256("0x" + toHex(bytes(data.begin() + 32, data.begin() + 44)));
+    if (!balance) data[32] = 0xff;
     if (!sender) data[63] = 0xf0;
     return data;
   }
@@ -277,17 +278,21 @@ namespace fuzzer {
       vector<TypeDef> tds;
       string type = node.second.get<string>("type");
       string constant = "false";
+      bool payable = false;
       if (node.second.get_child_optional("constant")) {
         constant = node.second.get<string>("constant");
       }
       if ((type == "constructor" || type == "function") && constant == "false") {
         auto inputNodes = node.second.get_child("inputs");
         string name = type == "constructor" ? "" : node.second.get<string>("name");
+        if (node.second.get_child_optional("payable")) {
+          payable = node.second.get<bool>("payable");
+        }
         for (auto inputNode : inputNodes) {
           string type = inputNode.second.get<string>("type");
           tds.push_back(TypeDef(type));
         }
-        this->fds.push_back(FuncDef(name, tds));
+        this->fds.push_back(FuncDef(name, tds, payable));
       }
     };
   }
@@ -296,6 +301,13 @@ namespace fuzzer {
     auto it = find_if(fds.begin(), fds.end(), [](FuncDef fd) { return fd.name == "";});
     if (it != fds.end()) return encodeTuple((*it).tds);
     return bytes(0, 0);
+  }
+  
+  bool ContractABI::isPayable(string name) {
+    for (auto fd : fds) {
+      if (fd.name == name) return fd.payable;
+    }
+    return false;
   }
   
   vector<bytes> ContractABI::encodeFunctions() {

@@ -41,18 +41,18 @@ namespace fuzzer {
     return state.code(addr);
   }
   
-  ExecutionResult TargetProgram::invoke(Address addr, ContractCall type, bytes data, OnOpFunc onOp) {
+  ExecutionResult TargetProgram::invoke(Address addr, ContractCall type, bytes data, bool payable, OnOpFunc onOp) {
     switch (type) {
       case CONTRACT_CONSTRUCTOR: {
         bytes code = state.code(addr);
         code.insert(code.end(), data.begin(), data.end());
         state.setCode(addr, bytes{code});
-        ExecutionResult res = invoke(addr, data, onOp);
+        ExecutionResult res = invoke(addr, data, payable, onOp);
         state.setCode(addr, bytes{res.output});
         return res;
       }
       case CONTRACT_FUNCTION: {
-        return invoke(addr, data, onOp);
+        return invoke(addr, data, payable, onOp);
       }
       default: {
         throw "Unknown invoke type";
@@ -60,10 +60,10 @@ namespace fuzzer {
     }
   }
   
-  ExecutionResult TargetProgram::invoke(Address addr, bytes data, OnOpFunc onOp) {
+  ExecutionResult TargetProgram::invoke(Address addr, bytes data, bool payable, OnOpFunc onOp) {
     ExecutionResult res;
     Address senderAddr(sender);
-    u256 value = 0;
+    u256 value = payable ? getBalance(sender) / 2 : 0;
     u256 gasPrice = 0;
     Transaction t = Transaction(value, gasPrice, gas, data, state.getNonce(sender));
     t.forceSender(senderAddr);
