@@ -63,7 +63,7 @@ namespace fuzzer {
   ExecutionResult TargetProgram::invoke(Address addr, bytes data, bool payable, OnOpFunc onOp) {
     ExecutionResult res;
     Address senderAddr(sender);
-    u256 value = payable ? getBalance(sender) / 2 : 0;
+    u256 value = payable ? state.balance(sender) : 0;
     u256 gasPrice = 0;
     Transaction t = Transaction(value, gasPrice, gas, data, state.getNonce(sender));
     t.forceSender(senderAddr);
