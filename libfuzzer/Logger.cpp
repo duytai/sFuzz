@@ -14,13 +14,14 @@ namespace fuzzer {
   }
   
   void Logger::writeOut(bool isInteresting) {
+    if (!enable) return;
     ofstream outfile;
     counter ++;
     string filename = contractName + "/log" + (isInteresting ? "_i_" : "_");
     filename = filename + to_string(counter) + ".txt";
     outfile.open(filename, std::ios_base::out);
     outfile << data.str() << endl;
-    data.str("");
+    clear();
     outfile.close();
   }
 }

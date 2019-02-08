@@ -139,6 +139,7 @@ namespace fuzzer {
           jumpDest1 = (u64) vm->stack().back();
           jumpDest2 = pc + 1;
           branchId = pow(pc, 2);
+          logger->log("-- JUMPI  : " + to_string(pc) + "\n");
         }
         if (prevInst == Instruction::JUMPCI) {
           tracebits.insert(pc ^ prevLocation);
@@ -149,26 +150,17 @@ namespace fuzzer {
             /* Save predicate for uncovered branches */
             u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
             predicates[jumpDest ^ prevLocation] = lastCompValue;
-//            cout << ">> cover: " << (pc ^ prevLocation) << endl;
-//            cout << "++ uncover: " << (jumpDest ^ prevLocation) << endl;
-//            cout << "** comp: " << lastCompValue << endl;
+            stringstream data;
+            data << ">> DEST    : " << pc << endl;
+            data << ">> COVER   : " << (pc ^ prevLocation) << endl;
+            data << "++ UNCOVER : " << (jumpDest ^ prevLocation) << endl;
+            data << "** COMP    : " << lastCompValue << endl;
+            logger->log(data.str());
             lastCompValue = 0;
           }
           prevLocation = pc >> 1;
         }
         prevInst = inst;
-      }
-      /* log to file */
-      if (logger->isEnabled()) {
-        stringstream data;
-        vector<u256>::size_type stackSize = vm->stack().size();
-        data << pc << "|";
-        data << instructionInfo(inst).name << "|";
-        for (int64_t i = 0; i < (int64_t) stackSize; i ++) {
-          data << toHex(u256ToBytes(vm->stack()[i])) << "|";
-        }
-        data << endl;
-        logger->log(data.str());
       }
     };
     /* Decode and call functions */
@@ -228,6 +220,7 @@ namespace fuzzer {
     oracleFactory->finalize();
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
+    logger->log(">>>>>>>>>> END <<<<<<<<<<\n");
     return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);
   }
 }

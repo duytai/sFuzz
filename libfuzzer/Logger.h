@@ -16,7 +16,6 @@ namespace fuzzer {
         contractName = _contractName;
         enable = _enable;
       };
-      bool isEnabled() { return enable; }
       void writeOut(bool isInteresting);
       void log(string content);
       void clear();
