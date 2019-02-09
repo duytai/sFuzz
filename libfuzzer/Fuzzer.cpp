@@ -167,7 +167,7 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
   if (timer.elapsed() < fuzzParam.csvInterval) {
-    stats << "duration, execution, speed, cycle, tuple, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, branches, coverage, callorder, predicates, random-havoc, heuristic-havoc" << endl;
+    stats << "duration, execution, speed, cycle, tuple, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, branches, coverage, callorder, predicates, random-havoc, heuristic-havoc, overflow, underflow" << endl;
   }
   cout << "** Write stats: " << timer.elapsed() << "" << endl;
   stats << timer.elapsed() << ",";
@@ -223,6 +223,8 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   stats << predicates.size() << ",";
   stats << fuzzStat.randomHavoc << ",";
   stats << fuzzStat.heuristicHavoc << ",";
+  stats << oracleResult.integerOverflow << ",";
+  stats << oracleResult.integerUnderflow;
   stats << endl;
   stats.close();
 }
