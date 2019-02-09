@@ -141,24 +141,34 @@ namespace fuzzer {
           branchId = pow(pc, 2);
           logger->log("-- JUMPI  : " + to_string(pc) + "\n");
         }
-        if (prevInst == Instruction::JUMPCI) {
-          tracebits.insert(pc ^ prevLocation);
-          branchId = abs(pow(pc, 2) - branchId);
+        /* INVALID opcode is not recoreded in callback */
+        auto newPc = pc;
+        auto hasInvalid = false;
+        if (inst == Instruction::JUMPCI && (Instruction)ext->code[pc + 1] == Instruction::INVALID) {
+          vector<u256>::size_type stackSize = vm->stack().size();
+          if (!vm->stack()[stackSize - 2]) {
+            hasInvalid = true;
+            newPc = pc + 1;
+          }
+        }
+        if (prevInst == Instruction::JUMPCI || hasInvalid) {
+          tracebits.insert(newPc ^ prevLocation);
+          branchId = abs(pow(newPc, 2) - branchId);
           branches.insert(branchId);
           /* Calculate branch distance */
           if (lastCompValue != 0) {
             /* Save predicate for uncovered branches */
-            u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
+            u64 jumpDest = newPc == jumpDest1 ? jumpDest2 : jumpDest1;
             predicates[jumpDest ^ prevLocation] = lastCompValue;
             stringstream data;
-            data << ">> DEST    : " << pc << endl;
-            data << ">> COVER   : " << (pc ^ prevLocation) << endl;
+            data << ">> DEST    : " << newPc << endl;
+            data << ">> COVER   : " << (newPc ^ prevLocation) << endl;
             data << "++ UNCOVER : " << (jumpDest ^ prevLocation) << endl;
             data << "** COMP    : " << lastCompValue << endl;
             logger->log(data.str());
             lastCompValue = 0;
           }
-          prevLocation = pc >> 1;
+          prevLocation = newPc >> 1;
         }
         prevInst = inst;
       }
@@ -221,7 +231,6 @@ namespace fuzzer {
     oracleFactory->finalize();
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
-    logger->log(">>>>>>>>>> END <<<<<<<<<<\n");
     return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);
   }
 }

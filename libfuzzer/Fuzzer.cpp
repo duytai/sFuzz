@@ -71,6 +71,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
+//  return;
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -127,6 +128,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
   for (auto exp: uniqExceptions) expCout+= exp.second.size();
   auto exceptionCount = padStr(to_string(expCout), 5);
+  auto predicateSize = padStr(to_string(predicates.size()), 5);
   auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto contract = mainContract();
   printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contract.contractName.substr(0, 20).c_str());
@@ -145,7 +147,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
   printf(bH "  known ints : %s" bH " except type : %s" bH "\n", knownInts.c_str(), typeExceptionCount.c_str());
   printf(bH "  dictionary : %s" bH " uniq except : %s" bH "\n", dictionary.c_str(), exceptionCount.c_str());
-  printf(bH "       havoc : %s" bH "                    " bH "\n", havoc.c_str());
+  printf(bH "       havoc : %s" bH "  predicates : %s" bH "\n", havoc.c_str(), predicateSize.c_str());
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
   printf(bH "  call order : %s" bH "                    " bH "\n", callOrder.c_str());
   printf(bLTR bV5 cGRN " oracle yields " cRST bV bV10 bV5 bV bTTR bV2 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
@@ -460,6 +462,11 @@ void Fuzzer::start() {
                   fuzzStat.randomHavoc = queues.size() - origHitCount;
                   fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
                 }
+              } else if(!predicates.size()) {
+                mutation.havoc(save);
+                queues[fuzzStat.idx].fuzzedCount ++;
+                fuzzStat.randomHavoc = queues.size() - origHitCount;
+                fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               } else {
                 mutation.newHavoc(save);
                 queues[fuzzStat.idx].fuzzedCount ++;
@@ -490,6 +497,9 @@ void Fuzzer::start() {
                 mutation.havoc(save);
                 queues[fuzzStat.idx].fuzzedCount ++;
               }
+            } else if (!predicates.size()) {
+              mutation.havoc(save);
+              queues[fuzzStat.idx].fuzzedCount ++;
             } else {
               mutation.newHavoc(save);
               queues[fuzzStat.idx].fuzzedCount ++;

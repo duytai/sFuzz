@@ -26,14 +26,16 @@ void Mutation::flipbit(int pos) {
 
 vector<FuzzItem> Mutation::mixCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb) {
   vector<FuzzItem> items;
-  int orderSize = orders.size() - 1;
-  for (int i = 0; i < orderSize; i += 1) {
-    auto lastOrder = orders.back();
-    orders.pop_back();
-    orders.insert(orders.begin(), lastOrder);
-    items.push_back(cb(data, orders));
+  if (orders.size()) {
+    int orderSize = orders.size() - 1;
+    for (int i = 0; i < orderSize; i += 1) {
+      auto lastOrder = orders.back();
+      orders.pop_back();
+      orders.insert(orders.begin(), lastOrder);
+      items.push_back(cb(data, orders));
+    }
+    stageCycles[STAGE_ORDER] += orderSize;
   }
-  stageCycles[STAGE_ORDER] += orderSize;
   return items;
 }
 
@@ -479,6 +481,7 @@ void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
 
 FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb) {
   /* 50% wont change */
+  if (!orders.size()) return cb(data, orders);
   if (UR(2) > 0) return cb(data, orders);
   vector<uint64_t> newOrders;
   bool isFirst = true;
