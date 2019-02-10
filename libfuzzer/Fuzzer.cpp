@@ -383,7 +383,8 @@ void Fuzzer::start() {
             }
           }
           /* Stop program */
-          if (timer.elapsed() > fuzzParam.duration) {
+          int speed = (int)(fuzzStat.totalExecs / timer.elapsed());
+          if (timer.elapsed() > fuzzParam.duration || speed <= 10) {
             auto data = container.analyze();
             for (auto it : data) {
               writeVulnerability(get<1>(it), get<0>(it));
