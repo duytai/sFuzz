@@ -399,7 +399,6 @@ void Fuzzer::start() {
               mutation.singleWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
               origHitCount = queues.size();
-              showStats(mutation, container.oracleResult());
 
               mutation.twoWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
