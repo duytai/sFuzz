@@ -69,6 +69,7 @@ namespace fuzzer {
       Accounts decodeAccounts();
       FakeBlock decodeBlock();
       bool isPayable(string name);
+      Address getSender();
       static bytes encodeTuple(vector<TypeDef> tds);
       static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);

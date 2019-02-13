@@ -17,6 +17,7 @@ namespace fuzzer {
     bytes testData;
     bool isOverflow = false;
     bool isUnderflow = false;
+    bool storageChanged = false;
   };
   struct CallLogItem {
     CallLogItemPayload payload;

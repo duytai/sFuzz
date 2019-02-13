@@ -40,7 +40,23 @@ namespace fuzzer {
     program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
   }
-  
+
+  bool TargetExecutive::storageIsChanged(map<h256, pair<u256, u256>> st1, map<h256, pair<u256, u256>> st2) {
+    vector<string> hashs;
+    vector<map<h256, pair<u256, u256>>> storages = {st1, st2};
+    for (auto storage : storages) {
+      stringstream data;
+      data << "::";
+      for (auto it : storage) {
+        data << it.first << ":";
+        data << get<0>(it.second) << ":";
+        data << get<1>(it.second);
+      }
+      hashs.push_back(data.str());
+    }
+    return hashs[0] != hashs[1];
+  }
+
   TargetContainerResult TargetExecutive::exec(bytes data, vector<uint64_t> orders, Logger* logger) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
@@ -182,15 +198,23 @@ namespace fuzzer {
     program->setBalance(addr, DEFAULT_BALANCE);
     program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     oracleFactory->initialize();
+    /* Record all jumpis in constructor */
+    recordJumpiFrom = 0;
+    prevLocation = 0;
+    /* Who is sender */
+    auto sender = ca.getSender();
+    /* record stograge */
+    auto storage = program->storage(addr);
+    auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
     CallLogItemPayload payload;
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
     payload.testData = data;
+    payload.storageChanged = storageIsChanged(storage, program->storage(addr));
+    payload.wei = ca.isPayable("") ? program->getBalance(sender) : 0;
     oracleFactory->save(CallLogItem(0, payload));
-    /* Record all jumpis in constructor */
-    recordJumpiFrom = 0;
-    prevLocation = 0;
-    auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
+    cout << "payload.wei: " << payload.wei <<endl;
+    storage = program->storage(addr);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
       os << res.excepted;
@@ -203,20 +227,24 @@ namespace fuzzer {
       payload.testData = data;
       oracleFactory->save(CallLogItem(0, payload));
     }
+
     for (auto funcIdx : orders) {
       /* Update payload */
-      CallLogItemPayload payload;
       auto func = funcs[funcIdx];
       auto fd = ca.fds[funcIdx];
-      payload.data = func;
-      payload.inst = Instruction::CALL;
-      payload.testData = data;
-      oracleFactory->save(CallLogItem(0, payload));
       /* Ignore JUMPI untill program reaches inside function */
       recordJumpiFrom = 1000000000;
       functionSig = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
       prevLocation = functionSig;
       res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
+      CallLogItemPayload payload;
+      payload.data = func;
+      payload.inst = Instruction::CALL;
+      payload.testData = data;
+      payload.storageChanged = storageIsChanged(storage, program->storage(addr));
+      payload.wei = ca.isPayable(fd.name) ? program->getBalance(sender) : 0;
+      oracleFactory->save(CallLogItem(0, payload));
+      storage = program->storage(addr);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
         os << res.excepted;
@@ -231,6 +259,7 @@ namespace fuzzer {
       }
     }
     oracleFactory->finalize();
+    exit(1);
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
     return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);

@@ -32,6 +32,10 @@ namespace fuzzer {
     return state.balance(addr);
   }
 
+  map<h256, pair<u256, u256>> TargetProgram::storage(Address const& addr) {
+    return state.storage(addr);
+  }
+
   void TargetProgram::deploy(Address addr, bytes code) {
     state.clearStorage(addr);
     state.setCode(addr, bytes{code});
@@ -63,7 +67,7 @@ namespace fuzzer {
   ExecutionResult TargetProgram::invoke(Address addr, bytes data, bool payable, OnOpFunc onOp) {
     ExecutionResult res;
     Address senderAddr(sender);
-    u256 value = payable ? state.balance(sender) / 10 : 0;
+    u256 value = payable ? state.balance(sender) / 2 : 0;
     u256 gasPrice = 0;
     Transaction t = Transaction(value, gasPrice, gas, data, state.getNonce(sender));
     t.forceSender(senderAddr);

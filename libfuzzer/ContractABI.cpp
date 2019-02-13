@@ -19,7 +19,14 @@ namespace fuzzer {
     auto timestamp = u64("0x" + toHex(timestampInBytes));
     return make_tuple(block, (int64_t)number, (int64_t)timestamp);
   }
-  
+
+  Address ContractABI::getSender() {
+    auto accounts = decodeAccounts();
+    for (auto account : accounts) {
+      if (get<3>(account)) return get<1>(account);
+    }
+  }
+
   Accounts ContractABI::decodeAccounts() {
     unordered_set<string> accountSet;
     Accounts ret;

@@ -25,6 +25,7 @@ namespace fuzzer {
       ~TargetProgram();
       u256 getBalance(Address addr);
       bytes getCode(Address addr);
+      map<h256, pair<u256, u256>> storage(Address const& addr);
       void setBalance(Address addr, u256 balance);
       void deploy(Address addr, bytes code);
       void updateEnv(Accounts accounts, FakeBlock block);
