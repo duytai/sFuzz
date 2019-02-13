@@ -6,19 +6,18 @@ using namespace std;
 
 namespace fuzzer {
   bool TimestampDependency::analyze(CallLog callLog) {
+    auto ethTransfer = hasEthTransfer(callLog);
+    auto storageChanged = hasStorageChanged(callLog);
+    auto blockNumber = false;
     for (auto callLogItem : callLog) {
-      auto inst = callLogItem.payload.inst;
-      auto level = callLogItem.level;
-      if (level > 0) {
-        if (inst == Instruction::TIMESTAMP) numTimestamp ++;
-        if (inst == Instruction::CALL) numSend ++;
-      }
-      /* Detect test case */
-      if (!!numSend && !!numTimestamp && !testData.size()) {
-        testData = callLogItem.payload.testData;
-      }
+      if (callLogItem.payload.inst == Instruction::TIMESTAMP)
+        blockNumber = true;
     }
-    return !!numSend && !!numTimestamp;
+    if (blockNumber && (ethTransfer || storageChanged)) {
+      testData = callLog[0].payload.testData;
+      return true;
+    }
+    return false;
   }
 }
 

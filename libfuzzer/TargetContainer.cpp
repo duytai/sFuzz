@@ -205,15 +205,14 @@ namespace fuzzer {
     auto sender = ca.getSender();
     /* record stograge */
     auto storage = program->storage(addr);
-    auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
     CallLogItemPayload payload;
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
     payload.testData = data;
-    payload.storageChanged = storageIsChanged(storage, program->storage(addr));
-    payload.wei = ca.isPayable("") ? program->getBalance(sender) : 0;
+    payload.wei = ca.isPayable("") ? program->getBalance(sender) / 2 : 0;
     oracleFactory->save(CallLogItem(0, payload));
-    cout << "payload.wei: " << payload.wei <<endl;
+    auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
+    auto storageChanged = storageIsChanged(storage, program->storage(addr));
     storage = program->storage(addr);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -227,6 +226,7 @@ namespace fuzzer {
       payload.testData = data;
       oracleFactory->save(CallLogItem(0, payload));
     }
+    oracleFactory->finalize(storageChanged);
 
     for (auto funcIdx : orders) {
       /* Update payload */
@@ -236,14 +236,14 @@ namespace fuzzer {
       recordJumpiFrom = 1000000000;
       functionSig = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
       prevLocation = functionSig;
-      res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
       CallLogItemPayload payload;
       payload.data = func;
       payload.inst = Instruction::CALL;
       payload.testData = data;
-      payload.storageChanged = storageIsChanged(storage, program->storage(addr));
-      payload.wei = ca.isPayable(fd.name) ? program->getBalance(sender) : 0;
+      payload.wei = ca.isPayable(fd.name) ? program->getBalance(sender) / 2 : 0;
       oracleFactory->save(CallLogItem(0, payload));
+      res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
+      auto storageChanged = storageIsChanged(storage, program->storage(addr));
       storage = program->storage(addr);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
@@ -257,9 +257,8 @@ namespace fuzzer {
         payload.testData = data;
         oracleFactory->save(CallLogItem(0, payload));
       }
+      oracleFactory->finalize(storageChanged);
     }
-    oracleFactory->finalize();
-    exit(1);
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
     return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);

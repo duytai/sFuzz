@@ -19,6 +19,7 @@ namespace fuzzer {
     bool isUnderflow = false;
     bool storageChanged = false;
   };
+
   struct CallLogItem {
     CallLogItemPayload payload;
     u256 level;
@@ -43,6 +44,15 @@ namespace fuzzer {
   class Oracle {
     protected:
       bytes testData;
+      bool static hasEthTransfer(CallLog callLog) {
+        for (auto callLogItem : callLog) {
+          if (callLogItem.payload.wei > 0) return true;
+        }
+        return false;
+      }
+      bool static hasStorageChanged(CallLog callLog) {
+        return callLog[0].payload.storageChanged;
+      }
     public:
       virtual bool analyze(CallLog callLog) = 0;
       bytes getTestData() { return testData; }

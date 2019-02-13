@@ -6,19 +6,18 @@ using namespace std;
 
 namespace fuzzer {
   bool BlockNumberDependency::analyze(CallLog callLog) {
+    auto ethTransfer = hasEthTransfer(callLog);
+    auto storageChanged = hasStorageChanged(callLog);
+    auto blockNumber = false;
     for (auto callLogItem : callLog) {
-      auto level = callLogItem.level;
-      auto inst = callLogItem.payload.inst;
-      if (level > 0) {
-        if (inst == Instruction::NUMBER) numBlocknumber ++;
-        if (inst == Instruction::CALL) numSend ++;
-      }
-      /* Detect test case */
-      if (!!numBlocknumber && !!numSend && !testData.size()) {
-        testData = callLogItem.payload.testData;
-      }
+      if (callLogItem.payload.inst == Instruction::NUMBER)
+        blockNumber = true;
     }
-    return !!numBlocknumber && !!numSend;
+    if (blockNumber && (ethTransfer || storageChanged)) {
+      testData = callLog[0].payload.testData;
+      return true;
+    }
+    return false;
   }
 }
 
