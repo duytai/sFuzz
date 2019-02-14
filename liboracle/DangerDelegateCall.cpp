@@ -6,22 +6,28 @@ using namespace std;
 
 namespace fuzzer {
   bool DangerDelegateCall::analyze(CallLog callLog) {
-    bytes inData;
+    auto rootCall = getRootCall(callLog);
+    auto data = rootCall.payload.data;
+    auto caller = rootCall.payload.caller;
     for (auto callLogItem : callLog) {
-      auto level = callLogItem.level;
-      auto inst = callLogItem.payload.inst;
-      auto data = callLogItem.payload.data;
-      if (level == 0 && inst == Instruction::CALL) {
-        inData = callLogItem.payload.data;
-      }
-      if (level > 0 && inst == Instruction::DELEGATECALL && inData == data) {
-        numDanger ++;
-        /* Detect test case */
-        if (!testData.size()) {
-          testData = callLogItem.payload.testData;
+      if (callLogItem.payload.inst == Instruction::DELEGATECALL) {
+        /* delegatecall(msg.data) */
+        if (data == callLogItem.payload.data) {
+          testData = data;
+          return true;
+        };
+        /* msg.sender.delegatecall() */
+        if (caller == callLogItem.payload.callee) {
+          testData = data;
+          return true;
+        }
+        /* msg.data includes(callee address)*/
+        if (toHex(data).find(toHex(callLogItem.payload.callee)) != string::npos) {
+          testData = data;
+          return true;
         }
       }
     }
-    return !!numDanger;
+    return false;
   }
 }

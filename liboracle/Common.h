@@ -15,6 +15,8 @@ namespace fuzzer {
     Instruction inst;
     bytes data;
     bytes testData;
+    Address caller;
+    Address callee;
     bool isOverflow = false;
     bool isUnderflow = false;
     bool storageChanged = false;
@@ -52,6 +54,9 @@ namespace fuzzer {
       }
       bool static hasStorageChanged(CallLog callLog) {
         return callLog[0].payload.storageChanged;
+      }
+      CallLogItem static getRootCall(CallLog callLog) {
+        return callLog[0];
       }
     public:
       virtual bool analyze(CallLog callLog) = 0;

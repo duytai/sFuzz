@@ -88,6 +88,8 @@ namespace fuzzer {
           auto inSize = (uint64_t) vm->stack()[sizeOffset - 1];
           auto first = vm->memory().begin();
           CallLogItemPayload payload;
+          payload.caller = ext->myAddress;
+          payload.callee = Address((u160)vm->stack()[stackSize - 2]);
           payload.pc = pc;
           payload.gas = vm->stack()[stackSize - 1];
           payload.wei = wei;
@@ -210,6 +212,8 @@ namespace fuzzer {
     payload.data = ca.encodeConstructor();
     payload.testData = data;
     payload.wei = ca.isPayable("") ? program->getBalance(sender) / 2 : 0;
+    payload.caller = sender;
+    payload.callee = addr;
     oracleFactory->save(CallLogItem(0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
     auto storageChanged = storageIsChanged(storage, program->storage(addr));
@@ -241,6 +245,8 @@ namespace fuzzer {
       payload.inst = Instruction::CALL;
       payload.testData = data;
       payload.wei = ca.isPayable(fd.name) ? program->getBalance(sender) / 2 : 0;
+      payload.caller = sender;
+      payload.callee = addr;
       oracleFactory->save(CallLogItem(0, payload));
       res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
       auto storageChanged = storageIsChanged(storage, program->storage(addr));
