@@ -9,18 +9,16 @@ namespace fuzzer {
     for (auto callLogItem : callLog) {
       auto inst = callLogItem.payload.inst;
       auto level = callLogItem.level;
-      if (level > 0) {
-        if (inst == Instruction::DELEGATECALL) numDelegatecall += 1;
-        if (level == 1 && (inst == Instruction::CALL || inst == Instruction::SUICIDE)) {
-          numTransfer ++;
-        }
+      if (inst == Instruction::DELEGATECALL) numDelegatecall ++;
+      if (level == 1 && (inst == Instruction::CALL || inst == Instruction::CALLCODE || inst == Instruction::SUICIDE)) {
+        numTransfer ++;
       }
       /* Detect test case */
-      if (!numTransfer && !!numDelegatecall && !testData.size()) {
+      if (!numTransfer && numDelegatecall) {
         testData = callLogItem.payload.testData;
       }
     }
-    return !numTransfer && !!numDelegatecall;
+    return false;
   }
 }
 

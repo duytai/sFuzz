@@ -378,7 +378,6 @@ void Fuzzer::start() {
           /* Analyze every 1000 test cases */
           if (!(fuzzStat.totalExecs % 500)) {
             auto data = container.analyze();
-//            exit(1);
             for (auto it : data) {
               writeVulnerability(get<1>(it), get<0>(it));
             }

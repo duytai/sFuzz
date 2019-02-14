@@ -10,6 +10,7 @@ namespace fuzzer {
     u256 numTransfer = 0;
     u256 numDelegatecall = 0;
     public:
+      bool isFreezed() { return !numTransfer && numDelegatecall; };
       bool analyze(CallLog callLog);
   };
 }
