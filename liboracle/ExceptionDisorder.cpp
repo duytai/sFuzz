@@ -6,30 +6,14 @@ using namespace std;
 
 namespace fuzzer {
   bool ExceptionDisorder::analyze(CallLog callLog) {
-    bool rootException = false;
-    bool nestedException = false;
-    
+    auto rootCallResponse = callLog[callLog.size() - 1];
+    bool rootException = rootCallResponse.payload.inst == Instruction::INVALID && !rootCallResponse.level;
     for (auto callLogItem : callLog) {
-      auto level = callLogItem.level;
-      auto inst = callLogItem.payload.inst;
-      if (level == 0) {
-        if (inst == Instruction::CALL) {
-          if (!rootException && nestedException) numDisorder ++;
-          rootException = nestedException = false;
-        }
-        if (inst == Instruction::INVALID) {
-          rootException = true;
-        }
-      } else if (inst == Instruction::INVALID) {
-        nestedException = true;
-      }
-      /* Detect test case */
-      if (!rootException && nestedException && !testData.size()) {
-        testData = callLogItem.payload.testData;
+      if (!rootException && callLogItem.payload.inst == Instruction::INVALID && callLogItem.level) {
+        testData = callLog[0].payload.testData;
+        return true;
       }
     }
-    
-    numDisorder += (!rootException && nestedException);
-    return !!numDisorder;
+    return false;
   }
 }
