@@ -19,12 +19,11 @@ namespace fuzzer {
         !data.size() &&
         (gas == 2300 || gas == 0)
       ) {
-        numSend ++;
-        /* Detect test case */
-        if (!testData.size()) testData = callLogItem.payload.testData;
+        testData = callLogItem.payload.testData;
+        return true;
       }
     }
-    return !!numSend;
+    return false;
   }
 }
 

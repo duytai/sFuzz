@@ -7,7 +7,6 @@ using namespace std;
 
 namespace fuzzer {
   class GaslessSend : public Oracle {
-    u256 numSend = 0;
     public:
       bool analyze(CallLog callLog);
   };
