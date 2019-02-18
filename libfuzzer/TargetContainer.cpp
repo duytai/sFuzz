@@ -267,6 +267,6 @@ namespace fuzzer {
     }
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
-    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);
+    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions, program->storage(addr));
   }
 }

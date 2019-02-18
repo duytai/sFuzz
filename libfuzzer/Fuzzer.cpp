@@ -239,6 +239,14 @@ void Fuzzer::writeVulnerability(bytes data, string prefix) {
   test.close();
 }
 
+void Fuzzer::writeStorage(string data, string prefix) {
+  auto contract = mainContract();
+  fuzzStat.numStorage ++;
+  ofstream storage(contract.contractName + "/" + prefix + to_string(fuzzStat.numStorage) + "__.bin");
+  storage << data;
+  storage.close();
+}
+
 void Fuzzer::writeTestcase(bytes data, string prefix) {
   auto contract = mainContract();
   ContractABI ca(contract.abiJson);
@@ -392,6 +400,14 @@ void Fuzzer::start() {
             writeStats(mutation, container.oracleResult());
             exit(0);
           }
+          if (fuzzParam.storage > 0 && !(fuzzStat.totalExecs % fuzzParam.storage)) {
+            stringstream ss;
+            for (auto it : item.res.storage) {
+              ss << it.first << " : " << endl;
+              ss << "  " << get<0>(it.second) << " : " <<  get<1>(it.second) << endl;
+            }
+            writeStorage(ss.str(), "__STORAGE__");
+          }
           return item;
         };
         switch (fuzzParam.mode) {
@@ -452,7 +468,7 @@ void Fuzzer::start() {
               mutation.overwriteWithAddressDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_AO] += queues.size() - origHitCount;
               origHitCount = queues.size();
-
+              
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
               origHitCount = queues.size();

@@ -29,6 +29,7 @@ namespace fuzzer {
     bool log;
     int duration;
     int csvInterval;
+    int storage;
     string attackerName;
   };
   struct FuzzStat {
@@ -45,6 +46,7 @@ namespace fuzzer {
     int numTest = 0;
     int numException = 0;
     int numJumpis = 0;
+    int numStorage = 0;
   };
   class Fuzzer {
     unordered_set<uint64_t> tracebits;
@@ -66,6 +68,7 @@ namespace fuzzer {
       bool hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth);
       void start();
+      void writeStorage(string data, string prefix);
       void writeTestcase(bytes data, string prefix);
       void writeException(bytes data, string prefix);
       void writeVulnerability(bytes data, string prefix);
