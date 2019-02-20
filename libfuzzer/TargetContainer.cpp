@@ -265,8 +265,10 @@ namespace fuzzer {
       }
       oracleFactory->finalize(storageChanged);
     }
+    /* Reset data before running new contract */
+    program->rollback();
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
-    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions, program->storage(addr));
+    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions, storage);
   }
 }

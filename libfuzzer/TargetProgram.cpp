@@ -93,6 +93,10 @@ namespace fuzzer {
     blockNumber = get<1>(block);
     timestamp = get<2>(block);
   }
+
+  void TargetProgram::rollback() {
+    state.rollback(0);
+  }
   
   TargetProgram::~TargetProgram() {
     delete envInfo;

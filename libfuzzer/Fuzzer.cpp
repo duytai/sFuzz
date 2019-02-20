@@ -402,6 +402,7 @@ void Fuzzer::start() {
           }
           if (fuzzParam.storage > 0 && !(fuzzStat.totalExecs % fuzzParam.storage)) {
             stringstream ss;
+            ss << mutation.stageName << endl;
             for (auto it : item.res.storage) {
               ss << it.first << " : " << endl;
               ss << "  " << get<0>(it.second) << " : " <<  get<1>(it.second) << endl;
