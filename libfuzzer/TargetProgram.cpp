@@ -94,6 +94,10 @@ namespace fuzzer {
     timestamp = get<2>(block);
   }
 
+  unordered_map<Address, u256> TargetProgram::addresses() {
+    return state.maddresses();
+  }
+
   void TargetProgram::rollback() {
     state.rollback(0);
   }

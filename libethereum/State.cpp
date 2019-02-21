@@ -207,6 +207,21 @@ void State::commit(CommitBehaviour _commitBehaviour)
     m_unchangedCacheEntries.clear();
 }
 
+unordered_map<Address, u256> State::maddresses() const
+{
+#if ETH_FATDB
+    unordered_map<Address, u256> ret;
+    for (auto& i: m_cache)
+        ret[i.first] = i.second.balance();
+    for (auto const& i: m_state)
+        if (m_cache.find(i.first) == m_cache.end())
+            ret[i.first] = RLP(i.second)[1].toInt<u256>();
+    return ret;
+#else
+    BOOST_THROW_EXCEPTION(InterfaceNotSupported() << errinfo_interface("State::addresses()"));
+#endif
+}
+
 unordered_map<Address, u256> State::addresses() const
 {
 #if ETH_FATDB

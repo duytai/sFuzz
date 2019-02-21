@@ -202,6 +202,7 @@ public:
     /// @warning This is slowslowslow. Don't use it unless you want to lock the object for seconds or minutes at a time.
     /// @throws InterfaceNotSupported if compiled without ETH_FATDB.
     std::unordered_map<Address, u256> addresses() const;
+    std::unordered_map<Address, u256> maddresses() const;
 
     /// @returns the map with maximum _maxResults elements containing hash->addresses and the next
     /// address hash. This method faster then addresses() const;

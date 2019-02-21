@@ -29,6 +29,7 @@ namespace fuzzer {
       void setBalance(Address addr, u256 balance);
       void deploy(Address addr, bytes code);
       void updateEnv(Accounts accounts, FakeBlock block);
+      unordered_map<Address, u256> addresses();
       void rollback();
       ExecutionResult invoke(Address addr, ContractCall type, bytes data, bool payable, OnOpFunc onOp);
   };
