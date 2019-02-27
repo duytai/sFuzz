@@ -72,6 +72,7 @@ namespace fuzzer {
     unordered_set<uint64_t> branches;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, u256> predicates;
+    vector<bytes> outputs;
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
@@ -251,6 +252,7 @@ namespace fuzzer {
       res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
       auto storageChanged = storageIsChanged(storage, program->storage(addr));
       storage = program->storage(addr);
+      outputs.push_back(res.output);
       if (res.excepted != TransactionException::None) {
         ostringstream os;
         os << res.excepted;
@@ -270,6 +272,6 @@ namespace fuzzer {
     program->rollback();
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
-    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions, storage, addresses);
+    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions, storage, addresses, outputs);
   }
 }

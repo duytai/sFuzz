@@ -22,7 +22,8 @@ namespace fuzzer {
         unordered_map<string,
         unordered_set<uint64_t>> uniqExceptions,
         map<h256, pair<u256, u256>> storage,
-        unordered_map<Address, u256> addresses
+        unordered_map<Address, u256> addresses,
+        vector<bytes> outputs
         ) {
       this->tracebits = tracebits;
       this->cksum = cksum;
@@ -31,6 +32,7 @@ namespace fuzzer {
       this->branches = branches;
       this->storage = storage;
       this->addresses = addresses;
+      this->outputs = outputs;
     }
     /* Contains execution paths */
     unordered_set<uint64_t> tracebits;
@@ -46,6 +48,8 @@ namespace fuzzer {
     map<h256, pair<u256, u256>> storage;
     /* Addresses and balances */
     unordered_map<Address, u256> addresses;
+    /* output of function by orders */
+    vector<bytes> outputs;
   };
   
   class TargetExecutive {

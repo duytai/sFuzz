@@ -15,7 +15,9 @@ namespace fuzzer {
     bool isInteresting = false;
     uint64_t fuzzedCount = 0;
     uint64_t depth = 0;
+    uint64_t from = 0;
     uint64_t totalFuncs = 0;
+    string stage = "";
     FuzzItem(bytes _data, vector<uint64_t> _orders, uint64_t _totalFuncs) {
       data = _data;
       totalFuncs = _totalFuncs;

@@ -227,6 +227,13 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   stats << oracleResult.integerUnderflow;
   stats << endl;
   stats.close();
+  /* write test cases relationship here */
+  ofstream relationship(contract.contractName + "/relationships.txt", ofstream::app);
+  for (auto it : queues) {
+    relationship << it.stage + ", " + to_string(it.from) << endl;
+  }
+  relationship << "===" << endl;
+  relationship.close();
 }
 
 void Fuzzer::writeVulnerability(bytes data, string prefix) {
@@ -247,20 +254,42 @@ void Fuzzer::writeStorage(string data, string prefix) {
   storage.close();
 }
 
-void Fuzzer::writeTestcase(bytes data, string prefix) {
+void Fuzzer::writeTestcase(bytes data, vector<bytes> outputs, map<h256, pair<u256, u256>> storage, unordered_map<Address, u256> addresses, vector<uint64_t> orders, string prefix) {
   auto contract = mainContract();
   ContractABI ca(contract.abiJson);
   ca.updateTestData(data);
   fuzzStat.numTest ++;
   string ret = ca.toStandardJson();
   // write decoded data
-  ofstream test(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
-  test << ret;
-  test.close();
+  ofstream testFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
+  testFile << ret;
+  testFile.close();
   // write full data
   ofstream fullTest(contract.contractName + "/" + prefix + toString(fuzzStat.numTest) + "__.bin");
   fullTest << toHex(data) << endl;
   fullTest.close();
+  // write order
+  ofstream orderFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.order");
+  orderFile << orders << endl;
+  orderFile.close();
+  // write outputs
+  ofstream outFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.out");
+  for (auto it : outputs) {
+    outFile << toHex(it) << endl;
+  }
+  outFile.close();
+  // write addresses
+  ofstream addressFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.address");
+  for (auto it : addresses) {
+    addressFile << it.first << " : " << it.second << endl;
+  }
+  addressFile.close();
+  // write storage
+  ofstream storageFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.storage");
+  for (auto it : storage) {
+    storageFile << get<0>(it.second) << " : " << get<1>(it.second) << endl;
+  }
+  storageFile.close();
 }
 
 void Fuzzer::writeException(bytes data, string prefix) {
@@ -306,7 +335,7 @@ void Fuzzer::updateScore(FuzzItem& item) {
   }
 }
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth) {
+FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth, string stageName) {
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData, orders, totalFuncs);
   item.res = te.exec(revisedData, orders, fuzzParam.logger);
@@ -317,7 +346,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     item.isInteresting = true;
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
-    writeTestcase(revisedData, "__TEST__");
+    writeTestcase(revisedData, item.res.outputs, item.res.storage, item.res.addresses, orders, "__TEST__");
     fuzzParam.logger->writeOut(true);
   } else fuzzParam.logger->clear();
   if (hasNewExceptions(item.res.uniqExceptions)) {
@@ -327,11 +356,13 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
   hasNewPredicates(item.res.predicates);
   /* New testcase */
   if (item.isInteresting) {
+    /* update origin */
+    item.from = fuzzStat.idx;
+    item.stage = stageName;
     /* update score */
     queues.push_back(item);
     updateAllPredicates(); /* must do before updating score */
     updateAllScore();
-    /* update predicates */
   }
   updateScore(item);
   return item;
@@ -365,13 +396,13 @@ void Fuzzer::start() {
       });
       auto totalFuncs = ca.totalFuncs();
       auto orders = FuzzItem::fixedOrders(totalFuncs);
-      saveIfInterest(executive, ca.randomTestcase(), orders, totalFuncs, 0);
+      saveIfInterest(executive, ca.randomTestcase(), orders, totalFuncs, 0, "INIT");
       int origHitCount = queues.size();
       while (true) {
         FuzzItem curItem = queues[fuzzStat.idx];
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
         auto save = [&](bytes data, vector<uint64_t> orders) {
-          auto item = saveIfInterest(executive, data, orders, totalFuncs, curItem.depth);
+          auto item = saveIfInterest(executive, data, orders, totalFuncs, curItem.depth, mutation.stageName);
           /* Show every one second */
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {
