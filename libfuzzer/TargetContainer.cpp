@@ -60,6 +60,7 @@ namespace fuzzer {
   TargetContainerResult TargetExecutive::exec(bytes data, vector<uint64_t> orders, Logger* logger) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
+    Instruction prevInstrBr;
     u256 lastCompValue = 0;
     u64 prevLocation = 0;
     u64 jumpDest1 = 0;
@@ -154,12 +155,20 @@ namespace fuzzer {
         }
         default: { break; }
       }
-      /* calculate if command inside a function */
+      /* calculate number of branches */
+      if (inst == Instruction::JUMPCI) {
+        branchId = pow(pc, 2);
+      }
+      if (prevInstrBr == Instruction::JUMPCI) {
+        branchId = abs(pow(pc, 2) - branchId);
+        branches.insert(branchId);
+      }
+      prevInstrBr = inst;
+      /* calulate predicates */
       if (pc > recordJumpiFrom) {
         if (inst == Instruction::JUMPCI) {
           jumpDest1 = (u64) vm->stack().back();
           jumpDest2 = pc + 1;
-          branchId = pow(pc, 2);
           logger->log("-- JUMPI  : " + to_string(pc) + "\n");
         }
         /* INVALID opcode is not recoreded in callback */
@@ -174,8 +183,6 @@ namespace fuzzer {
         }
         if (prevInst == Instruction::JUMPCI || hasInvalid) {
           tracebits.insert(newPc ^ prevLocation);
-          branchId = abs(pow(newPc, 2) - branchId);
-          branches.insert(branchId);
           /* Calculate branch distance */
           if (lastCompValue != 0) {
             /* Save predicate for uncovered branches */
