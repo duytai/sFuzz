@@ -10,6 +10,7 @@ using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
+using namespace dev::eth;
 
 namespace fuzzer {
     TargetExecutive LoadContractEth::loadContractfromEthereum(std::string name, std::string address, vector<ContractInfo> contractInfo) {
@@ -20,8 +21,16 @@ namespace fuzzer {
                 contract = i;
         }
         // from address get bytecode
-        rpc::Eth eth();
-        std::string bin = eth().eth_getCode(address, "pending");
+        ChainParams chainParams;
+        chainParams = ChainParams(
+            genesisInfo(eth::Network::MainNetwork), genesisStateRoot(eth::Network::MainNetwork));
+
+        dev::WebThreeDirect web3(WebThreeDirect::composeClientVersion("eth"), "", "", chainParams,
+            WithExisting::Kill, set<string>{"eth"});
+
+
+        std::string bin =
+            toJS(web3.ethereum()->codeAt(jsToAddress(address), jsToBlockNumber("pending")));
  
         return loadContract(bin, contract.abiJson);
 

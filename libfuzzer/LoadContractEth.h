@@ -6,7 +6,12 @@
 #include "Util.h"
 #include "Fuzzer.h"
 #include <liboracle/Common.h>
-#include "libweb3jsonrpc/Eth.h"
+#include <libweb3jsonrpc/Eth.h>
+#include <libweb3jsonrpc/JsonHelper.h>
+#include <libwebthree/WebThree.h>
+#include <libp2p/Network.h>
+#include <libethashseal/GenesisInfo.h>
+#include <libethcore/CommonJS.h>
 #include <sstream>
 #include <string>
 #include <vector>
