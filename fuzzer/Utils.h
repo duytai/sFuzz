@@ -60,6 +60,7 @@ string toContractName(directory_entry file) {
 void forEachFile(string folder, string extension, function<void (directory_entry)> cb) {
   path folderPath(folder);
   for (auto& file : boost::make_iterator_range(directory_iterator(folderPath), {})) {
+    if (is_directory(file.status())) forEachFile(file.path.string(), extension, cb);
     if (!is_directory(file.status()) && boost::ends_with(file.path().string(), extension)) cb(file);
   }
 }
