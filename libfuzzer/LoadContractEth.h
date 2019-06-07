@@ -5,13 +5,10 @@
 #include "Mutation.h"
 #include "Util.h"
 #include "Fuzzer.h"
+#include "httpclient.h"
+#include <jsonrpccpp/client.h>
 #include <liboracle/Common.h>
-#include <libweb3jsonrpc/Eth.h>
-#include <libweb3jsonrpc/JsonHelper.h>
-#include <libwebthree/WebThree.h>
-#include <libp2p/Network.h>
-#include <libethashseal/GenesisInfo.h>
-#include <libethcore/CommonJS.h>
+#include <jsonrpccpp/client/connectors/httpclient.h>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -27,5 +24,6 @@ public:
     TargetExecutive loadContractfromEthereum(
         std::string name, std::string address, vector<ContractInfo> contractInfo);
     TargetExecutive loadContract(std::string bin, std::string json);
+    string getBinaryCode(string address);
 };
 }  // namespace fuzzer

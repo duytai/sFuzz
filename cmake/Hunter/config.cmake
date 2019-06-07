@@ -14,7 +14,13 @@ hunter_config(
     TCP_SOCKET_SERVER=NO
     TCP_SOCKET_CLIENT=NO
     HTTP_SERVER=NO
-    HTTP_CLIENT=NO
+    HTTP_CLIENT=YES
 )
 
 hunter_config(Boost VERSION 1.65.1)
+
+hunter_config(
+        CURL
+        VERSION ${HUNTER_CURL_VERSION}
+        CMAKE_ARGS
+)
