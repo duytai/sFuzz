@@ -19,7 +19,7 @@ namespace fuzzer {
         }
         // from address get bytecode
 
-        std::string bin = getBinaryCode(address);
+        std::string bin = getByteCode(address);
  
         return loadContract(bin, contract.abiJson);
 
@@ -34,17 +34,17 @@ namespace fuzzer {
         return executive;
     }
 
-    string LoadContractEth::getBinaryCode(string address) {
+    string LoadContractEth::getByteCode(string address) {
         HttpClient client("https://mainnet.infura.io");
         jsonrpc::Client c(client);
 
         Json::Value params;
-        params["DATA"] = address;
-        params["TAG"] = "pending";
+        params.append(address);
+        params.append("pending");
 
-        Json::Value result = c.CallMethod("eth_getCode", params);
+       Json::Value result = c.CallMethod("eth_getCode", params);
+        return result.asString();
 
-        return result["result"].asString();
     }
 
 }

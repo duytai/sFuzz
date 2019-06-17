@@ -23,4 +23,6 @@ hunter_config(
         CURL
         VERSION ${HUNTER_CURL_VERSION}
         CMAKE_ARGS
+        CMAKE_USE_OPENSSL=OFF
+        CMAKE_USE_MBEDTLS=ON
 )
