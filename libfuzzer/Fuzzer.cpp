@@ -236,12 +236,12 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   relationship.close();
 }
 
-void Fuzzer::writeVulnerability(bytes data, string prefix) {
+void Fuzzer::writeVulnerability(bytes data, string prefix, u64 pc) {
   auto contract = mainContract();
   ContractABI ca(contract.abiJson);
   ca.updateTestData(data);
   string ret = ca.toStandardJson();
-  ofstream test(contract.contractName + "/" + prefix + ".json");
+  ofstream test(contract.contractName + "/" + prefix + "_" +  to_string(pc) + ".json");
   test << ret;
   test.close();
 }
@@ -418,7 +418,7 @@ void Fuzzer::start() {
           if (!(fuzzStat.totalExecs % 500)) {
             auto data = container.analyze();
             for (auto it : data) {
-              writeVulnerability(get<1>(it), get<0>(it));
+              writeVulnerability(get<1>(it), get<0>(it), get<2>(it));
             }
           }
           /* Stop program */
@@ -426,7 +426,7 @@ void Fuzzer::start() {
           if (timer.elapsed() > fuzzParam.duration || speed <= 10) {
             auto data = container.analyze();
             for (auto it : data) {
-              writeVulnerability(get<1>(it), get<0>(it));
+              writeVulnerability(get<1>(it), get<0>(it), get<2>(it));
             }
             writeStats(mutation, container.oracleResult());
             exit(0);

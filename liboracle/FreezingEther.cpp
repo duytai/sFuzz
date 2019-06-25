@@ -16,6 +16,7 @@ namespace fuzzer {
       /* Detect test case */
       if (!numTransfer && numDelegatecall) {
         testData = callLogItem.payload.testData;
+        issuePayloadPc = callLogItem.payload.pc;
       }
     }
     return false;

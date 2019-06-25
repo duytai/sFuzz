@@ -71,7 +71,7 @@ namespace fuzzer {
       void writeStorage(string data, string prefix);
       void writeTestcase(bytes data, vector<bytes> outputs, map<h256, pair<u256, u256>> storage, unordered_map<Address, u256> addresses, vector<uint64_t> orders, string prefix);
       void writeException(bytes data, string prefix);
-      void writeVulnerability(bytes data, string prefix);
+      void writeVulnerability(bytes data, string prefix, u64 pc);
       void showStats(Mutation mutation, OracleResult oracleResult);
       void updateScore(FuzzItem &item);
       void updateAllScore();

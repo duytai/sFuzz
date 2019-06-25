@@ -1,5 +1,6 @@
 #pragma once
 #include <iostream>
+
 #include "Common.h"
 #include "GaslessSend.h"
 #include "ExceptionDisorder.h"
@@ -35,6 +36,6 @@ namespace fuzzer {
       void initialize();
       void finalize(bool storageChanged);
       void save(CallLogItem fc);
-      vector<tuple<string, bytes>> analyze();
+      vector<tuple<string, bytes, u64>> analyze();
   };
 }

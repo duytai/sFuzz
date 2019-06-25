@@ -6,12 +6,12 @@ using namespace std;
 
 namespace fuzzer {
   bool Reentrancy::analyze(CallLog callLog) {
-    auto isReentrancy = false;
-    for (auto callLogItem : callLog) {
+      for (auto callLogItem : callLog) {
       auto data = callLogItem.payload.data;
       auto level = callLogItem.level;
       if (level >= 4 && toHex(data) == "000000ff") {
         testData = callLog[0].payload.testData;
+        issuePayloadPc = callLogItem.payload.pc;
         return true;
       }
     }

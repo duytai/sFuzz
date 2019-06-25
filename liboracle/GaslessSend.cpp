@@ -20,6 +20,7 @@ namespace fuzzer {
         (gas == 2300 || gas == 0)
       ) {
         testData = callLogItem.payload.testData;
+        issuePayloadPc = callLogItem.payload.pc;
         return true;
       }
     }

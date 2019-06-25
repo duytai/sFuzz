@@ -11,7 +11,7 @@ namespace fuzzer {
   struct CallLogItemPayload {
     u256 wei = 0;
     u256 gas = 0;
-    u256 pc = 0;
+    u64 pc = 0;
     Instruction inst;
     bytes data;
     bytes testData;
@@ -46,6 +46,7 @@ namespace fuzzer {
   class Oracle {
     protected:
       bytes testData;
+      u64 issuePayloadPc;
       bool static hasEthTransfer(CallLog callLog) {
         for (auto callLogItem : callLog) {
           if (callLogItem.payload.wei > 0) return true;
@@ -61,5 +62,6 @@ namespace fuzzer {
     public:
       virtual bool analyze(CallLog callLog) = 0;
       bytes getTestData() { return testData; }
+      u64 getPayloadPc() {return issuePayloadPc;}
   };
 }
