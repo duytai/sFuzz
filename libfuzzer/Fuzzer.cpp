@@ -4,7 +4,6 @@
 #include "Util.h"
 #include "ContractABI.h"
 #include "Dictionary.h"
-#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -338,7 +337,7 @@ void Fuzzer::updateScore(FuzzItem& item) {
 FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth, string stageName) {
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData, orders, totalFuncs);
-  item.res = te.exec(revisedData, orders, fuzzParam.logger);
+  item.res = te.exec(revisedData, orders);
   fuzzStat.totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
     if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
@@ -347,8 +346,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
     writeTestcase(revisedData, item.res.outputs, item.res.storage, item.res.addresses, orders, "__TEST__");
-    fuzzParam.logger->writeOut(true);
-  } else fuzzParam.logger->clear();
+  };
   if (hasNewExceptions(item.res.uniqExceptions)) {
     writeException(revisedData, "__EXCEPTION__");
   }
@@ -390,7 +388,6 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
-      fuzzParam.logger = new Logger(contractName, fuzzParam.log);
       staticAnalyze(bin, [&](Instruction inst) {
         if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
       });

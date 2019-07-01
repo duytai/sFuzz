@@ -57,7 +57,7 @@ namespace fuzzer {
     return hashs[0] != hashs[1];
   }
 
-  TargetContainerResult TargetExecutive::exec(bytes data, vector<uint64_t> orders, Logger* logger) {
+  TargetContainerResult TargetExecutive::exec(bytes data, vector<uint64_t> orders) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
     Instruction prevInstrBr;
@@ -169,7 +169,6 @@ namespace fuzzer {
         if (inst == Instruction::JUMPCI) {
           jumpDest1 = (u64) vm->stack().back();
           jumpDest2 = pc + 1;
-          logger->log("-- JUMPI  : " + to_string(pc) + "\n");
         }
         /* INVALID opcode is not recoreded in callback */
         auto newPc = pc;
@@ -188,12 +187,6 @@ namespace fuzzer {
             /* Save predicate for uncovered branches */
             u64 jumpDest = newPc == jumpDest1 ? jumpDest2 : jumpDest1;
             predicates[jumpDest ^ prevLocation] = lastCompValue;
-            stringstream data;
-            data << ">> DEST    : " << newPc << endl;
-            data << ">> COVER   : " << (newPc ^ prevLocation) << endl;
-            data << "++ UNCOVER : " << (jumpDest ^ prevLocation) << endl;
-            data << "** COMP    : " << lastCompValue << endl;
-            logger->log(data.str());
             lastCompValue = 0;
           }
           prevLocation = newPc >> 1;
