@@ -20,12 +20,6 @@ namespace fuzzer  {
   }
   
   void OracleFactory::save(CallLogItem fc) {
-    ofstream test("x.txt", ios::app);
-    test << "pc:" <<fc.payload.pc<<endl;
-    test << "inst:" <<(int)fc.payload.inst<<endl;
-    test << "data:" << fc.payload.data<<endl;
-    test << "testdata:" << fc.payload.testData<<endl;
-    test.close();
     callLog.push_back(fc);
   }
   
