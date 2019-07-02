@@ -33,7 +33,7 @@ namespace fuzzer {
       OracleResult oracleResult;
       OracleFactory();
       void initialize();
-      void finalize(bool storageChanged);
+      void finalize();
       void save(CallLogItem fc);
       vector<tuple<string, bytes>> analyze();
   };

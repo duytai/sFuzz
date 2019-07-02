@@ -19,19 +19,13 @@ namespace fuzzer {
         double cksum,
         unordered_map<uint64_t, u256> predicates,
         unordered_map<string,
-        unordered_set<uint64_t>> uniqExceptions,
-        map<h256, pair<u256, u256>> storage,
-        unordered_map<Address, u256> addresses,
-        vector<bytes> outputs
+        unordered_set<uint64_t>> uniqExceptions
         ) {
       this->tracebits = tracebits;
       this->cksum = cksum;
       this->predicates = predicates;
       this->uniqExceptions = uniqExceptions;
       this->branches = branches;
-      this->storage = storage;
-      this->addresses = addresses;
-      this->outputs = outputs;
     }
     /* Contains execution paths */
     unordered_set<uint64_t> tracebits;
@@ -43,12 +37,6 @@ namespace fuzzer {
     unordered_map<uint64_t, u256> predicates;
     /* Exception path */
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
-    /* Storage */
-    map<h256, pair<u256, u256>> storage;
-    /* Addresses and balances */
-    unordered_map<Address, u256> addresses;
-    /* output of function by orders */
-    vector<bytes> outputs;
   };
   
   class TargetExecutive {
@@ -65,9 +53,8 @@ namespace fuzzer {
         this->program = program;
         this->oracleFactory = oracleFactory;
       }
-      TargetContainerResult exec(bytes data, vector<uint64_t> orders);
+      TargetContainerResult exec(bytes data);
       void deploy(bytes data, OnOpFunc onOp);
-      static bool storageIsChanged(map<h256, pair<u256, u256>> st1, map<h256, pair<u256, u256>> st2);
   };
   
   class TargetContainer {

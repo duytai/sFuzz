@@ -235,25 +235,7 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   relationship.close();
 }
 
-void Fuzzer::writeVulnerability(bytes data, string prefix) {
-  auto contract = mainContract();
-  ContractABI ca(contract.abiJson);
-  ca.updateTestData(data);
-  string ret = ca.toStandardJson();
-  ofstream test(contract.contractName + "/" + prefix + ".json");
-  test << ret;
-  test.close();
-}
-
-void Fuzzer::writeStorage(string data, string prefix) {
-  auto contract = mainContract();
-  fuzzStat.numStorage ++;
-  ofstream storage(contract.contractName + "/" + prefix + to_string(fuzzStat.numStorage) + "__.bin");
-  storage << data;
-  storage.close();
-}
-
-void Fuzzer::writeTestcase(bytes data, vector<bytes> outputs, map<h256, pair<u256, u256>> storage, unordered_map<Address, u256> addresses, vector<uint64_t> orders, string prefix) {
+void Fuzzer::writeTestcase(bytes data, string prefix) {
   auto contract = mainContract();
   ContractABI ca(contract.abiJson);
   ca.updateTestData(data);
@@ -263,32 +245,6 @@ void Fuzzer::writeTestcase(bytes data, vector<bytes> outputs, map<h256, pair<u25
   ofstream testFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
   testFile << ret;
   testFile.close();
-  // write full data
-  ofstream fullTest(contract.contractName + "/" + prefix + toString(fuzzStat.numTest) + "__.bin");
-  fullTest << toHex(data) << endl;
-  fullTest.close();
-  // write order
-  ofstream orderFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.order");
-  orderFile << orders << endl;
-  orderFile.close();
-  // write outputs
-  ofstream outFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.out");
-  for (auto it : outputs) {
-    outFile << toHex(it) << endl;
-  }
-  outFile.close();
-  // write addresses
-  ofstream addressFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.address");
-  for (auto it : addresses) {
-    addressFile << it.first << " : " << it.second << endl;
-  }
-  addressFile.close();
-  // write storage
-  ofstream storageFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.storage");
-  for (auto it : storage) {
-    storageFile << get<0>(it.second) << " : " << get<1>(it.second) << endl;
-  }
-  storageFile.close();
 }
 
 void Fuzzer::writeException(bytes data, string prefix) {
@@ -322,10 +278,10 @@ void Fuzzer::updateScore(FuzzItem& item) {
   }
 }
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth, string stageName) {
+FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, string stageName) {
   auto revisedData = ContractABI::postprocessTestData(data);
-  FuzzItem item(revisedData, orders, totalFuncs);
-  item.res = te.exec(revisedData, orders);
+  FuzzItem item(revisedData);
+  item.res = te.exec(revisedData);
   fuzzStat.totalExecs ++;
   if (hasNewBits(item.res.tracebits)) {
     if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
@@ -333,7 +289,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t
     item.isInteresting = true;
     fuzzStat.lastNewPath = timer.elapsed();
     fuzzStat.coveredTuples = tracebits.size();
-    writeTestcase(revisedData, item.res.outputs, item.res.storage, item.res.addresses, orders, "__TEST__");
+    writeTestcase(revisedData, "__TEST__");
   };
   if (hasNewExceptions(item.res.uniqExceptions)) {
     writeException(revisedData, "__EXCEPTION__");
@@ -379,15 +335,13 @@ void Fuzzer::start() {
       staticAnalyze(bin, [&](Instruction inst) {
         if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
       });
-      auto totalFuncs = ca.totalFuncs();
-      auto orders = FuzzItem::fixedOrders(totalFuncs);
-      saveIfInterest(executive, ca.randomTestcase(), orders, totalFuncs, 0, "INIT");
+      saveIfInterest(executive, ca.randomTestcase(), 0, "INIT");
       int origHitCount = queues.size();
       while (true) {
         FuzzItem curItem = queues[fuzzStat.idx];
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
-        auto save = [&](bytes data, vector<uint64_t> orders) {
-          auto item = saveIfInterest(executive, data, orders, totalFuncs, curItem.depth, mutation.stageName);
+        auto save = [&](bytes data) {
+          auto item = saveIfInterest(executive, data, curItem.depth, mutation.stageName);
           /* Show every one second */
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {
@@ -401,29 +355,14 @@ void Fuzzer::start() {
           }
           /* Analyze every 1000 test cases */
           if (!(fuzzStat.totalExecs % 500)) {
-            auto data = container.analyze();
-            for (auto it : data) {
-              writeVulnerability(get<1>(it), get<0>(it));
-            }
+            container.analyze();
           }
           /* Stop program */
           int speed = (int)(fuzzStat.totalExecs / timer.elapsed());
           if (timer.elapsed() > fuzzParam.duration || speed <= 10) {
-            auto data = container.analyze();
-            for (auto it : data) {
-              writeVulnerability(get<1>(it), get<0>(it));
-            }
+            container.analyze();
             writeStats(mutation, container.oracleResult());
             exit(0);
-          }
-          if (fuzzParam.storage > 0 && !(fuzzStat.totalExecs % fuzzParam.storage)) {
-            stringstream ss;
-            ss << mutation.stageName << endl;
-            for (auto it : item.res.storage) {
-              ss << it.first << " : " << endl;
-              ss << "  " << get<0>(it.second) << " : " <<  get<1>(it.second) << endl;
-            }
-            writeStorage(ss.str(), "__STORAGE__");
           }
           return item;
         };

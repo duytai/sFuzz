@@ -8,7 +8,6 @@ using namespace eth;
 
 namespace fuzzer {
   struct FuzzItem {
-    vector<uint64_t> orders;
     unordered_map<uint64_t, double> score;
     bytes data;
     TargetContainerResult res;
@@ -16,21 +15,12 @@ namespace fuzzer {
     uint64_t fuzzedCount = 0;
     uint64_t depth = 0;
     uint64_t from = 0;
-    uint64_t totalFuncs = 0;
     string stage = "";
-    FuzzItem(bytes _data, vector<uint64_t> _orders, uint64_t _totalFuncs) {
+    FuzzItem(bytes _data) {
       data = _data;
-      totalFuncs = _totalFuncs;
-      orders = _orders;
-    }
-    static vector<uint64_t> fixedOrders(uint64_t totalFuncs) {
-      vector<uint64_t> orders;
-      for (uint64_t i = 0; i < totalFuncs; i ++)
-        orders.push_back(i);
-      return orders;
     }
   };
-  using OnMutateFunc = function<FuzzItem (bytes b, vector<uint64_t>)>;
+  using OnMutateFunc = function<FuzzItem (bytes b)>;
   struct SubFuzzItem {
     FuzzItem item;
     uint64_t branch = 0;

@@ -13,8 +13,7 @@ namespace fuzzer  {
     callLog.clear();
   }
   
-  void OracleFactory::finalize(bool storageChanged) {
-    callLog[0].payload.storageChanged = storageChanged;
+  void OracleFactory::finalize() {
     callLogs.push_back(callLog);
     callLog.clear();
   }
