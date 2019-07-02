@@ -19,7 +19,6 @@ namespace fuzzer {
     void flipbit(int pos);
     public:
       Mutation(FuzzItem item, Dicts dicts);
-      vector<FuzzItem> mixCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb);
       FuzzItem havocCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
@@ -35,8 +34,6 @@ namespace fuzzer {
       void fourInterest(OnMutateFunc cb);
       void overwriteWithAddressDictionary(OnMutateFunc cb);
       void overwriteWithDictionary(OnMutateFunc cb);
-      void insertWithDictionary(OnMutateFunc cb);
-      void overwriteWithAutoDictionary(OnMutateFunc cb);
       void random(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
       void newHavoc(OnMutateFunc cb);
