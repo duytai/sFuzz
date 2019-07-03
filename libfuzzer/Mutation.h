@@ -18,8 +18,13 @@ namespace fuzzer {
     bytes eff;
     void flipbit(int pos);
     public:
+      int dataSize;
+      int stageMax;
+      int stageCur;
+      string stageName;
+      string stageShort;
+      static int stageCycles[32];
       Mutation(FuzzItem item, Dicts dicts);
-      FuzzItem havocCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);
@@ -36,13 +41,6 @@ namespace fuzzer {
       void overwriteWithDictionary(OnMutateFunc cb);
       void random(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
-      void newHavoc(OnMutateFunc cb);
       bool splice(vector<FuzzItem> items);
-      int dataSize;
-      int stageMax;
-      int stageCur;
-      string stageName;
-      string stageShort;
-      static int stageCycles[32];
   };
 }
