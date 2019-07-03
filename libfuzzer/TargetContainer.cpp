@@ -128,8 +128,9 @@ namespace fuzzer {
                 payload.isUnderflow = left < right;
               }
               if (inst == Instruction::MUL && left) {
-                u256 total = left * right;
-                payload.isOverflow = (total / left != right);
+                auto total256 = left * right;
+                auto total512 = (u512) left * (u512) right;
+                payload.isOverflow = total512 != total256;
               }
             }
             oracleFactory->save(CallLogItem(ext->depth + 1, payload));
