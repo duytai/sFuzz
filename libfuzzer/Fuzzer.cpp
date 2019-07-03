@@ -226,13 +226,6 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   stats << oracleResult.integerUnderflow;
   stats << endl;
   stats.close();
-  /* write test cases relationship here */
-  ofstream relationship(contract.contractName + "/relationships.txt", ofstream::app);
-  for (auto it : queues) {
-    relationship << it.stage + ", " + to_string(it.from) << endl;
-  }
-  relationship << "===" << endl;
-  relationship.close();
 }
 
 void Fuzzer::writeTestcase(bytes data, string prefix) {
@@ -278,7 +271,7 @@ void Fuzzer::updateScore(FuzzItem& item) {
   }
 }
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, string stageName) {
+FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth) {
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData);
   item.res = te.exec(revisedData);
@@ -298,9 +291,6 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
   hasNewPredicates(item.res.predicates);
   /* New testcase */
   if (item.isInteresting) {
-    /* update origin */
-    item.from = fuzzStat.idx;
-    item.stage = stageName;
     /* update score */
     queues.push_back(item);
     updateAllPredicates(); /* must do before updating score */
@@ -335,13 +325,13 @@ void Fuzzer::start() {
       staticAnalyze(bin, [&](Instruction inst) {
         if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
       });
-      saveIfInterest(executive, ca.randomTestcase(), 0, "INIT");
+      saveIfInterest(executive, ca.randomTestcase(), 0);
       int origHitCount = queues.size();
       while (true) {
         FuzzItem curItem = queues[fuzzStat.idx];
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
         auto save = [&](bytes data) {
-          auto item = saveIfInterest(executive, data, curItem.depth, mutation.stageName);
+          auto item = saveIfInterest(executive, data, curItem.depth);
           /* Show every one second */
           u64 dur = timer.elapsed();
           if (!showMap.count(dur)) {

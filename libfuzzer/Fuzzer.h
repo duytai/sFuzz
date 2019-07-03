@@ -45,8 +45,8 @@ namespace fuzzer {
     int numTest = 0;
     int numException = 0;
     int numJumpis = 0;
-    int numStorage = 0;
   };
+
   class Fuzzer {
     unordered_set<uint64_t> tracebits;
     unordered_set<uint64_t> predicates;
@@ -64,7 +64,7 @@ namespace fuzzer {
       bool hasNewPredicates(unordered_map<uint64_t, u256> predicates);
       bool hasNewBranches(unordered_set<uint64_t> branches);
       bool hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
-      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, string stageName);
+      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth);
       void start();
       void writeStorage(string data, string prefix);
       void writeTestcase(bytes data, string prefix);
