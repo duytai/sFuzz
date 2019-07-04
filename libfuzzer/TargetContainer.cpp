@@ -213,8 +213,7 @@ namespace fuzzer {
       oracleFactory->save(CallLogItem(0, payload));
     }
     oracleFactory->finalize();
-
-    for (uint32_t funcIdx = 1; funcIdx < funcs.size(); funcIdx ++ ) {
+    for (uint32_t funcIdx = 0; funcIdx < funcs.size(); funcIdx ++ ) {
       /* Update payload */
       auto func = funcs[funcIdx];
       auto fd = ca.fds[funcIdx];

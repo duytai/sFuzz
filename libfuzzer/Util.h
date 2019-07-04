@@ -57,19 +57,10 @@ namespace fuzzer {
   static string ATTACKER_ADDRESS_HEX = "00000000000000000000000000000000000000f0";
   static u160 CONTRACT_ADDRESS = 0xf1;
   static u256 DEFAULT_BALANCE = 0xffffffffff;
-  static bytes SET_DATA_SIG = fromHex("0399321e");
   static OnOpFunc EMPTY_ONOP = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
 
   static u32 SPLICE_CYCLES = 15;
   static u32 MAX_DET_EXTRAS = 200;
-  static u32 HAVOC_BLK_XL = 640;
-  static u32 HAVOC_BLK_SMALL = 32;
-  static u32 HAVOC_BLK_MEDIUM = 128;
-  static u32 HAVOC_BLK_LARGE = 320;
-  static u32 MAX_FILE = (1024 * 100); // 100kb
-  static u32 MIN_AUTO_EXTRA = 3;
-  static u32 MAX_AUTO_EXTRA = 33;
-  static u32 MAX_AUTO_EXTRAS = 200;
   static int STAGE_FLIP1 = 0;
   static int STAGE_FLIP2 = 1;
   static int STAGE_FLIP4 = 2;
@@ -83,17 +74,12 @@ namespace fuzzer {
   static int STAGE_INTEREST16 = 10;
   static int STAGE_INTEREST32 = 11;
   static int STAGE_EXTRAS_UO = 12;
-  static int STAGE_EXTRAS_UI = 13;
   static int STAGE_EXTRAS_AO = 14;
   static int STAGE_HAVOC = 15;
   static int STAGE_RANDOM = 16;
   static int STAGE_ORDER = 17;
   static int HAVOC_STACK_POW2 = 7;
-  static int HAVOC_CYCLES_INIT = 1024;
-  static int HAVOC_CYCLES = 256;
-  static int SPLICE_HAVOC = 32;
   static int HAVOC_MIN = 16;
-  static int EFF_MIN_LEN = 1;
   static int EFF_MAP_SCALE2 = 4; // 32 bytes block
   static int MAP_SIZE_POW2 = 16;
   static int MAP_SIZE = (1 << MAP_SIZE_POW2);
