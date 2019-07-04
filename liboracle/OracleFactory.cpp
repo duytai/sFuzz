@@ -24,16 +24,50 @@ vector<bool> OracleFactory::analyze() {
   }
   for (auto function : functions) {
     for (uint8_t i = 0; i < total; i ++) {
-      switch (i) {
-        case GASLESS_SEND: {}
-        case EXCEPTION_DISORDER: {}
-        case TIME_DEPENDENCY: {}
-        case NUMBER_DEPENDENCY: {}
-        case DELEGATE_CALL: {}
-        case REENTRANCY: {}
-        case FREEZING: {}
-        case UNDERFLOW: {}
-        case OVERFLOW: {}
+      if (!vulnerabilities[i]) {
+        switch (i) {
+          case GASLESS_SEND: {
+            for (auto ctx: function) {
+              auto level = ctx.level;
+              auto inst = ctx.payload.inst;
+              auto gas = ctx.payload.gas;
+              auto data = ctx.payload.data;
+              vulnerabilities[i] = vulnerabilities[i]
+                  || (level == 1 && inst == Instruction::CALL && !data.size() && (gas == 2300 || gas == 0));
+            }
+            break;
+          }
+          case EXCEPTION_DISORDER: {
+            break;
+          }
+          case TIME_DEPENDENCY: {
+            break;
+          }
+          case NUMBER_DEPENDENCY: {
+            break;
+          }
+          case DELEGATE_CALL: {
+            break;
+          }
+          case REENTRANCY: {
+            break;
+          }
+          case FREEZING: {
+            break;
+          }
+          case UNDERFLOW: {
+            for (auto ctx: function) {
+              vulnerabilities[i] = vulnerabilities[i] || ctx.payload.isUnderflow;
+            }
+            break;
+          }
+          case OVERFLOW: {
+            for (auto ctx: function) {
+              vulnerabilities[i] = vulnerabilities[i] || ctx.payload.isOverflow;
+            }
+            break;
+          }
+        }
       }
     }
   }
