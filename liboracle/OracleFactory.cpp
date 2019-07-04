@@ -18,8 +18,12 @@ void OracleFactory::save(OpcodeContext ctx) {
 }
 
 vector<bool> OracleFactory::analyze() {
-  for (uint8_t i = 0; i < functions.size(); i ++) {
-    if (!vulnerabilities[i]) {
+  uint8_t total = 9;
+  while (vulnerabilities.size() < total) {
+    vulnerabilities.push_back(false);
+  }
+  for (auto function : functions) {
+    for (uint8_t i = 0; i < total; i ++) {
       switch (i) {
         case GASLESS_SEND: {}
         case EXCEPTION_DISORDER: {}
@@ -34,4 +38,5 @@ vector<bool> OracleFactory::analyze() {
     }
   }
   functions.clear();
+  return vulnerabilities;
 }

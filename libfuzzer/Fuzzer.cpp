@@ -128,7 +128,7 @@ void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
   auto predicateSize = padStr(to_string(predicates.size()), 5);
   auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto contract = mainContract();
-  auto toResult = [](bool val) { return val ? "found" : "none"; };
+  auto toResult = [](bool val) { return val ? "found" : "none "; };
   printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contract.contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
@@ -300,7 +300,6 @@ void Fuzzer::start() {
   TargetContainer container;
   Dictionary codeDict, addressDict;
   unordered_map<u64, u64> showMap;
-  vector<bool> oracleResult;
   for (auto contractInfo : fuzzParam.contractInfo) {
     auto isAttacker = contractInfo.contractName.find(fuzzParam.attackerName) != string::npos;
     if (!contractInfo.isMain && !isAttacker) continue;
@@ -334,20 +333,15 @@ void Fuzzer::start() {
             showMap.insert(make_pair(dur, 1));
             if (fuzzParam.reporter == CSV_FILE) {
               if (dur % fuzzParam.csvInterval == 0)
-                writeStats(mutation, oracleResult);
+                writeStats(mutation, container.analyze());
             } else if (fuzzParam.reporter == TERMINAL) {
-              showStats(mutation, oracleResult);
+              showStats(mutation, container.analyze());
             }
-          }
-          /* Analyze every 1000 test cases */
-          if (!(fuzzStat.totalExecs % 500)) {
-            oracleResult = container.analyze();
           }
           /* Stop program */
           int speed = (int)(fuzzStat.totalExecs / timer.elapsed());
           if (timer.elapsed() > fuzzParam.duration || speed <= 10) {
-            oracleResult = container.analyze();
-            writeStats(mutation, oracleResult);
+            writeStats(mutation, container.analyze());
             exit(0);
           }
           return item;
