@@ -14,12 +14,10 @@ namespace fuzzer {
     u256 pc = 0;
     Instruction inst;
     bytes data;
-    bytes testData;
     Address caller;
     Address callee;
     bool isOverflow = false;
     bool isUnderflow = false;
-    bool storageChanged = false;
   };
 
   struct CallLogItem {
@@ -52,14 +50,11 @@ namespace fuzzer {
         }
         return false;
       }
-      bool static hasStorageChanged(CallLog callLog) {
-        return callLog[0].payload.storageChanged;
-      }
+
       CallLogItem static getRootCall(CallLog callLog) {
         return callLog[0];
       }
     public:
       virtual bool analyze(CallLog callLog) = 0;
-      bytes getTestData() { return testData; }
   };
 }

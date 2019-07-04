@@ -81,7 +81,6 @@ namespace fuzzer {
           payload.wei = wei;
           payload.inst = inst;
           payload.data = bytes(first + inOff, first + inOff + inSize);
-          payload.testData = data;
           oracleFactory->save(CallLogItem(ext->depth + 1, payload));
           break;
         }
@@ -89,7 +88,6 @@ namespace fuzzer {
           CallLogItemPayload payload;
           payload.pc = pc;
           payload.inst = inst;
-          payload.testData = data;
           if (
             inst == Instruction::SUICIDE ||
             inst == Instruction::NUMBER ||
@@ -194,7 +192,6 @@ namespace fuzzer {
     CallLogItemPayload payload;
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
-    payload.testData = data;
     payload.wei = ca.isPayable("") ? program->getBalance(sender) / 2 : 0;
     payload.caller = sender;
     payload.callee = addr;
@@ -209,7 +206,6 @@ namespace fuzzer {
       /* Save Call Log */
       CallLogItemPayload payload;
       payload.inst = Instruction::INVALID;
-      payload.testData = data;
       oracleFactory->save(CallLogItem(0, payload));
     }
     oracleFactory->finalize();
@@ -224,7 +220,6 @@ namespace fuzzer {
       CallLogItemPayload payload;
       payload.data = func;
       payload.inst = Instruction::CALL;
-      payload.testData = data;
       payload.wei = ca.isPayable(fd.name) ? program->getBalance(sender) / 2 : 0;
       payload.caller = sender;
       payload.callee = addr;
@@ -240,7 +235,6 @@ namespace fuzzer {
         /* Save Call Log */
         CallLogItemPayload payload;
         payload.inst = Instruction::INVALID;
-        payload.testData = data;
         oracleFactory->save(CallLogItem(0, payload));
       }
       oracleFactory->finalize();

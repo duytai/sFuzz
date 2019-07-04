@@ -11,7 +11,6 @@ namespace fuzzer {
       auto data = callLogItem.payload.data;
       auto level = callLogItem.level;
       if (level >= 4 && toHex(data) == "000000ff") {
-        testData = callLog[0].payload.testData;
         return true;
       }
     }

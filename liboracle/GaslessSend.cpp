@@ -19,7 +19,6 @@ namespace fuzzer {
         !data.size() &&
         (gas == 2300 || gas == 0)
       ) {
-        testData = callLogItem.payload.testData;
         return true;
       }
     }

@@ -13,10 +13,6 @@ namespace fuzzer {
       if (level == 1 && (inst == Instruction::CALL || inst == Instruction::CALLCODE || inst == Instruction::SUICIDE)) {
         numTransfer ++;
       }
-      /* Detect test case */
-      if (!numTransfer && numDelegatecall) {
-        testData = callLogItem.payload.testData;
-      }
     }
     return false;
   }

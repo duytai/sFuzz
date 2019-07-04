@@ -13,17 +13,14 @@ namespace fuzzer {
       if (callLogItem.payload.inst == Instruction::DELEGATECALL) {
         /* delegatecall(msg.data) */
         if (data == callLogItem.payload.data) {
-          testData = rootCall.payload.testData;
           return true;
         };
         /* msg.sender.delegatecall() */
         if (caller == callLogItem.payload.callee) {
-          testData = rootCall.payload.testData;
           return true;
         }
         /* msg.data includes(callee address)*/
         if (toHex(data).find(toHex(callLogItem.payload.callee)) != string::npos) {
-          testData = rootCall.payload.testData;
           return true;
         }
       }

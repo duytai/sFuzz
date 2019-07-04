@@ -35,6 +35,6 @@ namespace fuzzer {
       void initialize();
       void finalize();
       void save(CallLogItem fc);
-      vector<tuple<string, bytes>> analyze();
+      void analyze();
   };
 }

@@ -7,17 +7,14 @@ using namespace std;
 namespace fuzzer {
   bool TimestampDependency::analyze(CallLog callLog) {
     auto ethTransfer = hasEthTransfer(callLog);
-    auto storageChanged = hasStorageChanged(callLog);
+    // TODO: find storage changed
+    auto storageChanged = false;
     auto blockNumber = false;
     for (auto callLogItem : callLog) {
       if (callLogItem.payload.inst == Instruction::TIMESTAMP)
         blockNumber = true;
     }
-    if (blockNumber && (ethTransfer || storageChanged)) {
-      testData = callLog[0].payload.testData;
-      return true;
-    }
-    return false;
+    return blockNumber && (ethTransfer || storageChanged);
   }
 }
 

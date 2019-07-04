@@ -10,7 +10,6 @@ namespace fuzzer {
     bool rootException = rootCallResponse.payload.inst == Instruction::INVALID && !rootCallResponse.level;
     for (auto callLogItem : callLog) {
       if (!rootException && callLogItem.payload.inst == Instruction::INVALID && callLogItem.level) {
-        testData = callLog[0].payload.testData;
         return true;
       }
     }
