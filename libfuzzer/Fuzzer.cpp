@@ -69,7 +69,7 @@ ContractInfo Fuzzer::mainContract() {
   return *it;
 }
 
-void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
+void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
 //  return;
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
@@ -120,9 +120,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto callOrder1 = to_string(mutation.stageCycles[STAGE_ORDER]);
   auto callOrder = padStr(callOrder1, 30);
   auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
-  auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
-    return !item.fuzzedCount;
-  });
+  auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) { return !item.fuzzedCount; });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
   for (auto exp: uniqExceptions) expCout+= exp.second.size();
@@ -130,6 +128,7 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto predicateSize = padStr(to_string(predicates.size()), 5);
   auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto contract = mainContract();
+  auto toResult = [](bool val) { return val ? "found" : "none"; };
   printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contract.contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
@@ -150,19 +149,15 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
   printf(bH "  call order : %s" bH "                    " bH "\n", callOrder.c_str());
   printf(bLTR bV5 cGRN " oracle yields " cRST bV bV10 bV5 bV bTTR bV2 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
-  auto toResult = [](u256 val){
-    if (val > 0) return "found";
-    return "none ";
-  };
-  printf(bH "            gasless send : %s " bH " dangerous delegatecall : %s " bH "\n", toResult(oracleResult.gaslessSend), toResult(oracleResult.dangerDelegateCall));
-  printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(oracleResult.exceptionDisorder), toResult(oracleResult.freezingEther));
-  printf(bH "              reentrancy : %s " bH "       integer overflow : %s " bH "\n", toResult(oracleResult.reentrancy), toResult(oracleResult.integerOverflow));
-  printf(bH "    timestamp dependency : %s " bH "      integer underflow : %s " bH "\n", toResult(oracleResult.timestampDependency), toResult(oracleResult.integerUnderflow));
-  printf(bH " block number dependency : %s " bH "%s" bH "\n", toResult(oracleResult.blockNumDependency), padStr(" ", 32).c_str());
+  printf(bH "            gasless send : %s " bH " dangerous delegatecall : %s " bH "\n", toResult(vulnerabilities[GASLESS_SEND]), toResult(vulnerabilities[DELEGATE_CALL]));
+  printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(vulnerabilities[EXCEPTION_DISORDER]), toResult(vulnerabilities[FREEZING]));
+  printf(bH "              reentrancy : %s " bH "       integer overflow : %s " bH "\n", toResult(vulnerabilities[REENTRANCY]), toResult(vulnerabilities[OVERFLOW]));
+  printf(bH "    timestamp dependency : %s " bH "      integer underflow : %s " bH "\n", toResult(vulnerabilities[TIME_DEPENDENCY]), toResult(vulnerabilities[UNDERFLOW]));
+  printf(bH " block number dependency : %s " bH "%s" bH "\n", toResult(vulnerabilities[NUMBER_DEPENDENCY]), padStr(" ", 32).c_str());
   printf(bBL bV20 bV2 bV10 bV5 bV2 bV bBTR bV10 bV5 bV20 bV2 bV2 bBR "\n");
 }
 
-void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
+void Fuzzer::writeStats(Mutation mutation, vector<bool> vulnerabilities) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
   if (timer.elapsed() < fuzzParam.csvInterval) {
@@ -209,21 +204,21 @@ void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
   stats << fuzzStat.stageFinds[STAGE_HAVOC] << ",";
   stats << mutation.stageCycles[STAGE_HAVOC] << ",";
   stats << fuzzStat.maxdepth << ",";
-  stats << oracleResult.gaslessSend << ",";
-  stats << oracleResult.exceptionDisorder << ",";
-  stats << oracleResult.reentrancy << ",";
-  stats << oracleResult.timestampDependency << ",";
-  stats << oracleResult.blockNumDependency << ",";
-  stats << oracleResult.dangerDelegateCall << ",";
-  stats << oracleResult.freezingEther << ",";
+  stats << vulnerabilities[GASLESS_SEND] << ",";
+  stats << vulnerabilities[EXCEPTION_DISORDER] << ",";
+  stats << vulnerabilities[REENTRANCY] << ",";
+  stats << vulnerabilities[TIME_DEPENDENCY] << ",";
+  stats << vulnerabilities[NUMBER_DEPENDENCY] << ",";
+  stats << vulnerabilities[DELEGATE_CALL] << ",";
+  stats << vulnerabilities[FREEZING] << ",";
   stats << branches.size() << ",";
   stats << (int) ((float) branches.size() / (fuzzStat.numJumpis * 2) * 100) << ",";
   stats << mutation.stageCycles[STAGE_ORDER] << ",";
   stats << predicates.size() << ",";
   stats << fuzzStat.randomHavoc << ",";
   stats << fuzzStat.heuristicHavoc << ",";
-  stats << oracleResult.integerOverflow << ",";
-  stats << oracleResult.integerUnderflow;
+  stats << vulnerabilities[OVERFLOW] << ",";
+  stats << vulnerabilities[UNDERFLOW];
   stats << endl;
   stats.close();
 }
@@ -305,6 +300,7 @@ void Fuzzer::start() {
   TargetContainer container;
   Dictionary codeDict, addressDict;
   unordered_map<u64, u64> showMap;
+  vector<bool> oracleResult;
   for (auto contractInfo : fuzzParam.contractInfo) {
     auto isAttacker = contractInfo.contractName.find(fuzzParam.attackerName) != string::npos;
     if (!contractInfo.isMain && !isAttacker) continue;
@@ -338,24 +334,25 @@ void Fuzzer::start() {
             showMap.insert(make_pair(dur, 1));
             if (fuzzParam.reporter == CSV_FILE) {
               if (dur % fuzzParam.csvInterval == 0)
-                writeStats(mutation, container.oracleResult());
+                writeStats(mutation, oracleResult);
             } else if (fuzzParam.reporter == TERMINAL) {
-              showStats(mutation, container.oracleResult());
+              showStats(mutation, oracleResult);
             }
           }
           /* Analyze every 1000 test cases */
           if (!(fuzzStat.totalExecs % 500)) {
-            container.analyze();
+            oracleResult = container.analyze();
           }
           /* Stop program */
           int speed = (int)(fuzzStat.totalExecs / timer.elapsed());
           if (timer.elapsed() > fuzzParam.duration || speed <= 10) {
-            container.analyze();
-            writeStats(mutation, container.oracleResult());
+            oracleResult = container.analyze();
+            writeStats(mutation, oracleResult);
             exit(0);
           }
           return item;
         };
+
         mutation.singleWalkingBit(save);
         fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
         origHitCount = queues.size();

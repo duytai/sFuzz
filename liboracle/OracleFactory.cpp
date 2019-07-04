@@ -4,57 +4,34 @@ using namespace dev;
 using namespace eth;
 using namespace std;
 
-namespace fuzzer  {
-  OracleFactory::OracleFactory() {
-    remove("contracts/log.txt");
-  }
-  
-  void OracleFactory::initialize() {
-    callLog.clear();
-  }
-  
-  void OracleFactory::finalize() {
-    callLogs.push_back(callLog);
-    callLog.clear();
-  }
-  
-  void OracleFactory::save(CallLogItem fc) {
-    callLog.push_back(fc);
-  }
-  
-  void OracleFactory::analyze() {
-    for (auto callLog : callLogs) {
-      if (!oracleResult.gaslessSend) {
-        oracleResult.gaslessSend += gaslessSend.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.exceptionDisorder) {
-        oracleResult.exceptionDisorder += exceptionDisorder.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.timestampDependency) {
-        oracleResult.timestampDependency += timestampDependency.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.blockNumDependency) {
-        oracleResult.blockNumDependency += blockNumberDependency.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.dangerDelegateCall) {
-        oracleResult.dangerDelegateCall += dangerDelegateCall.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.integerOverflow) {
-        oracleResult.integerOverflow += integerOverflow.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.integerUnderflow) {
-        oracleResult.integerUnderflow += integerUnderflow.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.reentrancy) {
-        oracleResult.reentrancy += reentrancy.analyze(callLog) ? 1 : 0;
-      }
-      if (!oracleResult.freezingEther) {
-        freezingEther.analyze(callLog);
+void OracleFactory::initialize() {
+  function.clear();
+}
+
+void OracleFactory::finalize() {
+  functions.push_back(function);
+  function.clear();
+}
+
+void OracleFactory::save(OpcodeContext ctx) {
+  function.push_back(ctx);
+}
+
+vector<bool> OracleFactory::analyze() {
+  for (uint8_t i = 0; i < functions.size(); i ++) {
+    if (!vulnerabilities[i]) {
+      switch (i) {
+        case GASLESS_SEND: {}
+        case EXCEPTION_DISORDER: {}
+        case TIME_DEPENDENCY: {}
+        case NUMBER_DEPENDENCY: {}
+        case DELEGATE_CALL: {}
+        case REENTRANCY: {}
+        case FREEZING: {}
+        case UNDERFLOW: {}
+        case OVERFLOW: {}
       }
     }
-    if (freezingEther.isFreezed()) {
-      oracleResult.freezingEther = 1;
-    }
-    callLogs.clear();
   }
+  functions.clear();
 }

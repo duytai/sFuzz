@@ -73,7 +73,7 @@ namespace fuzzer {
           auto inOff = (uint64_t) vm->stack()[sizeOffset];
           auto inSize = (uint64_t) vm->stack()[sizeOffset - 1];
           auto first = vm->memory().begin();
-          CallLogItemPayload payload;
+          OpcodePayload payload;
           payload.caller = ext->myAddress;
           payload.callee = Address((u160)vm->stack()[stackSize - 2]);
           payload.pc = pc;
@@ -81,11 +81,11 @@ namespace fuzzer {
           payload.wei = wei;
           payload.inst = inst;
           payload.data = bytes(first + inOff, first + inOff + inSize);
-          oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+          oracleFactory->save(OpcodeContext(ext->depth + 1, payload));
           break;
         }
         default: {
-          CallLogItemPayload payload;
+          OpcodePayload payload;
           payload.pc = pc;
           payload.inst = inst;
           if (
@@ -109,7 +109,7 @@ namespace fuzzer {
                 payload.isUnderflow = left < right;
               }
             }
-            oracleFactory->save(CallLogItem(ext->depth + 1, payload));
+            oracleFactory->save(OpcodeContext(ext->depth + 1, payload));
           }
           break;
         }
@@ -189,13 +189,13 @@ namespace fuzzer {
     /* Who is sender */
     auto sender = ca.getSender();
     /* record stograge */
-    CallLogItemPayload payload;
+    OpcodePayload payload;
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
     payload.wei = ca.isPayable("") ? program->getBalance(sender) / 2 : 0;
     payload.caller = sender;
     payload.callee = addr;
-    oracleFactory->save(CallLogItem(0, payload));
+    oracleFactory->save(OpcodeContext(0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
     if (res.excepted != TransactionException::None) {
       ostringstream os;
@@ -204,9 +204,9 @@ namespace fuzzer {
       if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
       uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
       /* Save Call Log */
-      CallLogItemPayload payload;
+      OpcodePayload payload;
       payload.inst = Instruction::INVALID;
-      oracleFactory->save(CallLogItem(0, payload));
+      oracleFactory->save(OpcodeContext(0, payload));
     }
     oracleFactory->finalize();
     for (uint32_t funcIdx = 0; funcIdx < funcs.size(); funcIdx ++ ) {
@@ -217,13 +217,13 @@ namespace fuzzer {
       recordJumpiFrom = 1000000000;
       functionSig = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
       prevLocation = functionSig;
-      CallLogItemPayload payload;
+      OpcodePayload payload;
       payload.data = func;
       payload.inst = Instruction::CALL;
       payload.wei = ca.isPayable(fd.name) ? program->getBalance(sender) / 2 : 0;
       payload.caller = sender;
       payload.callee = addr;
-      oracleFactory->save(CallLogItem(0, payload));
+      oracleFactory->save(OpcodeContext(0, payload));
       res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
       outputs.push_back(res.output);
       if (res.excepted != TransactionException::None) {
@@ -233,9 +233,9 @@ namespace fuzzer {
         if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
         uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
         /* Save Call Log */
-        CallLogItemPayload payload;
+        OpcodePayload payload;
         payload.inst = Instruction::INVALID;
-        oracleFactory->save(CallLogItem(0, payload));
+        oracleFactory->save(OpcodeContext(0, payload));
       }
       oracleFactory->finalize();
     }

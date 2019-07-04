@@ -64,8 +64,7 @@ namespace fuzzer {
     public:
       TargetContainer();
       ~TargetContainer();
-      void analyze() { return oracleFactory->analyze(); }
-      OracleResult oracleResult() { return oracleFactory->oracleResult; }
+      vector<bool> analyze() { return oracleFactory->analyze(); }
       TargetExecutive loadContract(bytes code, ContractABI ca);
   };
 }

@@ -56,7 +56,7 @@ namespace fuzzer {
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
-    void writeStats(Mutation mutation, OracleResult oracleResult);
+    void writeStats(Mutation mutation, vector<bool> vulnerabilities);
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
@@ -70,7 +70,7 @@ namespace fuzzer {
       void writeTestcase(bytes data, string prefix);
       void writeException(bytes data, string prefix);
       void writeVulnerability(bytes data, string prefix);
-      void showStats(Mutation mutation, OracleResult oracleResult);
+      void showStats(Mutation mutation, vector<bool> vulerabilities);
       void updateScore(FuzzItem &item);
       void updateAllScore();
       void updateAllPredicates();
