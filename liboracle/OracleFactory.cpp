@@ -26,36 +26,37 @@ namespace fuzzer  {
   vector<tuple<string, bytes, u64>> OracleFactory::analyze() {
     vector<tuple<string, bytes, u64>> result;
     for (auto callLog : callLogs) {
-      oracleResult.gaslessSend += gaslessSend.analyze(callLog) ? 1 : 0;
-      if (oracleResult.gaslessSend) {
+      if(gaslessSend.analyze(callLog)){
+        oracleResult.gaslessSend++;
         result.push_back(make_tuple("gasless_send", gaslessSend.getTestData(), gaslessSend.getPayloadPc()));
       }
-      oracleResult.exceptionDisorder += exceptionDisorder.analyze(callLog) ? 1 : 0;
-      if (oracleResult.exceptionDisorder) {
+
+      if(exceptionDisorder.analyze(callLog)) {
+        oracleResult.exceptionDisorder++;
         result.push_back(make_tuple("exception_disorder", exceptionDisorder.getTestData(), exceptionDisorder.getPayloadPc()));
       }
-      oracleResult.timestampDependency += timestampDependency.analyze(callLog) ? 1 : 0;
-      if (oracleResult.timestampDependency) {
+      if(timestampDependency.analyze(callLog)){
+        oracleResult.timestampDependency++;
         result.push_back(make_tuple("timestamp_dependency", timestampDependency.getTestData(), timestampDependency.getPayloadPc()));
       }
-      oracleResult.blockNumDependency += blockNumberDependency.analyze(callLog) ? 1 : 0;
-      if (oracleResult.blockNumDependency) {
+      if(blockNumberDependency.analyze(callLog)){
+        oracleResult.blockNumDependency++;
         result.push_back(make_tuple("block_number_dependency", blockNumberDependency.getTestData(), blockNumberDependency.getPayloadPc()));
       }
-      oracleResult.dangerDelegateCall += dangerDelegateCall.analyze(callLog) ? 1 : 0;
-      if (oracleResult.dangerDelegateCall) {
+      if(dangerDelegateCall.analyze(callLog)){
+        oracleResult.dangerDelegateCall++;
         result.push_back(make_tuple("dangerous_delegatecall", dangerDelegateCall.getTestData(), dangerDelegateCall.getPayloadPc()));
       }
-      oracleResult.integerOverflow += integerOverflow.analyze(callLog) ? 1 : 0;
-      if (oracleResult.integerOverflow) {
+      if(integerOverflow.analyze(callLog)){
+        oracleResult.integerOverflow++;
         result.push_back(make_tuple("integer_overflow", integerOverflow.getTestData(), integerOverflow.getPayloadPc()));
       }
-      oracleResult.integerUnderflow += integerUnderflow.analyze(callLog) ? 1 : 0;
-      if (oracleResult.integerUnderflow) {
+      if(integerUnderflow.analyze(callLog)){
+        oracleResult.integerUnderflow++;
         result.push_back(make_tuple("integer_underflow", integerUnderflow.getTestData(), integerUnderflow.getPayloadPc()));
       }
-      oracleResult.reentrancy += reentrancy.analyze(callLog) ? 1 : 0;
-      if (oracleResult.reentrancy) {
+      if(reentrancy.analyze(callLog)){
+        oracleResult.reentrancy++;
         result.push_back(make_tuple("reentrancy", reentrancy.getTestData(), reentrancy.getPayloadPc()));
       }
       if (!oracleResult.freezingEther) {
