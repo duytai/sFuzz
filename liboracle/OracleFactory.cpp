@@ -32,12 +32,16 @@ vector<bool> OracleFactory::analyze() {
               auto inst = ctx.payload.inst;
               auto gas = ctx.payload.gas;
               auto data = ctx.payload.data;
-              vulnerabilities[i] = vulnerabilities[i]
-                  || (level == 1 && inst == Instruction::CALL && !data.size() && (gas == 2300 || gas == 0));
+              vulnerabilities[i] = vulnerabilities[i] || (level == 1 && inst == Instruction::CALL && !data.size() && (gas == 2300 || gas == 0));
             }
             break;
           }
           case EXCEPTION_DISORDER: {
+            auto rootCallResponse = function[function.size() - 1];
+            bool rootException = rootCallResponse.payload.inst == Instruction::INVALID && !rootCallResponse.level;
+            for (auto ctx : function) {
+              vulnerabilities[i] = vulnerabilities[i] || (!rootException && ctx.payload.inst == Instruction::INVALID && ctx.level);
+            }
             break;
           }
           case TIME_DEPENDENCY: {
