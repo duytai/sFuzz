@@ -10,8 +10,6 @@ static int DEFAULT_MODE = AFL;
 static int DEFAULT_DURATION = 120; // 2 mins
 static int DEFAULT_REPORTER = CSV_FILE;
 static int DEFAULT_CSV_INTERVAL = 5; // 5 sec
-static int DEFAULT_LOG_OPTION = 0;
-static int DEFAULT_STORAGE_OPTION = 0; // write storage file every 0 contracts
 static string DEFAULT_CONTRACTS_FOLDER = "contracts/";
 static string DEFAULT_ASSETS_FOLDER = "assets/";
 static string DEFAULT_ATTACKER = "ReentrancyAttacker";
@@ -25,8 +23,6 @@ int main(int argc, char* argv[]) {
   int mode = DEFAULT_MODE;
   int duration = DEFAULT_DURATION;
   int reporter = DEFAULT_REPORTER;
-  int logOption = DEFAULT_LOG_OPTION;
-  int storageOption = DEFAULT_STORAGE_OPTION;
   string contractsFolder = DEFAULT_CONTRACTS_FOLDER;
   string assetsFolder = DEFAULT_ASSETS_FOLDER;
   string jsonFile = "";
@@ -45,8 +41,6 @@ int main(int argc, char* argv[]) {
     ("mode,m", po::value(&mode), "choose mode: 0 - Random | 1 - AFL ")
     ("reporter,r", po::value(&reporter), "choose reporter: 0 - TERMINAL | 1 - CSV")
     ("duration,d", po::value(&duration), "fuzz duration")
-    ("log,l", po::value(&logOption), "write log: 0 - false | 1 - true")
-    ("storage,s", po::value(&storageOption), "1 storage file is written every how many contracts")
     ("attacker", po::value(&attackerName), "default is ReentrancyAttacker");
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
@@ -58,7 +52,7 @@ int main(int argc, char* argv[]) {
     fuzzMe << "#!/bin/bash" << endl;
     fuzzMe << compileSolFiles(contractsFolder);
     fuzzMe << compileSolFiles(assetsFolder);
-    fuzzMe << fuzzJsonFiles(contractsFolder, assetsFolder, duration, mode, reporter, logOption, attackerName, storageOption);
+    fuzzMe << fuzzJsonFiles(contractsFolder, assetsFolder, duration, mode, reporter, attackerName);
     fuzzMe.close();
     showGenerate();
     return 0;
@@ -73,9 +67,7 @@ int main(int argc, char* argv[]) {
     fuzzParam.duration = duration;
     fuzzParam.reporter = (Reporter) reporter;
     fuzzParam.csvInterval = DEFAULT_CSV_INTERVAL;
-    fuzzParam.log = logOption > 0;
     fuzzParam.attackerName = attackerName;
-    fuzzParam.storage = storageOption;
     Fuzzer fuzzer(fuzzParam);
     cout << ">> Fuzz " << contractName << endl;
     fuzzer.start();

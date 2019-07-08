@@ -25,10 +25,8 @@ namespace fuzzer {
     vector<ContractInfo> contractInfo;
     FuzzMode mode;
     Reporter reporter;
-    bool log;
     int duration;
     int csvInterval;
-    int storage;
     string attackerName;
   };
   struct FuzzStat {
