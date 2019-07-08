@@ -89,6 +89,17 @@ vector<bool> OracleFactory::analyze() {
             break;
           }
           case FREEZING: {
+            auto has_delegate = false;
+            auto has_transfer = false;
+            for (auto ctx: function) {
+              has_delegate = has_delegate || ctx.payload.inst == Instruction::DELEGATECALL;
+              has_transfer = has_transfer || (ctx.level == 1 && (
+                   ctx.payload.inst == Instruction::CALL
+                || ctx.payload.inst == Instruction::CALLCODE
+                || ctx.payload.inst == Instruction::SUICIDE
+              ));
+            }
+            vulnerabilities[i] = has_delegate && !has_transfer;
             break;
           }
           case UNDERFLOW: {
