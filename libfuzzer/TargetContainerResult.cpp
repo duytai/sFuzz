@@ -1,6 +1,7 @@
 #include "TargetContainerResult.h"
 
 namespace fuzzer {
+
   TargetContainerResult::TargetContainerResult(
     unordered_set<uint64_t> tracebits,
     unordered_set<uint64_t> branches,
@@ -15,4 +16,5 @@ namespace fuzzer {
     this->uniqExceptions = uniqExceptions;
     this->branches = branches;
   }
+
 }

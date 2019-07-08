@@ -26,6 +26,7 @@ namespace fuzzer {
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, u256> predicates;
     vector<bytes> outputs;
+    size_t savepoint = program->savepoint();
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
@@ -208,7 +209,7 @@ namespace fuzzer {
       oracleFactory->finalize();
     }
     /* Reset data before running new contract */
-    program->rollback();
+    program->rollback(savepoint);
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
     return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);

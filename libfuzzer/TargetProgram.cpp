@@ -90,8 +90,12 @@ namespace fuzzer {
     timestamp = get<2>(block);
   }
 
-  void TargetProgram::rollback() {
-    state.rollback(0);
+  void TargetProgram::rollback(size_t savepoint) {
+    state.rollback(savepoint);
+  }
+
+  size_t TargetProgram::savepoint() {
+    return state.savepoint();
   }
   
   TargetProgram::~TargetProgram() {
