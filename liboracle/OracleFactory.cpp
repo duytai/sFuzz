@@ -45,6 +45,13 @@ vector<bool> OracleFactory::analyze() {
             break;
           }
           case TIME_DEPENDENCY: {
+            auto has_transfer = false;
+            auto has_timestamp = false;
+            for (auto ctx : function) {
+              has_transfer = has_transfer || ctx.payload.wei > 0;
+              has_timestamp = has_timestamp || ctx.payload.inst == Instruction::TIMESTAMP;
+            }
+            vulnerabilities[i] = has_transfer && has_timestamp;
             break;
           }
           case NUMBER_DEPENDENCY: {
