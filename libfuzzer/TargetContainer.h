@@ -5,7 +5,6 @@
 #include "Common.h"
 #include "TargetProgram.h"
 #include "ContractABI.h"
-#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -66,7 +65,7 @@ namespace fuzzer {
         this->program = program;
         this->oracleFactory = oracleFactory;
       }
-      TargetContainerResult exec(bytes data, vector<uint64_t> orders, Logger* logger);
+      TargetContainerResult exec(bytes data, vector<uint64_t> orders);
       void deploy(bytes data, OnOpFunc onOp);
       static bool storageIsChanged(map<h256, pair<u256, u256>> st1, map<h256, pair<u256, u256>> st2);
   };
