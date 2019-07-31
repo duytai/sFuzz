@@ -40,16 +40,21 @@ bool Fuzzer::hasNewBits(unordered_set<uint64_t> _tracebits) {
   auto newSize = tracebits.size();
   return newSize - originSize;
 }
-/* Detect all uncover branches of predicates */
-bool Fuzzer::hasNewPredicates(unordered_map<uint64_t, u256> _pred) {
-  auto originSize = predicates.size();
+
+void Fuzzer::updatePredicates(unordered_map<uint64_t, u256> _pred) {
+  // If predicate is in tracebits => need to remove it
+  vector<uint64_t> eleminated_keys = {};
   for (auto it : _pred) {
-    if (!tracebits.count(it.first)) {
-      predicates.insert(it.first);
+    predicates.insert(it.first);
+  };
+  // Remove covered predicates
+  for(auto it = predicates.begin(); it != predicates.end(); ) {
+    if (tracebits.count(*it)) {
+      it = predicates.erase(it);
+    } else {
+      ++it;
     }
   }
-  auto newSize = predicates.size();
-  return newSize - originSize;
 }
 
 ContractInfo Fuzzer::mainContract() {
@@ -252,7 +257,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
   if (hasNewExceptions(item.res.uniqExceptions)) {
     writeException(revisedData, "__EXCEPTION__");
   }
-  hasNewPredicates(item.res.predicates);
+  updatePredicates(item.res.predicates);
   /* New testcase */
   if (item.isInteresting) {
     /* update score */

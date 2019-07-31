@@ -58,12 +58,12 @@ namespace fuzzer {
     public:
       Fuzzer(FuzzParam fuzzParam);
       bool hasNewBits(unordered_set<uint64_t> tracebits);
-      bool hasNewPredicates(unordered_map<uint64_t, u256> predicates);
       bool hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth);
-      void start();
       void writeTestcase(bytes data, string prefix);
       void writeException(bytes data, string prefix);
       void showStats(Mutation mutation, vector<bool> vulerabilities);
+      void updatePredicates(unordered_map<uint64_t, u256> predicates);
+      void start();
   };
 }
