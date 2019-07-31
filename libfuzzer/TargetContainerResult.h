@@ -12,22 +12,19 @@ namespace fuzzer {
     TargetContainerResult() {}
     TargetContainerResult(
         unordered_set<uint64_t> tracebits,
-        unordered_set<uint64_t> branches,
-        double cksum,
         unordered_map<uint64_t, u256> predicates,
         unordered_map<string,
-        unordered_set<uint64_t>> uniqExceptions
+        unordered_set<uint64_t>> uniqExceptions,
+        double cksum
     );
 
     /* Contains execution paths */
     unordered_set<uint64_t> tracebits;
-    /* Contains all branches */
-    unordered_set<uint64_t> branches;
-    /* Contains checksum of tracebits */
-    double cksum;
     /* Save predicates */
     unordered_map<uint64_t, u256> predicates;
     /* Exception path */
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
+    /* Contains checksum of tracebits */
+    double cksum;
   };
 }

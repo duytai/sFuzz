@@ -18,11 +18,9 @@ namespace fuzzer {
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
     u64 lastpc = 0;
-    u64 branchId = 0;
     u64 functionSig = 0;
     u64 recordJumpiFrom = 0;
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
-    unordered_set<uint64_t> branches;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, u256> predicates;
     vector<bytes> outputs;
@@ -105,14 +103,6 @@ namespace fuzzer {
           break;
         }
         default: { break; }
-      }
-      /* calculate number of branches */
-      if (inst == Instruction::JUMPCI) {
-        branchId = pow(pc, 2);
-      }
-      if (prevInstrBr == Instruction::JUMPCI) {
-        branchId = abs(pow(pc, 2) - branchId);
-        branches.insert(branchId);
       }
       prevInstrBr = inst;
       /* calulate predicates */
@@ -212,6 +202,6 @@ namespace fuzzer {
     program->rollback(savepoint);
     double cksum = 0;
     for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
-    return TargetContainerResult(tracebits, branches, cksum, predicates, uniqExceptions);
+    return TargetContainerResult(tracebits, predicates, uniqExceptions, cksum);
   }
 }

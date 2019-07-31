@@ -52,14 +52,6 @@ bool Fuzzer::hasNewPredicates(unordered_map<uint64_t, u256> _pred) {
   return newSize - originSize;
 }
 
-/* Detect new branch */
-bool Fuzzer::hasNewBranches(unordered_set<uint64_t> _branches) {
-  auto originSize = branches.size();
-  for (auto it : _branches) branches.insert(it);
-  auto newSize = branches.size();
-  return newSize - originSize;
-}
-
 ContractInfo Fuzzer::mainContract() {
   auto contractInfo = fuzzParam.contractInfo;
   auto first = contractInfo.begin();
@@ -70,7 +62,6 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
-//  return;
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -92,8 +83,8 @@ void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
   auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples), 15);
   auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
   auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
-  auto numBranches = padStr(to_string(branches.size()), 15);
-  auto coverage = padStr(to_string((int) ((float) branches.size() / (fuzzStat.numJumpis * 2) * 100)) + " %", 15);
+  auto numBranches = padStr("N/A", 15);
+  auto coverage = padStr("N/A", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(fuzzStat.stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(fuzzStat.stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -161,7 +152,7 @@ void Fuzzer::writeStats(Mutation mutation, vector<bool> vulnerabilities) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
   if (timer.elapsed() < fuzzParam.csvInterval) {
-    stats << "duration, execution, speed, cycle, tuple, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, branches, coverage, callorder, predicates, random-havoc, heuristic-havoc, overflow, underflow" << endl;
+    stats << "duration, execution, speed, cycle, tuple, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, callorder, predicates, random-havoc, heuristic-havoc, overflow, underflow" << endl;
   }
   cout << "** Write stats: " << timer.elapsed() << "" << endl;
   stats << timer.elapsed() << ",";
@@ -211,8 +202,6 @@ void Fuzzer::writeStats(Mutation mutation, vector<bool> vulnerabilities) {
   stats << vulnerabilities[NUMBER_DEPENDENCY] << ",";
   stats << vulnerabilities[DELEGATE_CALL] << ",";
   stats << vulnerabilities[FREEZING] << ",";
-  stats << branches.size() << ",";
-  stats << (int) ((float) branches.size() / (fuzzStat.numJumpis * 2) * 100) << ",";
   stats << mutation.stageCycles[STAGE_ORDER] << ",";
   stats << predicates.size() << ",";
   stats << fuzzStat.randomHavoc << ",";
@@ -246,25 +235,6 @@ void Fuzzer::writeException(bytes data, string prefix) {
   exp.close();
 }
 
-void Fuzzer::updateAllScore() {
-  for (auto &it : queues) updateScore(it);
-}
-
-void Fuzzer::updateAllPredicates() {
-  predicates.clear();
-  for (auto it : queues) hasNewPredicates(it.res.predicates);
-}
-/* Calculate score */
-void Fuzzer::updateScore(FuzzItem& item) {
-  item.score.clear();
-  for (auto branch : predicates) {
-    u256 value = DEFAULT_SCORE;
-    if (item.res.predicates.count(branch) > 0) {
-      value = item.res.predicates[branch];
-    }
-    item.score.insert(pair<uint64_t, u256>(branch, value));
-  }
-}
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth) {
   auto revisedData = ContractABI::postprocessTestData(data);
@@ -282,16 +252,13 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
   if (hasNewExceptions(item.res.uniqExceptions)) {
     writeException(revisedData, "__EXCEPTION__");
   }
-  hasNewBranches(item.res.branches);
   hasNewPredicates(item.res.predicates);
   /* New testcase */
   if (item.isInteresting) {
     /* update score */
     queues.push_back(item);
-    updateAllPredicates(); /* must do before updating score */
-    updateAllScore();
+    // TODO:
   }
-  updateScore(item);
   return item;
 }
 

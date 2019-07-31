@@ -8,7 +8,6 @@ using namespace eth;
 
 namespace fuzzer {
   struct FuzzItem {
-    unordered_map<uint64_t, double> score;
     bytes data;
     TargetContainerResult res;
     bool isInteresting = false;
