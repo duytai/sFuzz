@@ -13,21 +13,18 @@ namespace fuzzer {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
     Instruction prevInstrBr;
+    RecordParam recordParam;
     u256 lastCompValue = 0;
-    u64 prevLocation = 0;
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
-    u64 lastpc = 0;
-    u64 functionSig = 0;
-    u64 recordJumpiFrom = 0;
     unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, u256> predicates;
     vector<bytes> outputs;
     size_t savepoint = program->savepoint();
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
-      lastpc = pc;
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
+      recordParam.lastpc = pc;
       /* Oracle analyze data */
       switch (inst) {
         case Instruction::CALL:
@@ -92,13 +89,14 @@ namespace fuzzer {
           if (stackSize >= 2) {
             u256 left = vm->stack()[stackSize - 1];
             u256 right = vm->stack()[stackSize - 2];
-            /* EQ call == function signature */
-            if (left == functionSig && right == functionSig) recordJumpiFrom = pc + 4;
             /* calculate if command inside a function */
-            if (pc > recordJumpiFrom) {
+            if (recordParam.recording) {
               u256 temp = left > right ? left - right : right - left;
               lastCompValue = temp + 1;
             }
+            /* EQ call == function signature */
+            recordParam.recording = recordParam.recording
+                || (left == right && right == recordParam.functionSignature);
           }
           break;
         }
@@ -106,7 +104,7 @@ namespace fuzzer {
       }
       prevInstrBr = inst;
       /* calulate predicates */
-      if (pc > recordJumpiFrom) {
+      if (recordParam.recording) {
         if (inst == Instruction::JUMPCI) {
           jumpDest1 = (u64) vm->stack().back();
           jumpDest2 = pc + 1;
@@ -122,15 +120,15 @@ namespace fuzzer {
           }
         }
         if (prevInst == Instruction::JUMPCI || hasInvalid) {
-          tracebits.insert(newPc ^ prevLocation);
+          tracebits.insert(newPc ^ recordParam.prevLocation);
           /* Calculate branch distance */
           if (lastCompValue != 0) {
             /* Save predicate for uncovered branches */
             u64 jumpDest = newPc == jumpDest1 ? jumpDest2 : jumpDest1;
-            predicates[jumpDest ^ prevLocation] = lastCompValue;
+            predicates[jumpDest ^ recordParam.prevLocation] = lastCompValue;
             lastCompValue = 0;
           }
-          prevLocation = newPc >> 1;
+          recordParam.prevLocation = newPc >> 1;
         }
         prevInst = inst;
       }
@@ -142,9 +140,9 @@ namespace fuzzer {
     program->setBalance(addr, DEFAULT_BALANCE);
     program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     oracleFactory->initialize();
-    /* Record all jumpis in constructor */
-    recordJumpiFrom = 0;
-    prevLocation = 0;
+    /* Record all JUMPI in constructor */
+    recordParam.recording = true;
+    recordParam.prevLocation = 0;
     /* Who is sender */
     auto sender = ca.getSender();
     /* record storage */
@@ -161,7 +159,7 @@ namespace fuzzer {
       os << res.excepted;
       unordered_set<uint64_t> exps;
       if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
-      uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
+      uniqExceptions[os.str()].insert(recordParam.lastpc ^ recordParam.prevLocation);
       /* Save Call Log */
       OpcodePayload payload;
       payload.inst = Instruction::INVALID;
@@ -172,10 +170,10 @@ namespace fuzzer {
       /* Update payload */
       auto func = funcs[funcIdx];
       auto fd = ca.fds[funcIdx];
-      /* Ignore JUMPI untill program reaches inside function */
-      recordJumpiFrom = 1000000000;
-      functionSig = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
-      prevLocation = functionSig;
+      /* Ignore JUMPI until program reaches inside function */
+      recordParam.recording = false;
+      recordParam.functionSignature = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
+      recordParam.prevLocation = recordParam.functionSignature;
       OpcodePayload payload;
       payload.data = func;
       payload.inst = Instruction::CALL;
@@ -190,7 +188,7 @@ namespace fuzzer {
         os << res.excepted;
         unordered_set<uint64_t> exps;
         if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
-        uniqExceptions[os.str()].insert(lastpc ^ prevLocation);
+        uniqExceptions[os.str()].insert(recordParam.lastpc ^ recordParam.prevLocation);
         /* Save Call Log */
         OpcodePayload payload;
         payload.inst = Instruction::INVALID;

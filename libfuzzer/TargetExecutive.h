@@ -13,6 +13,12 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
+  struct RecordParam {
+    bool recording = false;
+    u64 functionSignature = 0;
+    u64 prevLocation = 0;
+    u64 lastpc = 0;
+  };
   class TargetExecutive {
       TargetProgram *program;
       OracleFactory *oracleFactory;
