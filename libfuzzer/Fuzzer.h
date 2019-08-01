@@ -14,6 +14,12 @@ using namespace std;
 namespace fuzzer {
   enum FuzzMode { RANDOM, AFL };
   enum Reporter { TERMINAL, CSV_FILE };
+  struct Leader {
+    uint64_t branchId = 0;
+    u256 comparisonValue = 0;
+    uint64_t queue_pos = 0;
+    bool replaceable = false;
+  };
   struct ContractInfo {
     string abiJson;
     string bin;
@@ -38,7 +44,6 @@ namespace fuzzer {
     int totalExecs = 0;
     int queueCycle = 0;
     int stageFinds[32];
-    int coveredTuples = 0;
     double lastNewPath = 0;
     int numTest = 0;
     int numException = 0;
@@ -49,6 +54,7 @@ namespace fuzzer {
     unordered_set<uint64_t> tracebits;
     unordered_set<uint64_t> predicates;
     vector<FuzzItem> queues;
+    vector<Leader> leaders;
     unordered_map<string, unordered_set<u64>> uniqExceptions;
     Timer timer;
     FuzzParam fuzzParam;

@@ -85,10 +85,7 @@ void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
   auto cyclePercentage = (int)((float)(fuzzStat.idx + 1) / queues.size() * 100);
   auto cycleProgress = padStr(to_string(fuzzStat.idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(fuzzStat.queueCycle), 15);
-  auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples), 15);
-  auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
-  auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
-  auto numBranches = padStr("N/A", 15);
+  auto numBranches = padStr(to_string(tracebits.size()), 15);
   auto coverage = padStr("N/A", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(fuzzStat.stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
@@ -131,10 +128,10 @@ void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
   printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV2 bV2 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
-  printf(bH " stage execs : %s" bH "      tuples : %s" bH "\n", stageExec.c_str(), coveredTupleStr.c_str());
-  printf(bH " total execs : %s" bH "    branches : %s" bH "\n", allExecs.c_str(), numBranches.c_str());
-  printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerTupe.c_str());
-  printf(bH "  cycle prog : %s" bH "    coverage : %s" bH "\n", cycleProgress.c_str(), coverage.c_str());
+  printf(bH " stage execs : %s" bH "    branches : %s" bH "\n", stageExec.c_str(), numBranches.c_str());
+  printf(bH " total execs : %s" bH "    coverage : %s" bH "\n", allExecs.c_str(), coverage.c_str());
+  printf(bH "  exec speed : %s" bH "               %s" bH "\n", execSpeed.c_str(), padStr("", 15).c_str());
+  printf(bH "  cycle prog : %s" bH "               %s" bH "\n", cycleProgress.c_str(), coverage.c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bV2 bV2 bRTR "\n");
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
@@ -157,14 +154,13 @@ void Fuzzer::writeStats(Mutation mutation, vector<bool> vulnerabilities) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
   if (timer.elapsed() < fuzzParam.csvInterval) {
-    stats << "duration, execution, speed, cycle, tuple, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, callorder, predicates, random-havoc, heuristic-havoc, overflow, underflow" << endl;
+    stats << "duration, execution, speed, cycle, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, callorder, predicates, random-havoc, heuristic-havoc, overflow, underflow" << endl;
   }
   cout << "** Write stats: " << timer.elapsed() << "" << endl;
   stats << timer.elapsed() << ",";
   stats << fuzzStat.totalExecs << ",";
   stats << fuzzStat.totalExecs / (double) timer.elapsed() << ",";
   stats << fuzzStat.queueCycle << ",";
-  stats << fuzzStat.coveredTuples << ",";
   int expCout = 0;
   for (auto exp: uniqExceptions) expCout += exp.second.size();
   stats << uniqExceptions.size() << ",";
@@ -246,24 +242,55 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
   FuzzItem item(revisedData);
   item.res = te.exec(revisedData);
   fuzzStat.totalExecs ++;
-  if (hasNewBits(item.res.tracebits)) {
+  auto hasNewBranch = hasNewBits(item.res.tracebits);
+  for (auto it : item.res.predicates) {
+    auto leader_it = std::find_if(leaders.begin(), leaders.end(), [&](const Leader& leader) {
+      return leader.branchId == it.first;
+    });
+    if (leader_it == leaders.end()) {
+      // New leader
+      Leader leader;
+      leader.branchId = it.first;
+      leader.queue_pos = queues.size();
+      leader.comparisonValue = it.second;
+      leader.replaceable = !hasNewBranch;
+      leaders.push_back(leader);
+      if (!hasNewBranch) {
+        if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+        item.depth = depth + 1;
+        queues.push_back(item);
+      }
+    } else {
+      if((*leader_it).comparisonValue > it.second) {
+        // Replace previous leader
+        (*leader_it).comparisonValue = it.second;
+        if (!hasNewBranch) {
+          if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+          if ((*leader_it).replaceable) {
+            queues[fuzzStat.idx] = item;
+          } else {
+            (*leader_it).queue_pos = queues.size();
+            (*leader_it).replaceable = true;
+            queues.push_back(item);
+          }
+        } else {
+          (*leader_it).queue_pos = queues.size();
+          (*leader_it).replaceable = false;
+        }
+      };
+    }
+  }
+  if (hasNewBranch) {
     if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
     item.depth = depth + 1;
-    item.isInteresting = true;
     fuzzStat.lastNewPath = timer.elapsed();
-    fuzzStat.coveredTuples = tracebits.size();
     writeTestcase(revisedData, "__TEST__");
-  };
+    queues.push_back(item);
+  }
   if (hasNewExceptions(item.res.uniqExceptions)) {
     writeException(revisedData, "__EXCEPTION__");
   }
   updatePredicates(item.res.predicates);
-  /* New testcase */
-  if (item.isInteresting) {
-    /* update score */
-    queues.push_back(item);
-    // TODO:
-  }
   return item;
 }
 
