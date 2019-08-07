@@ -14,12 +14,6 @@ using namespace std;
 namespace fuzzer {
   enum FuzzMode { RANDOM, AFL };
   enum Reporter { TERMINAL, CSV_FILE };
-  struct Leader {
-    uint64_t branchId = 0;
-    u256 comparisonValue = 0;
-    uint64_t queue_pos = 0;
-    bool replaceable = false;
-  };
   struct ContractInfo {
     string abiJson;
     string bin;
@@ -49,12 +43,18 @@ namespace fuzzer {
     int numException = 0;
     int numJumpis = 0;
   };
-
+  struct Leader {
+    FuzzItem item;
+    u256 comparisonValue = 0;
+    Leader(FuzzItem _item, u256 _comparisionValue): item(_item) {
+      comparisonValue = _comparisionValue;
+    }
+  };
   class Fuzzer {
     unordered_set<uint64_t> tracebits;
     unordered_set<uint64_t> predicates;
-    vector<FuzzItem> queues;
-    vector<Leader> leaders;
+    vector<uint64_t> queues;
+    unordered_map<uint64_t, Leader> leaders;
     unordered_map<string, unordered_set<u64>> uniqExceptions;
     Timer timer;
     FuzzParam fuzzParam;
@@ -63,12 +63,12 @@ namespace fuzzer {
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
-      bool hasNewBits(unordered_set<uint64_t> tracebits);
       bool hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth);
       void writeTestcase(bytes data, string prefix);
       void writeException(bytes data, string prefix);
       void showStats(Mutation mutation, vector<bool> vulerabilities);
+      void updateTracebits(unordered_set<uint64_t> tracebits);
       void updatePredicates(unordered_map<uint64_t, u256> predicates);
       void start();
   };
