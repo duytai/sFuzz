@@ -178,18 +178,5 @@ namespace fuzzer {
     return str;
   }
   
-  bytes u256ToBytes(u256 value) {
-    bytes ret;
-    for (int i = 0; i < 32; i += 1) {
-      byte b = (byte) (value >> ((32 - i - 1) * 8)) & 0xFF;
-      ret.push_back(b);
-    }
-    return ret;
-  }
-  
-  void printfWithColor(u256 value, string text) {
-    if (value > 0) cout << cRED + text  + cRST ;
-    if (!value) cout << cGRN + text  + cRST;
-  }
 }
 

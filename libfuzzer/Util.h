@@ -74,7 +74,6 @@ namespace fuzzer {
   static int HAVOC_STACK_POW2 = 7;
   static int HAVOC_MIN = 16;
   static int EFF_MAP_SCALE2 = 4; // 32 bytes block
-  static int MAP_SIZE_POW2 = 16;
   static int ARITH_MAX = 35;
   static int EFF_MAX_PERC = 90;
   static s8 INTERESTING_8[] = { -128, -1, 0, 1, 16, 32, 64, 100, 127};
@@ -102,8 +101,6 @@ namespace fuzzer {
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last);
   string formatDuration(int duration);
   string padStr(string str, int len);
-  bytes u256ToBytes(u256 v);
-  void printfWithColor(u256 value, string text);
   /* Data struct */
   struct ExtraData {
     bytes data;
