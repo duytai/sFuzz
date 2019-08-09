@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "Common.h"
+#include "Logger.h"
 #include "TargetContainer.h"
 #include "Dictionary.h"
 #include "FuzzItem.h"
@@ -12,6 +13,7 @@ using namespace std;
 namespace fuzzer {
   using Dicts = tuple<Dictionary/* code */, Dictionary/* address */>;
   class Mutation {
+    Logger logger;
     FuzzItem curFuzzItem;
     Dicts dicts;
     int effCount;
@@ -22,7 +24,6 @@ namespace fuzzer {
       int stageMax;
       int stageCur;
       string stageName;
-      string stageShort;
       static int stageCycles[32];
       Mutation(FuzzItem item, Dicts dicts);
       void singleWalkingBit(OnMutateFunc cb);

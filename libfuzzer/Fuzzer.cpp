@@ -62,7 +62,7 @@ ContractInfo Fuzzer::mainContract() {
   return *it;
 }
 
-void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
+void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   int numLines = 26, i = 0, expCout = 0;;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -146,7 +146,7 @@ void Fuzzer::showStats(Mutation mutation, vector<bool> vulnerabilities) {
   printf(bBL bV20 bV2 bV10 bV5 bV2 bV bBTR bV10 bV5 bV20 bV2 bV2 bBR "\n");
 }
 
-void Fuzzer::writeStats(Mutation mutation, vector<bool> vulnerabilities) {
+void Fuzzer::writeStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   auto contract = mainContract();
   ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
   if (timer.elapsed() < fuzzParam.csvInterval) {

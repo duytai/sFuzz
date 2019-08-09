@@ -60,7 +60,7 @@ namespace fuzzer {
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
-    void writeStats(Mutation mutation, vector<bool> vulnerabilities);
+    void writeStats(const Mutation &mutation, vector<bool> vulnerabilities);
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
@@ -68,7 +68,7 @@ namespace fuzzer {
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth);
       void writeTestcase(bytes data, string prefix);
       void writeException(bytes data, string prefix);
-      void showStats(Mutation mutation, vector<bool> vulerabilities);
+      void showStats(const Mutation &mutation, vector<bool> vulerabilities);
       void updateTracebits(unordered_set<uint64_t> tracebits);
       void updatePredicates(unordered_map<uint64_t, u256> predicates);
       void start();

@@ -25,7 +25,7 @@ namespace fuzzer {
 
   void Logger::info(string str) {
     if (enabled) {
-      infoFile << "INFO: " << str << endl;
+      infoFile << str << endl;
     }
   }
 

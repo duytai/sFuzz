@@ -17,7 +17,8 @@ Mutation::Mutation(FuzzItem item, Dicts dicts): curFuzzItem(item), dicts(dicts),
     eff[effAPos(dataSize - 1)] = 1;
     effCount ++;
   }
-  stageName = stageShort = "init";
+  stageName = "init";
+  logger.setEnabled(true);
 }
 
 void Mutation::flipbit(int pos) {
@@ -25,7 +26,6 @@ void Mutation::flipbit(int pos) {
 }
 
 void Mutation::singleWalkingBit(OnMutateFunc cb) {
-  stageShort = "flip1";
   stageName = "bitflip 1/1";
   stageMax = dataSize << 3;
   /* Start fuzzing */
@@ -38,7 +38,6 @@ void Mutation::singleWalkingBit(OnMutateFunc cb) {
 }
 
 void Mutation::twoWalkingBit(OnMutateFunc cb) {
-  stageShort = "flip2";
   stageName = "bitflip 2/1";
   stageMax = (dataSize << 3) - 1;
   /* Start fuzzing */
@@ -53,7 +52,6 @@ void Mutation::twoWalkingBit(OnMutateFunc cb) {
 }
 
 void Mutation::fourWalkingBit(OnMutateFunc cb) {
-  stageShort = "flip4";
   stageName = "bitflip 4/1";
   stageMax = (dataSize << 3) - 3;
   /* Start fuzzing */
@@ -72,7 +70,6 @@ void Mutation::fourWalkingBit(OnMutateFunc cb) {
 }
 
 void Mutation::singleWalkingByte(OnMutateFunc cb) {
-  stageShort = "flip8";
   stageName = "bitflip 8/8";
   stageMax = dataSize;
   /* Start fuzzing */
@@ -101,7 +98,6 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
 }
 
 void Mutation::twoWalkingByte(OnMutateFunc cb) {
-  stageShort = "flip16";
   stageName = "bitflip 16/8";
   stageMax = dataSize - 1;
   stageCur = 0;
@@ -122,7 +118,6 @@ void Mutation::twoWalkingByte(OnMutateFunc cb) {
 }
 
 void Mutation::fourWalkingByte(OnMutateFunc cb) {
-  stageShort = "flip32";
   stageName = "bitflip 32/8";
   stageMax = dataSize - 3;
   stageCur = 0;
@@ -144,7 +139,6 @@ void Mutation::fourWalkingByte(OnMutateFunc cb) {
 }
 
 void Mutation::singleArith(OnMutateFunc cb) {
-  stageShort = "arith8";
   stageName = "arith 8/8";
   stageMax = 2 * dataSize * ARITH_MAX;
   stageCur = 0;
@@ -176,7 +170,6 @@ void Mutation::singleArith(OnMutateFunc cb) {
 }
 
 void Mutation::twoArith(OnMutateFunc cb) {
-  stageShort = "arith16";
   stageName = "arith 16/8";
   stageMax = 4 * (dataSize - 1) * ARITH_MAX;
   stageCur = 0;
@@ -220,7 +213,6 @@ void Mutation::twoArith(OnMutateFunc cb) {
 }
 
 void Mutation::fourArith(OnMutateFunc cb) {
-  stageShort = "arith32";
   stageName = "arith 32/8";
   stageMax = 4 * (dataSize - 3) * ARITH_MAX;
   stageCur = 0;
@@ -265,7 +257,6 @@ void Mutation::fourArith(OnMutateFunc cb) {
 }
 
 void Mutation::singleInterest(OnMutateFunc cb) {
-  stageShort = "int8";
   stageName = "interest 8/8";
   stageMax = dataSize * sizeof(INTERESTING_8);
   stageCur = 0;
@@ -292,7 +283,6 @@ void Mutation::singleInterest(OnMutateFunc cb) {
 }
 
 void Mutation::twoInterest(OnMutateFunc cb) {
-  stageShort = "int16";
   stageName = "interest 16/8";
   stageMax = 2 * (dataSize - 1) * (sizeof(INTERESTING_16) >> 1);
   stageCur = 0;
@@ -328,7 +318,6 @@ void Mutation::twoInterest(OnMutateFunc cb) {
 }
 
 void Mutation::fourInterest(OnMutateFunc cb) {
-  stageShort = "int32";
   stageName = "interest 32/8";
   stageMax = 2 * (dataSize - 3) * (sizeof(INTERESTING_32) >> 2);
   stageCur = 0;
@@ -367,7 +356,6 @@ void Mutation::fourInterest(OnMutateFunc cb) {
 }
 
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
-  stageShort = "ext_UO";
   stageName = "dict (over)";
   auto dict = get<0>(dicts);
   stageMax = dataSize * dict.extras.size();
@@ -412,7 +400,6 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
 }
 
 void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
-  stageShort = "ext_AO";
   stageName = "address (over)";
   auto dict = get<1>(dicts);
 
@@ -445,7 +432,6 @@ void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
  * TODO: If found more, do more havoc
  */
 void Mutation::havoc(OnMutateFunc cb) {
-  stageShort = "havoc";
   stageName = "havoc";
   stageMax = HAVOC_MIN;
   stageCur = 0;
@@ -589,7 +575,7 @@ void Mutation::havoc(OnMutateFunc cb) {
         }
       }
     }
-    cb(curFuzzItem.data);
+    cb(data);
     stageCur ++;
     /* Restore to original state */
     data = origin;
@@ -628,7 +614,6 @@ bool Mutation::splice(vector<FuzzItem> queues) {
 }
 
 void Mutation::random(OnMutateFunc cb) {
-  stageShort = "random";
   stageName = "random 8/8";
   stageMax = 1;
   for (int i = 0; i < dataSize; i ++) {
