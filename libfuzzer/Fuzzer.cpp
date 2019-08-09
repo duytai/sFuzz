@@ -50,7 +50,7 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
-  int numLines = 26, i = 0;
+  int numLines = 24, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
@@ -68,7 +68,6 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   auto cycleProgress = padStr(to_string(fuzzStat.idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(fuzzStat.queueCycle), 15);
   auto numBranches = padStr(to_string(tracebits.size()), 15);
-  auto coverage = padStr("N/A", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(fuzzStat.stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(fuzzStat.stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -90,10 +89,6 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   auto dictionary = padStr(dict1 + ", " + addrDict1, 30);
   auto hav1 = to_string(fuzzStat.stageFinds[STAGE_HAVOC]) + "/" + to_string(mutation.stageCycles[STAGE_HAVOC]);
   auto havoc = padStr(hav1, 30);
-  auto random1 = to_string(fuzzStat.stageFinds[STAGE_RANDOM]) + "/" + to_string(mutation.stageCycles[STAGE_RANDOM]);
-  auto random = padStr(random1, 30);
-  auto callOrder1 = to_string(mutation.stageCycles[STAGE_ORDER]);
-  auto callOrder = padStr(callOrder1, 30);
   auto pending = padStr(to_string(leaders.size() - fuzzStat.idx - 1), 5);
   auto fav = count_if(leaders.begin(), leaders.end(), [](const pair<uint64_t, Leader> &p) {
     return !p.second.item.fuzzedCount;
@@ -111,18 +106,16 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV2 bV2 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
   printf(bH " stage execs : %s" bH "    branches : %s" bH "\n", stageExec.c_str(), numBranches.c_str());
-  printf(bH " total execs : %s" bH "    coverage : %s" bH "\n", allExecs.c_str(), coverage.c_str());
+  printf(bH " total execs : %s" bH "               %s" bH "\n", allExecs.c_str(), padStr("", 15).c_str());
   printf(bH "  exec speed : %s" bH "               %s" bH "\n", execSpeed.c_str(), padStr("", 15).c_str());
   printf(bH "  cycle prog : %s" bH "               %s" bH "\n", cycleProgress.c_str(), padStr("", 15).c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bV2 bV2 bRTR "\n");
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
   printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
-  printf(bH "  known ints : %s" bH " except type : %s" bH "\n", knownInts.c_str(), padStr("N/A", 5).c_str());
-  printf(bH "  dictionary : %s" bH " uniq except : %s" bH "\n", dictionary.c_str(), exceptionCount.c_str());
-  printf(bH "       havoc : %s" bH "  predicates : %s" bH "\n", havoc.c_str(), predicateSize.c_str());
-  printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
-  printf(bH "  call order : %s" bH "                    " bH "\n", callOrder.c_str());
+  printf(bH "  known ints : %s" bH " uniq except : %s" bH "\n", knownInts.c_str(), exceptionCount.c_str());
+  printf(bH "  dictionary : %s" bH "  predicates : %s" bH "\n", dictionary.c_str(), predicateSize.c_str());
+  printf(bH "       havoc : %s" bH "               %s" bH "\n", havoc.c_str(), padStr("", 5).c_str());
   printf(bLTR bV5 cGRN " oracle yields " cRST bV bV10 bV5 bV bTTR bV2 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
   printf(bH "            gasless send : %s " bH " dangerous delegatecall : %s " bH "\n", toResult(vulnerabilities[GASLESS_SEND]), toResult(vulnerabilities[DELEGATE_CALL]));
   printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(vulnerabilities[EXCEPTION_DISORDER]), toResult(vulnerabilities[FREEZING]));
