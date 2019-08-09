@@ -17,7 +17,7 @@ namespace fuzzer {
     u256 lastCompValue = 0;
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
-    unordered_map<string, unordered_set<uint64_t>> uniqExceptions;
+    unordered_set<uint64_t> uniqExceptions;
     unordered_set<uint64_t> tracebits;
     unordered_map<uint64_t, u256> predicates;
     vector<bytes> outputs;
@@ -155,11 +155,7 @@ namespace fuzzer {
     oracleFactory->save(OpcodeContext(0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
     if (res.excepted != TransactionException::None) {
-      ostringstream os;
-      os << res.excepted;
-      unordered_set<uint64_t> exps;
-      if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
-      uniqExceptions[os.str()].insert(recordParam.lastpc ^ recordParam.prevLocation);
+      uniqExceptions.insert(recordParam.lastpc ^ recordParam.prevLocation);
       /* Save Call Log */
       OpcodePayload payload;
       payload.inst = Instruction::INVALID;
@@ -184,11 +180,7 @@ namespace fuzzer {
       res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
       outputs.push_back(res.output);
       if (res.excepted != TransactionException::None) {
-        ostringstream os;
-        os << res.excepted;
-        unordered_set<uint64_t> exps;
-        if (!uniqExceptions.count(os.str())) uniqExceptions[os.str()] = exps;
-        uniqExceptions[os.str()].insert(recordParam.lastpc ^ recordParam.prevLocation);
+        uniqExceptions.insert(recordParam.lastpc ^ recordParam.prevLocation);
         /* Save Call Log */
         OpcodePayload payload;
         payload.inst = Instruction::INVALID;

@@ -17,16 +17,8 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
 }
 
 /* Detect new exception */
-void Fuzzer::updateExceptions(unordered_map<string, unordered_set<u64>> uexps) {
-  for (auto it : uexps) {
-    if (!uniqExceptions.count(it.first)) {
-      uniqExceptions[it.first] = it.second;
-    } else {
-      for (auto v : it.second) {
-        uniqExceptions[it.first].insert(v);
-      }
-    }
-  }
+void Fuzzer::updateExceptions(unordered_set<uint64_t> exps) {
+  for (auto it: exps) uniqExceptions.insert(it);
 }
 
 /* Detect new bits by comparing tracebits to virginbits */
@@ -58,12 +50,11 @@ ContractInfo Fuzzer::mainContract() {
 }
 
 void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
-  int numLines = 26, i = 0, expCout = 0;;
+  int numLines = 26, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
   }
-
   double duration = timer.elapsed();
   double fromLastNewPath = timer.elapsed() - fuzzStat.lastNewPath;
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
@@ -109,10 +100,8 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
-  for (auto exp: uniqExceptions) expCout+= exp.second.size();
-  auto exceptionCount = padStr(to_string(expCout), 5);
+  auto exceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto predicateSize = padStr(to_string(predicates.size()), 5);
-  auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto contract = mainContract();
   auto toResult = [](bool val) { return val ? "found" : "none "; };
   printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contract.contractName.substr(0, 20).c_str());
@@ -129,7 +118,7 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
   printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
-  printf(bH "  known ints : %s" bH " except type : %s" bH "\n", knownInts.c_str(), typeExceptionCount.c_str());
+  printf(bH "  known ints : %s" bH " except type : %s" bH "\n", knownInts.c_str(), padStr("N/A", 5).c_str());
   printf(bH "  dictionary : %s" bH " uniq except : %s" bH "\n", dictionary.c_str(), exceptionCount.c_str());
   printf(bH "       havoc : %s" bH "  predicates : %s" bH "\n", havoc.c_str(), predicateSize.c_str());
   printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
@@ -144,66 +133,7 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
 }
 
 void Fuzzer::writeStats(const Mutation &mutation, vector<bool> vulnerabilities) {
-  auto contract = mainContract();
-  ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
-  if (timer.elapsed() < fuzzParam.csvInterval) {
-    stats << "duration, execution, speed, cycle, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, callorder, predicates, random-havoc, heuristic-havoc, overflow, underflow" << endl;
-  }
-  cout << "** Write stats: " << timer.elapsed() << "" << endl;
-  stats << timer.elapsed() << ",";
-  stats << fuzzStat.totalExecs << ",";
-  stats << fuzzStat.totalExecs / (double) timer.elapsed() << ",";
-  stats << fuzzStat.queueCycle << ",";
-  int expCout = 0;
-  for (auto exp: uniqExceptions) expCout += exp.second.size();
-  stats << uniqExceptions.size() << ",";
-  stats << expCout << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP1] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP1] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP2] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP2] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP4] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP4] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP8] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP8] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP16] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP16] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP32] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP32] << ",";
-  stats << fuzzStat.stageFinds[STAGE_ARITH8] << ",";
-  stats << mutation.stageCycles[STAGE_ARITH8] << ",";
-  stats << fuzzStat.stageFinds[STAGE_ARITH16] << ",";
-  stats << mutation.stageCycles[STAGE_ARITH16] << ",";
-  stats << fuzzStat.stageFinds[STAGE_ARITH32] << ",";
-  stats << mutation.stageCycles[STAGE_ARITH32] << ",";
-  stats << fuzzStat.stageFinds[STAGE_INTEREST8] << ",";
-  stats << mutation.stageCycles[STAGE_INTEREST8] << ",";
-  stats << fuzzStat.stageFinds[STAGE_INTEREST16] << ",";
-  stats << mutation.stageCycles[STAGE_INTEREST16] << ",";
-  stats << fuzzStat.stageFinds[STAGE_INTEREST32] << ",";
-  stats << mutation.stageCycles[STAGE_INTEREST32] << ",";
-  stats << fuzzStat.stageFinds[STAGE_EXTRAS_AO] << ",";
-  stats << mutation.stageCycles[STAGE_EXTRAS_AO] << ",";
-  stats << fuzzStat.stageFinds[STAGE_EXTRAS_UO] << ",";
-  stats << mutation.stageCycles[STAGE_EXTRAS_UO] << ",";
-  stats << fuzzStat.stageFinds[STAGE_HAVOC] << ",";
-  stats << mutation.stageCycles[STAGE_HAVOC] << ",";
-  stats << fuzzStat.maxdepth << ",";
-  stats << vulnerabilities[GASLESS_SEND] << ",";
-  stats << vulnerabilities[EXCEPTION_DISORDER] << ",";
-  stats << vulnerabilities[REENTRANCY] << ",";
-  stats << vulnerabilities[TIME_DEPENDENCY] << ",";
-  stats << vulnerabilities[NUMBER_DEPENDENCY] << ",";
-  stats << vulnerabilities[DELEGATE_CALL] << ",";
-  stats << vulnerabilities[FREEZING] << ",";
-  stats << mutation.stageCycles[STAGE_ORDER] << ",";
-  stats << predicates.size() << ",";
-  stats << fuzzStat.randomHavoc << ",";
-  stats << fuzzStat.heuristicHavoc << ",";
-  stats << vulnerabilities[OVERFLOW] << ",";
-  stats << vulnerabilities[UNDERFLOW];
-  stats << endl;
-  stats.close();
+  return;
 }
 
 /* Save data if interest */

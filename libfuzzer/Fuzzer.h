@@ -56,7 +56,7 @@ namespace fuzzer {
     unordered_set<uint64_t> tracebits;
     unordered_set<uint64_t> predicates;
     unordered_map<uint64_t, Leader> leaders;
-    unordered_map<string, unordered_set<u64>> uniqExceptions;
+    unordered_set<uint64_t> uniqExceptions;
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
@@ -68,7 +68,7 @@ namespace fuzzer {
       void showStats(const Mutation &mutation, vector<bool> vulerabilities);
       void updateTracebits(unordered_set<uint64_t> tracebits);
       void updatePredicates(unordered_map<uint64_t, u256> predicates);
-      void updateExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
+      void updateExceptions(unordered_set<uint64_t> uniqExceptions);
       void start();
   };
 }
