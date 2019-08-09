@@ -64,13 +64,11 @@ namespace fuzzer {
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
-      bool hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth);
-      void writeTestcase(bytes data, string prefix);
-      void writeException(bytes data, string prefix);
       void showStats(const Mutation &mutation, vector<bool> vulerabilities);
       void updateTracebits(unordered_set<uint64_t> tracebits);
       void updatePredicates(unordered_map<uint64_t, u256> predicates);
+      void updateExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
       void start();
   };
 }

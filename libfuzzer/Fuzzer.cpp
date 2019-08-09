@@ -17,10 +17,7 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
 }
 
 /* Detect new exception */
-bool Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
-  int orginExceptions = 0;
-  int newExceptions = 0;
-  for (auto it : uniqExceptions) orginExceptions += it.second.size();
+void Fuzzer::updateExceptions(unordered_map<string, unordered_set<u64>> uexps) {
   for (auto it : uexps) {
     if (!uniqExceptions.count(it.first)) {
       uniqExceptions[it.first] = it.second;
@@ -30,8 +27,6 @@ bool Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
       }
     }
   }
-  for (auto it : uniqExceptions) newExceptions += it.second.size();
-  return newExceptions - orginExceptions;
 }
 
 /* Detect new bits by comparing tracebits to virginbits */
@@ -211,29 +206,6 @@ void Fuzzer::writeStats(const Mutation &mutation, vector<bool> vulnerabilities) 
   stats.close();
 }
 
-void Fuzzer::writeTestcase(bytes data, string prefix) {
-  auto contract = mainContract();
-  ContractABI ca(contract.abiJson);
-  ca.updateTestData(data);
-  fuzzStat.numTest ++;
-  string ret = ca.toStandardJson();
-  // write decoded data
-  ofstream testFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
-  testFile << ret;
-  testFile.close();
-}
-
-void Fuzzer::writeException(bytes data, string prefix) {
-  auto contract = mainContract();
-  ContractABI ca(contract.abiJson);
-  ca.updateTestData(data);
-  fuzzStat.numException ++;
-  string ret = ca.toStandardJson();
-  ofstream exp(contract.contractName + "/" + prefix + to_string(fuzzStat.numException) + "__.json");
-  exp << ret;
-  exp.close();
-}
-
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth) {
   auto revisedData = ContractABI::postprocessTestData(data);
@@ -252,6 +224,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
       auto leader = Leader(item, 0);
       leaders.insert(make_pair(tracebit, leader));
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+      fuzzStat.lastNewPath = timer.elapsed();
       logger.debug("Cover new branch " + to_string(tracebit));
       logger.debug(logger.testFormat(item.data));
     }
@@ -274,21 +247,21 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
       auto leader = Leader(item, predicateIt.second);
       leaders.insert(make_pair(predicateIt.first, leader)); // Insert leader
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+      fuzzStat.lastNewPath = timer.elapsed();
       logger.debug(logger.testFormat(item.data));
     } else if (leaderIt == leaders.end()) {
       auto leader = Leader(item, predicateIt.second);
       item.depth = depth + 1;
       leaders.insert(make_pair(predicateIt.first, leader)); // Insert leader
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+      fuzzStat.lastNewPath = timer.elapsed();
       // Debug
       logger.debug("Found new uncovered branch");
       logger.debug("now: " + predicateIt.second.str());
       logger.debug(logger.testFormat(item.data));
     }
   }
-  if (hasNewExceptions(item.res.uniqExceptions)) {
-    writeException(revisedData, "__EXCEPTION__");
-  }
+  updateExceptions(item.res.uniqExceptions);
   updateTracebits(item.res.tracebits);
   updatePredicates(item.res.predicates);
   return item;

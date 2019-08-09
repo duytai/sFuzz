@@ -587,7 +587,6 @@ bool Mutation::splice(vector<FuzzItem> queues) {
   u32 spliceCycle = 0;
   s32 firstDiff, lastDiff;
   bytes origin = curFuzzItem.data;
-  logger.debug(">> Origin");
   logger.debug(toHex(curFuzzItem.data));
   while (spliceCycle++ < SPLICE_CYCLES && queues.size() > 1
       && curFuzzItem.data.size() > 1) {
@@ -608,13 +607,8 @@ bool Mutation::splice(vector<FuzzItem> queues) {
       continue;
     }
     splitAt = firstDiff + UR(lastDiff - firstDiff);
-    logger.debug(">> With");
-    logger.debug(toHex(target.data));
-    logger.debug(">> At " + to_string(splitAt));
     /* Do the thing. */
     memcpy(outBuf, targetBuf, splitAt);
-    logger.debug(">> Spliced");
-    logger.debug(toHex(curFuzzItem.data));
     return true;
   }
   return false;
