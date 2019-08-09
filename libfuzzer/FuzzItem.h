@@ -10,7 +10,7 @@ namespace fuzzer {
   struct FuzzItem {
     bytes data;
     TargetContainerResult res;
-    bool fuzzed = false;
+    uint64_t fuzzedCount = 0;
     uint64_t depth = 0;
     FuzzItem(bytes _data) {
       data = _data;

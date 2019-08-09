@@ -6,6 +6,7 @@
 #include "Util.h"
 #include "FuzzItem.h"
 #include "Mutation.h"
+#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -51,9 +52,9 @@ namespace fuzzer {
     }
   };
   class Fuzzer {
+    Logger logger;
     unordered_set<uint64_t> tracebits;
     unordered_set<uint64_t> predicates;
-    vector<uint64_t> queues;
     unordered_map<uint64_t, Leader> leaders;
     unordered_map<string, unordered_set<u64>> uniqExceptions;
     Timer timer;
