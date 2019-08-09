@@ -587,9 +587,12 @@ bool Mutation::splice(vector<FuzzItem> queues) {
   u32 spliceCycle = 0;
   s32 firstDiff, lastDiff;
   bytes origin = curFuzzItem.data;
-  logger.debug(toHex(curFuzzItem.data));
-  while (spliceCycle++ < SPLICE_CYCLES && queues.size() > 1
-      && curFuzzItem.data.size() > 1) {
+  if (queues.size() <= 1) return false;
+  auto numDiff = count_if(queues.begin(), queues.end(), [&](const FuzzItem &item) {
+    return item.res.cksum != queues[0].res.cksum;
+  });
+  if (!numDiff) return false;
+  while (spliceCycle++ < SPLICE_CYCLES && curFuzzItem.data.size() > 1) {
     u32 tid, splitAt;
     do {
       tid = UR(queues.size());

@@ -9,6 +9,7 @@ using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
+namespace pt = boost::property_tree;
 
 /* Setup virgin byte to 255 */
 Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
@@ -126,7 +127,18 @@ void Fuzzer::showStats(const Mutation &mutation) {
 }
 
 void Fuzzer::writeStats(const Mutation &mutation) {
-  return;
+  auto contract = mainContract();
+  stringstream ss;
+  pt::ptree root;
+  ofstream stats(contract.contractName + "/stats.json");
+  root.put("duration", timer.elapsed());
+  root.put("totalExecs", fuzzStat.totalExecs);
+  root.put("speed", (double) fuzzStat.totalExecs / timer.elapsed());
+  root.put("queueCycles", fuzzStat.queueCycle);
+  root.put("uniqExceptions", uniqExceptions.size());
+  pt::write_json(ss, root);
+  stats << ss.str() << endl;
+  stats.close();
 }
 
 /* Save data if interest */
@@ -239,15 +251,8 @@ void Fuzzer::start() {
               if (duration % fuzzParam.analyzingInterval == 0) {
                 vulnerabilities = container.analyze();
               }
-              switch(fuzzParam.reporter) {
-                case JSON: {
-                  writeStats(mutation);
-                  break;
-                }
-                case TERMINAL: {
-                  showStats(mutation);
-                  break;
-                }
+              if (fuzzParam.reporter == TERMINAL) {
+                showStats(mutation);
               }
             }
             /* Stop program */

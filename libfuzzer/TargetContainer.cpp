@@ -32,5 +32,4 @@ namespace fuzzer {
     delete program;
     delete oracleFactory;
   }
-  
 }
