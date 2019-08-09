@@ -12,7 +12,6 @@ namespace fuzzer {
   TargetContainerResult TargetExecutive::exec(bytes data) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
-    Instruction prevInstrBr;
     RecordParam recordParam;
     u256 lastCompValue = 0;
     u64 jumpDest1 = 0;
@@ -102,33 +101,22 @@ namespace fuzzer {
         }
         default: { break; }
       }
-      prevInstrBr = inst;
-      /* calulate predicates */
+      /* Calculate predicates */
       if (recordParam.recording) {
         if (inst == Instruction::JUMPCI) {
           jumpDest1 = (u64) vm->stack().back();
           jumpDest2 = pc + 1;
         }
-        /* INVALID opcode is not recoreded in callback */
-        auto newPc = pc;
-        auto hasInvalid = false;
-        if (inst == Instruction::JUMPCI && (Instruction)ext->code[pc + 1] == Instruction::INVALID) {
-          vector<u256>::size_type stackSize = vm->stack().size();
-          if (!vm->stack()[stackSize - 2]) {
-            hasInvalid = true;
-            newPc = pc + 1;
-          }
-        }
-        if (prevInst == Instruction::JUMPCI || hasInvalid) {
-          tracebits.insert(newPc ^ recordParam.prevLocation);
+        if (prevInst == Instruction::JUMPCI) {
+          tracebits.insert(pc ^ recordParam.prevLocation);
           /* Calculate branch distance */
           if (lastCompValue != 0) {
             /* Save predicate for uncovered branches */
-            u64 jumpDest = newPc == jumpDest1 ? jumpDest2 : jumpDest1;
+            u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
             predicates[jumpDest ^ recordParam.prevLocation] = lastCompValue;
             lastCompValue = 0;
           }
-          recordParam.prevLocation = newPc >> 1;
+          recordParam.prevLocation = pc >> 1;
         }
         prevInst = inst;
       }

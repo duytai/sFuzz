@@ -1692,6 +1692,7 @@ void LegacyVM::interpretCases()
         CASE(INVALID)
         DEFAULT
         {
+            ON_OP();
             throwBadInstruction();
         }
     }
