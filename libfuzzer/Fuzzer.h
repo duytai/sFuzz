@@ -14,7 +14,7 @@ using namespace std;
 
 namespace fuzzer {
   enum FuzzMode { AFL };
-  enum Reporter { TERMINAL, JSON };
+  enum Reporter { TERMINAL, JSON, BOTH };
   struct ContractInfo {
     string abiJson;
     string bin;

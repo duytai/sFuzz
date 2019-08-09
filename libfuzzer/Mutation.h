@@ -16,15 +16,15 @@ namespace fuzzer {
     Logger logger;
     FuzzItem curFuzzItem;
     Dicts dicts;
-    int effCount;
+    uint64_t effCount = 0;
     bytes eff;
     void flipbit(int pos);
     public:
-      int dataSize;
-      int stageMax;
-      int stageCur;
-      string stageName;
-      static int stageCycles[32];
+      uint64_t dataSize = 0;
+      uint64_t stageMax = 0;
+      uint64_t stageCur = 0;
+      string stageName = "";
+      static uint64_t stageCycles[32];
       Mutation(FuzzItem item, Dicts dicts);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);

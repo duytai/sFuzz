@@ -7,7 +7,7 @@
 using namespace std;
 using namespace fuzzer;
 
-int Mutation::stageCycles[32] = {};
+uint64_t Mutation::stageCycles[32] = {};
 
 Mutation::Mutation(FuzzItem item, Dicts dicts): curFuzzItem(item), dicts(dicts), dataSize(item.data.size()) {
   effCount = 0;

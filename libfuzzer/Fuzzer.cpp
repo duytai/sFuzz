@@ -61,7 +61,7 @@ void Fuzzer::showStats(const Mutation &mutation) {
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
   auto nowTrying = padStr(mutation.stageName, 20);
   auto stageExecProgress = to_string(mutation.stageCur) + "/" + to_string(mutation.stageMax);
-  auto stageExecPercentage = to_string((int)((float) (mutation.stageCur) / mutation.stageMax * 100));
+  auto stageExecPercentage = mutation.stageMax == 0 ? to_string(100) : to_string((uint64_t)((float) (mutation.stageCur) / mutation.stageMax * 100));
   auto stageExec = padStr(stageExecProgress + " (" + stageExecPercentage + "%)", 20);
   auto allExecs = padStr(to_string(fuzzStat.totalExecs), 20);
   auto execSpeed = padStr(to_string((int)(fuzzStat.totalExecs / duration)), 20);
@@ -225,7 +225,37 @@ void Fuzzer::start() {
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
       saveIfInterest(executive, ca.randomTestcase(), 0);
-      int origHitCount = leaders.size();
+      int originHitCount = leaders.size();
+      // No branch
+      if (!originHitCount) {
+        cout << "No branch" << endl;
+        exit(0);
+      }
+      // There are uncovered branches or not
+      auto fi = [&](const pair<uint64_t, Leader> &p) { return p.second.comparisonValue != 0;};
+      auto numUncoveredBranches = count_if(leaders.begin(), leaders.end(), fi);
+      if (!numUncoveredBranches) {
+        auto curItem = (*leaders.begin()).second.item;
+        Mutation mutation(curItem, make_tuple(codeDict, addressDict));
+        vulnerabilities = container.analyze();
+        switch (fuzzParam.reporter) {
+          case TERMINAL: {
+            showStats(mutation);
+            break;
+          }
+          case JSON: {
+            writeStats(mutation);
+            break;
+          }
+          case BOTH: {
+            showStats(mutation);
+            writeStats(mutation);
+            break;
+          }
+        }
+        exit(1);
+      }
+      // Jump to fuzz loop
       while (true) {
         logger.debug("== LEADERS ==");
         for (auto leaderIt : leaders) {
@@ -251,15 +281,41 @@ void Fuzzer::start() {
               if (duration % fuzzParam.analyzingInterval == 0) {
                 vulnerabilities = container.analyze();
               }
-              if (fuzzParam.reporter == TERMINAL) {
-                showStats(mutation);
+              switch (fuzzParam.reporter) {
+                case TERMINAL: {
+                  showStats(mutation);
+                  break;
+                }
+                case JSON: {
+                  writeStats(mutation);
+                  break;
+                }
+                case BOTH: {
+                  showStats(mutation);
+                  writeStats(mutation);
+                  break;
+                }
               }
             }
             /* Stop program */
-            int speed = (int)(fuzzStat.totalExecs / timer.elapsed());
+            u64 speed = (u64)(fuzzStat.totalExecs / timer.elapsed());
             if (timer.elapsed() > fuzzParam.duration || speed <= 10 || !predicates.size()) {
               vulnerabilities = container.analyze();
-              writeStats(mutation);
+              switch(fuzzParam.reporter) {
+                case TERMINAL: {
+                  showStats(mutation);
+                  break;
+                }
+                case JSON: {
+                  writeStats(mutation);
+                  break;
+                }
+                case BOTH: {
+                  showStats(mutation);
+                  writeStats(mutation);
+                  break;
+                }
+              }
               exit(0);
             }
             return item;
@@ -270,91 +326,91 @@ void Fuzzer::start() {
             if (!curItem.fuzzedCount) {
               logger.debug("SingleWalkingBit");
               mutation.singleWalkingBit(save);
-              fuzzStat.stageFinds[STAGE_FLIP1] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_FLIP1] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("TwoWalkingBit");
               mutation.twoWalkingBit(save);
-              fuzzStat.stageFinds[STAGE_FLIP2] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_FLIP2] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("FourWalkingBtit");
               mutation.fourWalkingBit(save);
-              fuzzStat.stageFinds[STAGE_FLIP4] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_FLIP4] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("SingleWalkingByte");
               mutation.singleWalkingByte(save);
-              fuzzStat.stageFinds[STAGE_FLIP8] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_FLIP8] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("TwoWalkingByte");
               mutation.twoWalkingByte(save);
-              fuzzStat.stageFinds[STAGE_FLIP16] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_FLIP16] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("FourWalkingByte");
               mutation.fourWalkingByte(save);
-              fuzzStat.stageFinds[STAGE_FLIP32] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_FLIP32] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("SingleArith");
               mutation.singleArith(save);
-              fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("TwoArith");
               mutation.twoArith(save);
-              fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("FourArith");
               mutation.fourArith(save);
-              fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("SingleInterest");
               mutation.singleInterest(save);
-              fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("TwoInterest");
               mutation.twoInterest(save);
-              fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("FourInterest");
               mutation.fourInterest(save);
-              fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("overwriteDict");
               mutation.overwriteWithDictionary(save);
-              fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("overwriteAddress");
               mutation.overwriteWithAddressDictionary(save);
-              fuzzStat.stageFinds[STAGE_EXTRAS_AO] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_EXTRAS_AO] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
 
               logger.debug("havoc");
               mutation.havoc(save);
-              fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
             } else {
               logger.debug("havoc");
               mutation.havoc(save);
-              fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - origHitCount;
-              origHitCount = leaders.size();
+              fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
               logger.debug("Splice");
               vector<FuzzItem> queues = {};
               for (auto it : leaders) queues.push_back(it.second.item);
               if (mutation.splice(queues)) {
                 logger.debug("havoc");
                 mutation.havoc(save);
-                fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - origHitCount;
-                origHitCount = leaders.size();
+                fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
+                originHitCount = leaders.size();
               }
             }
           }
