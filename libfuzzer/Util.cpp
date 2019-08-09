@@ -178,28 +178,6 @@ namespace fuzzer {
     return str;
   }
   
-  bytes setVictimData(bytes data) {
-    bytes ret;
-    auto sig = fromHex("0399321e");
-    auto offset = u256ToBytes(32);
-    auto size = u256ToBytes(data.size());
-    ret.insert(ret.end(), sig.begin(), sig.end());
-    ret.insert(ret.end(), offset.begin(), offset.end());
-    ret.insert(ret.end(), size.begin(), size.end());
-    while (data.size() % 32 != 0) data.push_back(0);
-    ret.insert(ret.end(), data.begin(), data.end());
-    return ret;
-  }
-  
-  bytes u512ToBytes(u512 value) {
-    bytes ret;
-    for (int i = 0; i < 64; i += 1) {
-      byte b = (byte) (value >> ((64 - i - 1) * 8)) & 0xFF;
-      ret.push_back(b);
-    }
-    return ret;
-  }
-  
   bytes u256ToBytes(u256 value) {
     bytes ret;
     for (int i = 0; i < 32; i += 1) {
@@ -212,19 +190,6 @@ namespace fuzzer {
   void printfWithColor(u256 value, string text) {
     if (value > 0) cout << cRED + text  + cRST ;
     if (!value) cout << cGRN + text  + cRST;
-  }
-  
-  void staticAnalyze(bytes code, function<void(Instruction)> cb) {
-    uint64_t pc = 0;
-    while (pc < code.size()) {
-      auto inst = (Instruction) code[pc];
-      if (inst >= Instruction::PUSH1 && inst <= Instruction::PUSH32) {
-        auto jumpNum = code[pc] - (uint64_t) Instruction::PUSH1 + 1;
-        pc += jumpNum;
-      }
-      cb(inst);
-      pc ++;
-    }
   }
 }
 

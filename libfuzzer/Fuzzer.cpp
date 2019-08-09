@@ -49,7 +49,7 @@ ContractInfo Fuzzer::mainContract() {
   return *it;
 }
 
-void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
+void Fuzzer::showStats(const Mutation &mutation) {
   int numLines = 24, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -125,7 +125,7 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   printf(bBL bV20 bV2 bV10 bV5 bV2 bV bBTR bV10 bV5 bV20 bV2 bV2 bBR "\n");
 }
 
-void Fuzzer::writeStats(const Mutation &mutation, vector<bool> vulnerabilities) {
+void Fuzzer::writeStats(const Mutation &mutation) {
   return;
 }
 
@@ -212,9 +212,6 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
-      staticAnalyze(bin, [&](Instruction inst) {
-        if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
-      });
       saveIfInterest(executive, ca.randomTestcase(), 0);
       int origHitCount = leaders.size();
       while (true) {
@@ -239,17 +236,20 @@ void Fuzzer::start() {
             u64 dur = timer.elapsed();
             if (!showMap.count(dur)) {
               showMap.insert(make_pair(dur, 1));
-              if (fuzzParam.reporter == CSV_FILE) {
+              if (fuzzParam.reporter == JSON) {
                 if (dur % fuzzParam.csvInterval == 0)
-                  writeStats(mutation, container.analyze());
+                  vulnerabilities = container.analyze();
+                  writeStats(mutation);
               } else if (fuzzParam.reporter == TERMINAL) {
-                showStats(mutation, container.analyze());
+                vulnerabilities = container.analyze();
+                showStats(mutation);
               }
             }
             /* Stop program */
             int speed = (int)(fuzzStat.totalExecs / timer.elapsed());
             if (timer.elapsed() > fuzzParam.duration || speed <= 10 || !predicates.size()) {
-              writeStats(mutation, container.analyze());
+              vulnerabilities = container.analyze();
+              writeStats(mutation);
               exit(0);
             }
             return item;

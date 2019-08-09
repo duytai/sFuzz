@@ -8,7 +8,7 @@ using namespace fuzzer;
 
 static int DEFAULT_MODE = AFL;
 static int DEFAULT_DURATION = 120; // 2 mins
-static int DEFAULT_REPORTER = CSV_FILE;
+static int DEFAULT_REPORTER = JSON;
 static int DEFAULT_CSV_INTERVAL = 5; // 5 sec
 static string DEFAULT_CONTRACTS_FOLDER = "contracts/";
 static string DEFAULT_ASSETS_FOLDER = "assets/";
