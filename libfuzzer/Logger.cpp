@@ -3,19 +3,9 @@
 using namespace std;
 
 namespace fuzzer {
-  Logger::Logger() {
-    debugFile = ofstream("debug.txt", ios_base::app);
-    infoFile = ofstream("info.txt", ios_base::app);
-  }
-
-  Logger::~Logger() {
-    debugFile.close();
-    infoFile.close();
-  }
-
-  void Logger::setEnabled(bool _enabled) {
-    enabled = _enabled;
-  }
+  ofstream Logger::debugFile = ofstream("debug.txt", ios_base::app);
+  ofstream Logger::infoFile = ofstream("info.txt", ios_base::app);
+  bool Logger::enabled = true;
 
   void Logger::debug(string str) {
     if (enabled) {

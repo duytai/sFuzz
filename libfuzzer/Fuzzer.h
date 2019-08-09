@@ -6,7 +6,6 @@
 #include "Util.h"
 #include "FuzzItem.h"
 #include "Mutation.h"
-#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -47,7 +46,6 @@ namespace fuzzer {
     }
   };
   class Fuzzer {
-    Logger logger;
     vector<bool> vulnerabilities;
     unordered_set<uint64_t> tracebits;
     unordered_set<uint64_t> predicates;

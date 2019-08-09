@@ -4,6 +4,7 @@
 #include "Util.h"
 #include "ContractABI.h"
 #include "Dictionary.h"
+#include "Logger.h"
 
 using namespace dev;
 using namespace eth;
@@ -13,7 +14,6 @@ namespace pt = boost::property_tree;
 
 /* Setup virgin byte to 255 */
 Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
-  logger.setEnabled(true);
   fill_n(fuzzStat.stageFinds, 32, 0);
 }
 
@@ -146,7 +146,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData);
   item.res = te.exec(revisedData);
-  logger.debug(logger.testFormat(item.data));
+  Logger::debug(Logger::testFormat(item.data));
   fuzzStat.totalExecs ++;
   for (auto tracebit: item.res.tracebits) {
     if (!tracebits.count(tracebit)) {
@@ -160,8 +160,8 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
       leaders.insert(make_pair(tracebit, leader));
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
       fuzzStat.lastNewPath = timer.elapsed();
-      logger.debug("Cover new branch " + to_string(tracebit));
-      logger.debug(logger.testFormat(item.data));
+      Logger::debug("Cover new branch " + to_string(tracebit));
+      Logger::debug(Logger::testFormat(item.data));
     }
   }
   for (auto predicateIt: item.res.predicates) {
@@ -173,9 +173,9 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
         && leaderIt->second.comparisonValue > predicateIt.second // ComparisonValue is better
     ) {
       // Debug now
-      logger.debug("Found better test case for uncovered branch " + to_string(predicateIt.first));
-      logger.debug("prev: " + leaderIt->second.comparisonValue.str());
-      logger.debug("now : " + predicateIt.second.str());
+      Logger::debug("Found better test case for uncovered branch " + to_string(predicateIt.first));
+      Logger::debug("prev: " + leaderIt->second.comparisonValue.str());
+      Logger::debug("now : " + predicateIt.second.str());
       // Stop debug
       leaders.erase(leaderIt); // Remove leader
       item.depth = depth + 1;
@@ -183,7 +183,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
       leaders.insert(make_pair(predicateIt.first, leader)); // Insert leader
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
       fuzzStat.lastNewPath = timer.elapsed();
-      logger.debug(logger.testFormat(item.data));
+      Logger::debug(Logger::testFormat(item.data));
     } else if (leaderIt == leaders.end()) {
       auto leader = Leader(item, predicateIt.second);
       item.depth = depth + 1;
@@ -191,9 +191,9 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
       fuzzStat.lastNewPath = timer.elapsed();
       // Debug
-      logger.debug("Found new uncovered branch");
-      logger.debug("now: " + predicateIt.second.str());
-      logger.debug(logger.testFormat(item.data));
+      Logger::debug("Found new uncovered branch");
+      Logger::debug("now: " + predicateIt.second.str());
+      Logger::debug(Logger::testFormat(item.data));
     }
   }
   updateExceptions(item.res.uniqExceptions);
@@ -257,17 +257,17 @@ void Fuzzer::start() {
       }
       // Jump to fuzz loop
       while (true) {
-        logger.debug("== LEADERS ==");
+        Logger::debug("== LEADERS ==");
         for (auto leaderIt : leaders) {
           if (leaderIt.second.comparisonValue != 0) {
-            logger.debug("Branch \t\t\t : " + to_string(leaderIt.first));
-            logger.debug("Score \t\t\t : " + leaderIt.second.comparisonValue.str());
-            logger.debug("Fuzzed \t\t\t : " + to_string(leaderIt.second.item.fuzzedCount));
-            logger.debug("Depth \t\t\t : " + to_string(leaderIt.second.item.depth));
-            logger.debug(logger.testFormat(leaderIt.second.item.data));
+            Logger::debug("Branch \t\t\t : " + to_string(leaderIt.first));
+            Logger::debug("Score \t\t\t : " + leaderIt.second.comparisonValue.str());
+            Logger::debug("Fuzzed \t\t\t : " + to_string(leaderIt.second.item.fuzzedCount));
+            Logger::debug("Depth \t\t\t : " + to_string(leaderIt.second.item.depth));
+            Logger::debug(Logger::testFormat(leaderIt.second.item.data));
           }
         }
-        logger.debug("== END LEADERS ==");
+        Logger::debug("== END LEADERS ==");
         for (auto &leaderIt : leaders) {
           auto curItem = leaderIt.second.item;
           auto comparisonValue = leaderIt.second.comparisonValue;
@@ -324,90 +324,90 @@ void Fuzzer::start() {
           if (comparisonValue != 0) {
             // Haven't fuzzed before
             if (!curItem.fuzzedCount) {
-              logger.debug("SingleWalkingBit");
+              Logger::debug("SingleWalkingBit");
               mutation.singleWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP1] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("TwoWalkingBit");
+              Logger::debug("TwoWalkingBit");
               mutation.twoWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP2] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("FourWalkingBtit");
+              Logger::debug("FourWalkingBtit");
               mutation.fourWalkingBit(save);
               fuzzStat.stageFinds[STAGE_FLIP4] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("SingleWalkingByte");
+              Logger::debug("SingleWalkingByte");
               mutation.singleWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP8] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("TwoWalkingByte");
+              Logger::debug("TwoWalkingByte");
               mutation.twoWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP16] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("FourWalkingByte");
+              Logger::debug("FourWalkingByte");
               mutation.fourWalkingByte(save);
               fuzzStat.stageFinds[STAGE_FLIP32] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("SingleArith");
+              Logger::debug("SingleArith");
               mutation.singleArith(save);
               fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("TwoArith");
+              Logger::debug("TwoArith");
               mutation.twoArith(save);
               fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("FourArith");
+              Logger::debug("FourArith");
               mutation.fourArith(save);
               fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("SingleInterest");
+              Logger::debug("SingleInterest");
               mutation.singleInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("TwoInterest");
+              Logger::debug("TwoInterest");
               mutation.twoInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("FourInterest");
+              Logger::debug("FourInterest");
               mutation.fourInterest(save);
               fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("overwriteDict");
+              Logger::debug("overwriteDict");
               mutation.overwriteWithDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("overwriteAddress");
+              Logger::debug("overwriteAddress");
               mutation.overwriteWithAddressDictionary(save);
               fuzzStat.stageFinds[STAGE_EXTRAS_AO] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
 
-              logger.debug("havoc");
+              Logger::debug("havoc");
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
             } else {
-              logger.debug("havoc");
+              Logger::debug("havoc");
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
               originHitCount = leaders.size();
-              logger.debug("Splice");
+              Logger::debug("Splice");
               vector<FuzzItem> queues = {};
               for (auto it : leaders) queues.push_back(it.second.item);
               if (mutation.splice(queues)) {
-                logger.debug("havoc");
+                Logger::debug("havoc");
                 mutation.havoc(save);
                 fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
                 originHitCount = leaders.size();

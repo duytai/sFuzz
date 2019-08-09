@@ -1,7 +1,6 @@
 #pragma once
 #include <vector>
 #include "Common.h"
-#include "Logger.h"
 #include "TargetContainer.h"
 #include "Dictionary.h"
 #include "FuzzItem.h"
@@ -13,7 +12,6 @@ using namespace std;
 namespace fuzzer {
   using Dicts = tuple<Dictionary/* code */, Dictionary/* address */>;
   class Mutation {
-    Logger logger;
     FuzzItem curFuzzItem;
     Dicts dicts;
     uint64_t effCount = 0;

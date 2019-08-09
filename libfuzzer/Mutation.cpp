@@ -3,6 +3,7 @@
 #include "Dictionary.h"
 #include "Util.h"
 #include "FuzzItem.h"
+#include "Logger.h"
 
 using namespace std;
 using namespace fuzzer;
@@ -18,7 +19,6 @@ Mutation::Mutation(FuzzItem item, Dicts dicts): curFuzzItem(item), dicts(dicts),
     effCount ++;
   }
   stageName = "init";
-  logger.setEnabled(true);
 }
 
 void Mutation::flipbit(int pos) {
