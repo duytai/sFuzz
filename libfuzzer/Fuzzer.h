@@ -27,7 +27,7 @@ namespace fuzzer {
     FuzzMode mode;
     Reporter reporter;
     int duration;
-    int csvInterval;
+    int analyzingInterval;
     string attackerName;
   };
   struct FuzzStat {

@@ -194,7 +194,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
 void Fuzzer::start() {
   TargetContainer container;
   Dictionary codeDict, addressDict;
-  unordered_map<u64, u64> showMap;
+  unordered_set<u64> showSet;
   for (auto contractInfo : fuzzParam.contractInfo) {
     auto isAttacker = contractInfo.contractName.find(fuzzParam.attackerName) != string::npos;
     if (!contractInfo.isMain && !isAttacker) continue;
@@ -233,16 +233,21 @@ void Fuzzer::start() {
           auto save = [&](bytes data) {
             auto item = saveIfInterest(executive, data, curItem.depth);
             /* Show every one second */
-            u64 dur = timer.elapsed();
-            if (!showMap.count(dur)) {
-              showMap.insert(make_pair(dur, 1));
-              if (fuzzParam.reporter == JSON) {
-                if (dur % fuzzParam.csvInterval == 0)
-                  vulnerabilities = container.analyze();
-                  writeStats(mutation);
-              } else if (fuzzParam.reporter == TERMINAL) {
+            u64 duration = timer.elapsed();
+            if (!showSet.count(duration)) {
+              showSet.insert(duration);
+              if (duration % fuzzParam.analyzingInterval == 0) {
                 vulnerabilities = container.analyze();
-                showStats(mutation);
+              }
+              switch(fuzzParam.reporter) {
+                case JSON: {
+                  writeStats(mutation);
+                  break;
+                }
+                case TERMINAL: {
+                  showStats(mutation);
+                  break;
+                }
               }
             }
             /* Stop program */

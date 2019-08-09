@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 #include <libfuzzer/Fuzzer.h>
 #include "Utils.h"
 
@@ -9,7 +8,7 @@ using namespace fuzzer;
 static int DEFAULT_MODE = AFL;
 static int DEFAULT_DURATION = 120; // 2 mins
 static int DEFAULT_REPORTER = JSON;
-static int DEFAULT_CSV_INTERVAL = 5; // 5 sec
+static int DEFAULT_ANALYZING_INTERVAL = 5; // 5 sec
 static string DEFAULT_CONTRACTS_FOLDER = "contracts/";
 static string DEFAULT_ASSETS_FOLDER = "assets/";
 static string DEFAULT_ATTACKER = "ReentrancyAttacker";
@@ -66,7 +65,7 @@ int main(int argc, char* argv[]) {
     fuzzParam.mode = (FuzzMode) mode;
     fuzzParam.duration = duration;
     fuzzParam.reporter = (Reporter) reporter;
-    fuzzParam.csvInterval = DEFAULT_CSV_INTERVAL;
+    fuzzParam.analyzingInterval = DEFAULT_ANALYZING_INTERVAL;
     fuzzParam.attackerName = attackerName;
     Fuzzer fuzzer(fuzzParam);
     cout << ">> Fuzz " << contractName << endl;
