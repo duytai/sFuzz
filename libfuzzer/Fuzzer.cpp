@@ -109,7 +109,9 @@ void Fuzzer::showStats(const Mutation &mutation, vector<bool> vulnerabilities) {
   auto callOrder1 = to_string(mutation.stageCycles[STAGE_ORDER]);
   auto callOrder = padStr(callOrder1, 30);
   auto pending = padStr(to_string(leaders.size() - fuzzStat.idx - 1), 5);
-  auto fav = count_if(leaders.begin(), leaders.end(), [](const pair<uint64_t, Leader> &p) { return !p.second.item.fuzzedCount; });
+  auto fav = count_if(leaders.begin(), leaders.end(), [](const pair<uint64_t, Leader> &p) {
+    return !p.second.item.fuzzedCount;
+  });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
   for (auto exp: uniqExceptions) expCout+= exp.second.size();
@@ -250,9 +252,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
       auto leader = Leader(item, 0);
       leaders.insert(make_pair(tracebit, leader));
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
-      stringstream ss;
-      ss << "Cover New Branch " << tracebit << endl;
-      logger.debug(ss.str());
+      logger.debug("Cover new branch " + to_string(tracebit));
       logger.debug(logger.testFormat(item.data));
     }
   }
@@ -265,9 +265,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth)
         && leaderIt->second.comparisonValue > predicateIt.second // ComparisonValue is better
     ) {
       // Debug now
-      stringstream ss;
-      ss << "Found better test case for uncovered branch " << predicateIt.first;
-      logger.debug(ss.str());
+      logger.debug("Found better test case for uncovered branch " + to_string(predicateIt.first));
       logger.debug("prev: " + leaderIt->second.comparisonValue.str());
       logger.debug("now : " + predicateIt.second.str());
       // Stop debug
@@ -327,13 +325,11 @@ void Fuzzer::start() {
         logger.debug("== LEADERS ==");
         for (auto leaderIt : leaders) {
           if (leaderIt.second.comparisonValue != 0) {
-            stringstream ss;
-            ss << "Branch  : " << leaderIt.first << endl;
-            ss << "Score   : " << leaderIt.second.comparisonValue << endl;
-            ss << "Fuzzed  : " << leaderIt.second.item.fuzzedCount << endl;
-            ss << "Depth   : " << leaderIt.second.item.depth << endl;
-            ss << logger.testFormat(leaderIt.second.item.data) << endl;
-            logger.debug(ss.str());
+            logger.debug("Branch \t\t\t : " + to_string(leaderIt.first));
+            logger.debug("Score \t\t\t : " + leaderIt.second.comparisonValue.str());
+            logger.debug("Fuzzed \t\t\t : " + to_string(leaderIt.second.item.fuzzedCount));
+            logger.debug("Depth \t\t\t : " + to_string(leaderIt.second.item.depth));
+            logger.debug(logger.testFormat(leaderIt.second.item.data));
           }
         }
         logger.debug("== END LEADERS ==");
@@ -445,9 +441,18 @@ void Fuzzer::start() {
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - origHitCount;
               origHitCount = leaders.size();
+              logger.debug("Splice");
+              vector<FuzzItem> queues = {};
+              for (auto it : leaders) queues.push_back(it.second.item);
+              if (mutation.splice(queues)) {
+                logger.debug("havoc");
+                mutation.havoc(save);
+                fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - origHitCount;
+                origHitCount = leaders.size();
+              }
             }
-            leaderIt.second.item.fuzzedCount += 1;
           }
+          leaderIt.second.item.fuzzedCount += 1;
           fuzzStat.idx = (fuzzStat.idx + 1) % leaders.size();
           if (fuzzStat.idx == 0) fuzzStat.queueCycle ++;
         }
