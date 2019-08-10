@@ -1,4 +1,5 @@
 #include "TargetExecutive.h"
+#include "Logger.h"
 
 namespace fuzzer {
   void TargetExecutive::deploy(bytes data, OnOpFunc onOp) {

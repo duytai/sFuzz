@@ -212,6 +212,8 @@ void Fuzzer::start() {
     if (!contractInfo.isMain && !isAttacker) continue;
     ContractABI ca(contractInfo.abiJson);
     auto bin = fromHex(contractInfo.bin);
+    auto binRuntime = fromHex(contractInfo.binRuntime);
+    // Accept only valid jumpis
     auto executive = container.loadContract(bin, ca);
     if (!contractInfo.isMain) {
       /* Load Attacker agent contract */
@@ -224,6 +226,7 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
+      findValidJumpis(bin, binRuntime);
       saveIfInterest(executive, ca.randomTestcase(), 0);
       int originHitCount = leaders.size();
       // No branch

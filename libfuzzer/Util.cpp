@@ -1,22 +1,23 @@
 #include "Util.h"
+#include "Logger.h"
 
 namespace fuzzer {
   u32 UR(u32 limit) {
     return random() % limit;
   }
-  
+
   int effAPos(int p) {
     return p >> EFF_MAP_SCALE2;
   }
-  
+
   int effRem(int x) {
     return (x) & ((1 << EFF_MAP_SCALE2) - 1);
   }
-  
+
   int effALen(int l) {
     return effAPos(l) + !!effRem(l);
   }
-  
+
   int effSpanALen(int p, int l) {
     return (effAPos(p + l - 1) - effAPos(p) + 1);
   }
@@ -125,22 +126,22 @@ namespace fuzzer {
     }
     return false;
   }
-  
+
   u16 swap16(u16 x) {
     return x << 8 | x >> 8;
   }
-  
+
   u32 swap32(u32 x) {
     return x << 24 | x >> 24 | ((x << 8) & 0x00FF0000) | ((x >> 8) & 0x0000FF00);
   }
-  
+
   u32 chooseBlockLen(u32 limit) {
     /* Delete at most: 1/4 */
     int maxFactor = limit / (4 * 32);
     if (!maxFactor) return 0;
     return (UR(maxFactor) + 1) * 32;
   }
-    
+
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last) {
     s32 f_loc = -1;
     s32 l_loc = -1;
@@ -155,7 +156,7 @@ namespace fuzzer {
     *last = l_loc;
     return;
   }
-  
+
   string formatDuration(int duration) {
     stringstream ret;
     int days = duration / (60 * 60 * 24);
@@ -172,11 +173,138 @@ namespace fuzzer {
       << " sec";
     return padStr(ret.str(), 48);
   }
-  
+
   string padStr(string str, int len) {
     while ((int)str.size() < len) str += " ";
     return str;
   }
-  
+
+  vector<uint64_t> findValidJumpisInSegment(bytes code) {
+    uint64_t pc = 0;
+    vector<Instruction> instructions;
+    vector<uint64_t> validJumpis;
+    Logger::debug(toHex(code));
+    while (pc < code.size()) {
+      auto inst = (Instruction) code[pc];
+      auto name = Tier::Invalid == instructionInfo(inst).gasPriceTier ? "Missing Opcode" : instructionInfo(inst).name;
+      if (inst >= Instruction::PUSH1 && inst <= Instruction::PUSH32) {
+        auto jumpNum = code[pc] - (uint64_t) Instruction::PUSH1 + 1;
+        auto payload = bytes(code.begin() + pc + 1, code.begin() + pc + 1 + jumpNum);
+        Logger::debug(to_string(pc) + " " + name + " 0x" + toHex(payload));
+        pc += jumpNum;
+      } else {
+        Logger::debug(to_string(pc) + " " + name);
+      }
+      if (inst == Instruction ::JUMPI) {
+        // Check user sends ether
+        bool isValid = true;
+        if (instructions.size() >= 5) {
+          bool isValueCheck = true;
+          auto it = instructions.begin() + instructions.size() - 5;
+          isValueCheck = isValueCheck && (*it == Instruction::JUMPDEST);
+          isValueCheck = isValueCheck && (*(it + 1) == Instruction::CALLVALUE);
+          isValueCheck = isValueCheck && (*(it + 2) >= Instruction::DUP1 && *(it + 2) <= Instruction::DUP16);
+          isValueCheck = isValueCheck && (*(it + 3) == Instruction::ISZERO);
+          isValueCheck = isValueCheck && (*(it + 4) >= Instruction::PUSH1 && *(it + 4) <= Instruction::PUSH32);
+          Logger::debug("isValueCheck " + to_string(isValueCheck));
+          isValid = isValid && !isValueCheck;
+        }
+        // Check size of function inputs
+        if (instructions.size() >= 3) {
+          bool isDataSize = true;
+          auto it = instructions.begin() + instructions.size() - 3;
+          isDataSize = isDataSize && (*it == Instruction::CALLDATASIZE);
+          isDataSize = isDataSize && (*(it + 1) == Instruction::LT);
+          isDataSize = isDataSize && (*(it + 2) >= Instruction::PUSH1 && *(it + 2) <= Instruction::PUSH32);
+          Logger::debug("isDataSize " + to_string(isDataSize));
+          isValid = isValid && !isDataSize;
+        }
+        // Check function signature
+        if (instructions.size() >= 4) {
+          bool isFunctionCall = true;
+          auto it = instructions.begin() + instructions.size() - 4;
+          isFunctionCall = isFunctionCall && (*it == Instruction::DUP1);
+          isFunctionCall = isFunctionCall && (*(it + 1) == Instruction::PUSH4);
+          isFunctionCall = isFunctionCall && (*(it + 2) == Instruction::EQ);
+          isFunctionCall = isFunctionCall && (*(it + 3) >= Instruction::PUSH1);
+          Logger::debug("isFunctionCall " + to_string(isFunctionCall));
+          isValid = isValid && !isFunctionCall;
+        }
+        // Check if load data from memory
+        if (instructions.size() >= 6) {
+          bool isMemoryLoad = true;
+          auto it = instructions.begin() + instructions.size() - 6;
+          isMemoryLoad = isMemoryLoad && (*it == Instruction::MLOAD);
+          isMemoryLoad = isMemoryLoad && (*(it + 1) >= Instruction::DUP1 && *(it + 1) <= Instruction::DUP16);
+          isMemoryLoad = isMemoryLoad && (*(it + 2) == Instruction::LT);
+          isMemoryLoad = isMemoryLoad && (*(it + 3) == Instruction::ISZERO);
+          isMemoryLoad = isMemoryLoad && (*(it + 4) == Instruction::ISZERO);
+          isMemoryLoad = isMemoryLoad && (*(it + 5) >= Instruction::PUSH1 && *(it + 5) <= Instruction::PUSH32);
+          Logger::debug("isMemoryLoad " + to_string(isMemoryLoad));
+          isValid = isValid && !isMemoryLoad;
+        }
+        // check if load data from strorage
+        if (instructions.size() >= 6) {
+          bool isStorageLoad = true;
+          auto it = instructions.begin() + instructions.size() - 6;
+          isStorageLoad = isStorageLoad && (*it == Instruction::SLOAD);
+          isStorageLoad = isStorageLoad && (*(it + 1) >= Instruction::DUP1 && *(it + 1) <= Instruction::DUP16);
+          isStorageLoad = isStorageLoad && (*(it + 2) == Instruction::LT);
+          isStorageLoad = isStorageLoad && (*(it + 3) == Instruction::ISZERO);
+          isStorageLoad = isStorageLoad && (*(it + 4) == Instruction::ISZERO);
+          isStorageLoad = isStorageLoad && (*(it + 5) >= Instruction::PUSH1 && *(it + 5) <= Instruction::PUSH32);
+          Logger::debug("isStorageLoad " + to_string(isStorageLoad));
+          isValid = isValid && !isStorageLoad;
+        }
+        // check if str
+        if (instructions.size() >= 6) {
+          bool isStr = true;
+          auto it = instructions.begin() + instructions.size() - 6;
+          isStr = isStr && (*it == Instruction::JUMPDEST);
+          isStr = isStr && (*(it + 1) >= Instruction::DUP1 && *(it + 1) <= Instruction::DUP16);
+          isStr = isStr && (*(it + 2) >= Instruction::DUP1 && *(it + 2) <= Instruction::DUP16);
+          isStr = isStr && (*(it + 3) == Instruction::LT
+                            || *(it + 3) == Instruction::GT
+                            || *(it + 3) == Instruction::EQ
+                            || *(it + 3) == Instruction::ISZERO);
+          isStr = isStr && (*(it + 4) == Instruction::ISZERO);
+          isStr = isStr && (*(it + 5) == Instruction::PUSH2);
+          Logger::debug("isStr " + to_string(isStr));
+          isValid = isValid && !isStr;
+        }
+        // check if valid
+        if (instructions.size() >= 3) {
+          bool isComparison = true;
+          auto it = instructions.begin() + instructions.size() - 3;
+          isComparison = isComparison && (*it == Instruction::LT
+                                || *it == Instruction::GT
+                                || *it == Instruction::EQ
+                                || *it == Instruction::ISZERO);
+          isComparison = isComparison && (*(it + 1) == Instruction::ISZERO);
+          isComparison = isComparison && (*(it + 2) >= Instruction::PUSH1 && *(it + 2) <= Instruction::PUSH32);
+          Logger::debug("isComparison " + to_string(isComparison));
+          isValid = isValid && isComparison;
+        }
+        Logger::debug("final " + to_string(isValid));
+        if (isValid) validJumpis.push_back(pc);
+      }
+      instructions.push_back(inst);
+      pc ++;
+    }
+    return validJumpis;
+  }
+
+  tuple<vector<uint64_t>, vector<uint64_t>> findValidJumpis(bytes bin, bytes binRuntime) {
+    uint64_t idx = 0;
+    while (idx < bin.size()) {
+      auto temp = bytes(bin.begin() + idx, bin.end());
+      if (toHex(temp) == toHex(binRuntime)) break;
+      idx += 1;
+    }
+    auto binDeploy = bytes(bin.begin(), bin.begin() + idx);
+    auto jumpisDeploy = findValidJumpisInSegment(binDeploy);
+    auto jumpisRuntime = findValidJumpisInSegment(binRuntime);
+    return make_tuple(jumpisDeploy, jumpisRuntime);
+  }
 }
 
