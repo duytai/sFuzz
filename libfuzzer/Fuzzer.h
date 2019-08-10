@@ -47,10 +47,10 @@ namespace fuzzer {
   };
   class Fuzzer {
     vector<bool> vulnerabilities;
-    unordered_set<uint64_t> tracebits;
-    unordered_set<uint64_t> predicates;
-    unordered_map<uint64_t, Leader> leaders;
-    unordered_set<uint64_t> uniqExceptions;
+    unordered_set<string> tracebits;
+    unordered_set<string> predicates;
+    unordered_map<string, Leader> leaders;
+    unordered_set<string> uniqExceptions;
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
@@ -59,10 +59,11 @@ namespace fuzzer {
     public:
       Fuzzer(FuzzParam fuzzParam);
       FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis);
-      void showStats(const Mutation &mutation);
-      void updateTracebits(unordered_set<uint64_t> tracebits);
-      void updatePredicates(unordered_map<uint64_t, u256> predicates);
-      void updateExceptions(unordered_set<uint64_t> uniqExceptions);
+      void showStats(const Mutation &mutation, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis);
+      void updateTracebits(unordered_set<string> tracebits);
+      void updatePredicates(unordered_map<string, u256> predicates);
+      void updateExceptions(unordered_set<string> uniqExceptions);
       void start();
+      void stop();
   };
 }

@@ -18,16 +18,16 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
 }
 
 /* Detect new exception */
-void Fuzzer::updateExceptions(unordered_set<uint64_t> exps) {
+void Fuzzer::updateExceptions(unordered_set<string> exps) {
   for (auto it: exps) uniqExceptions.insert(it);
 }
 
 /* Detect new bits by comparing tracebits to virginbits */
-void Fuzzer::updateTracebits(unordered_set<uint64_t> _tracebits) {
+void Fuzzer::updateTracebits(unordered_set<string> _tracebits) {
   for (auto it: _tracebits) tracebits.insert(it);
 }
 
-void Fuzzer::updatePredicates(unordered_map<uint64_t, u256> _pred) {
+void Fuzzer::updatePredicates(unordered_map<string, u256> _pred) {
   for (auto it : _pred) {
     predicates.insert(it.first);
   };
@@ -50,7 +50,7 @@ ContractInfo Fuzzer::mainContract() {
   return *it;
 }
 
-void Fuzzer::showStats(const Mutation &mutation) {
+void Fuzzer::showStats(const Mutation &mutation, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis) {
   int numLines = 24, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
@@ -69,6 +69,8 @@ void Fuzzer::showStats(const Mutation &mutation) {
   auto cycleProgress = padStr(to_string(fuzzStat.idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(fuzzStat.queueCycle), 15);
   auto numBranches = padStr(to_string(tracebits.size()), 15);
+  auto totalBranches = (get<0>(validJumpis).size() + get<1>(validJumpis).size()) * 2;
+  auto coverage = padStr(to_string((uint64_t)((float)(tracebits.size()) / totalBranches) * 100) + "%", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(fuzzStat.stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(fuzzStat.stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -91,7 +93,7 @@ void Fuzzer::showStats(const Mutation &mutation) {
   auto hav1 = to_string(fuzzStat.stageFinds[STAGE_HAVOC]) + "/" + to_string(mutation.stageCycles[STAGE_HAVOC]);
   auto havoc = padStr(hav1, 30);
   auto pending = padStr(to_string(leaders.size() - fuzzStat.idx - 1), 5);
-  auto fav = count_if(leaders.begin(), leaders.end(), [](const pair<uint64_t, Leader> &p) {
+  auto fav = count_if(leaders.begin(), leaders.end(), [](const pair<string, Leader> &p) {
     return !p.second.item.fuzzedCount;
   });
   auto pendingFav = padStr(to_string(fav), 5);
@@ -107,7 +109,7 @@ void Fuzzer::showStats(const Mutation &mutation) {
   printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV2 bV2 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
   printf(bH " stage execs : %s" bH "    branches : %s" bH "\n", stageExec.c_str(), numBranches.c_str());
-  printf(bH " total execs : %s" bH "               %s" bH "\n", allExecs.c_str(), padStr("", 15).c_str());
+  printf(bH " total execs : %s" bH "    coverage : %s" bH "\n", allExecs.c_str(), coverage.c_str());
   printf(bH "  exec speed : %s" bH "               %s" bH "\n", execSpeed.c_str(), padStr("", 15).c_str());
   printf(bH "  cycle prog : %s" bH "               %s" bH "\n", cycleProgress.c_str(), padStr("", 15).c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bV2 bV2 bRTR "\n");
@@ -151,7 +153,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
   for (auto tracebit: item.res.tracebits) {
     if (!tracebits.count(tracebit)) {
       // Remove leader
-      auto fi = [=](const pair<uint64_t, Leader>& p) { return p.first == tracebit;};
+      auto fi = [=](const pair<string, Leader>& p) { return p.first == tracebit;};
       auto it = find_if(leaders.begin(), leaders.end(), fi);
       if (it!= leaders.end()) leaders.erase(it);
       // Insert leader
@@ -160,12 +162,12 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
       leaders.insert(make_pair(tracebit, leader));
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
       fuzzStat.lastNewPath = timer.elapsed();
-      Logger::debug("Cover new branch " + to_string(tracebit));
+      Logger::debug("Cover new branch "  + tracebit);
       Logger::debug(Logger::testFormat(item.data));
     }
   }
   for (auto predicateIt: item.res.predicates) {
-    auto fi = [=](const pair<uint64_t, Leader>& p) { return p.first == predicateIt.first;};
+    auto fi = [=](const pair<string, Leader>& p) { return p.first == predicateIt.first;};
     auto leaderIt = find_if(leaders.begin(), leaders.end(), fi);
     if (
         leaderIt != leaders.end() // Found Leader
@@ -173,7 +175,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
         && leaderIt->second.comparisonValue > predicateIt.second // ComparisonValue is better
     ) {
       // Debug now
-      Logger::debug("Found better test case for uncovered branch " + to_string(predicateIt.first));
+      Logger::debug("Found better test case for uncovered branch " + predicateIt.first);
       Logger::debug("prev: " + leaderIt->second.comparisonValue.str());
       Logger::debug("now : " + predicateIt.second.str());
       // Stop debug
@@ -200,6 +202,16 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
   updateTracebits(item.res.tracebits);
   updatePredicates(item.res.predicates);
   return item;
+}
+
+/* Stop fuzzing */
+void Fuzzer::stop() {
+  Logger::debug("==== TEST CASES ====");
+  for (auto it : leaders) {
+    Logger::debug("BR " + it.first);
+    Logger::debug(Logger::testFormat(it.second.item.data));
+  }
+  exit(1);
 }
 
 /* Start fuzzing */
@@ -232,10 +244,10 @@ void Fuzzer::start() {
       // No branch
       if (!originHitCount) {
         cout << "No branch" << endl;
-        exit(0);
+        stop();
       }
       // There are uncovered branches or not
-      auto fi = [&](const pair<uint64_t, Leader> &p) { return p.second.comparisonValue != 0;};
+      auto fi = [&](const pair<string, Leader> &p) { return p.second.comparisonValue != 0;};
       auto numUncoveredBranches = count_if(leaders.begin(), leaders.end(), fi);
       if (!numUncoveredBranches) {
         auto curItem = (*leaders.begin()).second.item;
@@ -243,7 +255,7 @@ void Fuzzer::start() {
         vulnerabilities = container.analyze();
         switch (fuzzParam.reporter) {
           case TERMINAL: {
-            showStats(mutation);
+            showStats(mutation, validJumpis);
             break;
           }
           case JSON: {
@@ -251,19 +263,19 @@ void Fuzzer::start() {
             break;
           }
           case BOTH: {
-            showStats(mutation);
+            showStats(mutation, validJumpis);
             writeStats(mutation);
             break;
           }
         }
-        exit(1);
+        stop();
       }
       // Jump to fuzz loop
       while (true) {
         Logger::debug("== LEADERS ==");
         for (auto leaderIt : leaders) {
           if (leaderIt.second.comparisonValue != 0) {
-            Logger::debug("Branch \t\t\t : " + to_string(leaderIt.first));
+            Logger::debug("Branch \t\t\t : " + leaderIt.first);
             Logger::debug("Score \t\t\t : " + leaderIt.second.comparisonValue.str());
             Logger::debug("Fuzzed \t\t\t : " + to_string(leaderIt.second.item.fuzzedCount));
             Logger::debug("Depth \t\t\t : " + to_string(leaderIt.second.item.depth));
@@ -286,7 +298,7 @@ void Fuzzer::start() {
               }
               switch (fuzzParam.reporter) {
                 case TERMINAL: {
-                  showStats(mutation);
+                  showStats(mutation, validJumpis);
                   break;
                 }
                 case JSON: {
@@ -294,7 +306,7 @@ void Fuzzer::start() {
                   break;
                 }
                 case BOTH: {
-                  showStats(mutation);
+                  showStats(mutation, validJumpis);
                   writeStats(mutation);
                   break;
                 }
@@ -306,7 +318,7 @@ void Fuzzer::start() {
               vulnerabilities = container.analyze();
               switch(fuzzParam.reporter) {
                 case TERMINAL: {
-                  showStats(mutation);
+                  showStats(mutation, validJumpis);
                   break;
                 }
                 case JSON: {
@@ -314,12 +326,12 @@ void Fuzzer::start() {
                   break;
                 }
                 case BOTH: {
-                  showStats(mutation);
+                  showStats(mutation, validJumpis);
                   writeStats(mutation);
                   break;
                 }
               }
-              exit(0);
+              stop();
             }
             return item;
           };

@@ -11,19 +11,19 @@ namespace fuzzer {
   struct TargetContainerResult {
     TargetContainerResult() {}
     TargetContainerResult(
-        unordered_set<uint64_t> tracebits,
-        unordered_map<uint64_t, u256> predicates,
-        unordered_set<uint64_t> uniqExceptions,
-        double cksum
+        unordered_set<string> tracebits,
+        unordered_map<string, u256> predicates,
+        unordered_set<string> uniqExceptions,
+        string cksum
     );
 
     /* Contains execution paths */
-    unordered_set<uint64_t> tracebits;
+    unordered_set<string> tracebits;
     /* Save predicates */
-    unordered_map<uint64_t, u256> predicates;
+    unordered_map<string, u256> predicates;
     /* Exception path */
-    unordered_set<uint64_t> uniqExceptions;
+    unordered_set<string> uniqExceptions;
     /* Contains checksum of tracebits */
-    double cksum;
+    string cksum;
   };
 }

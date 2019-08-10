@@ -17,9 +17,9 @@ namespace fuzzer {
     u256 lastCompValue = 0;
     u64 jumpDest1 = 0;
     u64 jumpDest2 = 0;
-    unordered_set<uint64_t> uniqExceptions;
-    unordered_set<uint64_t> tracebits;
-    unordered_map<uint64_t, u256> predicates;
+    unordered_set<string> uniqExceptions;
+    unordered_set<string> tracebits;
+    unordered_map<string, u256> predicates;
     vector<bytes> outputs;
     size_t savepoint = program->savepoint();
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
@@ -107,11 +107,12 @@ namespace fuzzer {
       recordable = recordParam.isDeployment && get<0>(validJumpis).count(recordParam.lastpc);
       recordable = recordable || !recordParam.isDeployment && get<1>(validJumpis).count(recordParam.lastpc);
       if (prevInst == Instruction::JUMPCI && recordable) {
-        tracebits.insert(pc ^ recordParam.prevLocation);
+        auto branchId = to_string(recordParam.lastpc) + ":" + to_string(pc);
+        tracebits.insert(branchId);
         /* Calculate branch distance */
         u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
-        predicates[jumpDest ^ recordParam.prevLocation] = lastCompValue;
-        recordParam.prevLocation = pc >> 1;
+        branchId = to_string(recordParam.lastpc) + ":" + to_string(jumpDest);
+        predicates[branchId] = lastCompValue;
       }
       prevInst = inst;
       recordParam.lastpc = pc;
@@ -124,7 +125,6 @@ namespace fuzzer {
     program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     oracleFactory->initialize();
     /* Record all JUMPI in constructor */
-    recordParam.prevLocation = 0;
     recordParam.isDeployment = true;
     auto sender = ca.getSender();
     OpcodePayload payload;
@@ -136,7 +136,8 @@ namespace fuzzer {
     oracleFactory->save(OpcodeContext(0, payload));
     auto res = program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
     if (res.excepted != TransactionException::None) {
-      uniqExceptions.insert(recordParam.lastpc ^ recordParam.prevLocation);
+      auto exceptionId = to_string(recordParam.lastpc);
+      uniqExceptions.insert(exceptionId) ;
       /* Save Call Log */
       OpcodePayload payload;
       payload.inst = Instruction::INVALID;
@@ -148,7 +149,6 @@ namespace fuzzer {
       auto func = funcs[funcIdx];
       auto fd = ca.fds[funcIdx];
       /* Ignore JUMPI until program reaches inside function */
-      recordParam.prevLocation = (uint64_t) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
       recordParam.isDeployment = false;
       OpcodePayload payload;
       payload.data = func;
@@ -160,7 +160,8 @@ namespace fuzzer {
       res = program->invoke(addr, CONTRACT_FUNCTION, func, ca.isPayable(fd.name), onOp);
       outputs.push_back(res.output);
       if (res.excepted != TransactionException::None) {
-        uniqExceptions.insert(recordParam.lastpc ^ recordParam.prevLocation);
+        auto exceptionId = to_string(recordParam.lastpc);
+        uniqExceptions.insert(exceptionId);
         /* Save Call Log */
         OpcodePayload payload;
         payload.inst = Instruction::INVALID;
@@ -170,8 +171,8 @@ namespace fuzzer {
     }
     /* Reset data before running new contract */
     program->rollback(savepoint);
-    double cksum = 0;
-    for (auto t : tracebits) cksum = cksum + (double)(t + cksum)/3;
+    string cksum = "";
+    for (auto t : tracebits) cksum = cksum + t;
     return TargetContainerResult(tracebits, predicates, uniqExceptions, cksum);
   }
 }

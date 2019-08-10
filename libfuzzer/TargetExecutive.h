@@ -14,7 +14,6 @@ using namespace std;
 
 namespace fuzzer {
   struct RecordParam {
-    u64 prevLocation = 0;
     u64 lastpc = 0;
     bool isDeployment = false;
   };
