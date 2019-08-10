@@ -10,7 +10,7 @@ namespace fuzzer {
     program->invoke(addr, CONTRACT_CONSTRUCTOR, ca.encodeConstructor(), ca.isPayable(""), onOp);
   }
 
-  TargetContainerResult TargetExecutive::exec(bytes data) {
+  TargetContainerResult TargetExecutive::exec(bytes data, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>>& validJumpis) {
     /* Save all hit branches to trace_bits */
     Instruction prevInst;
     RecordParam recordParam;
@@ -24,7 +24,6 @@ namespace fuzzer {
     size_t savepoint = program->savepoint();
     OnOpFunc onOp = [&](u64, u64 pc, Instruction inst, bigint, bigint, bigint, VMFace const* _vm, ExtVMFace const* ext) {
       auto vm = dynamic_cast<LegacyVM const*>(_vm);
-      recordParam.lastpc = pc;
       /* Oracle analyze data */
       switch (inst) {
         case Instruction::CALL:
@@ -90,37 +89,32 @@ namespace fuzzer {
             u256 left = vm->stack()[stackSize - 1];
             u256 right = vm->stack()[stackSize - 2];
             /* calculate if command inside a function */
-            if (recordParam.recording) {
-              u256 temp = left > right ? left - right : right - left;
-              lastCompValue = temp + 1;
-            }
-            /* EQ call == function signature */
-            recordParam.recording = recordParam.recording
-                || (left == right && right == recordParam.functionSignature);
+            u256 temp = left > right ? left - right : right - left;
+            lastCompValue = temp + 1;
           }
           break;
         }
         default: { break; }
       }
-      /* Calculate predicates */
-      if (recordParam.recording) {
-        if (inst == Instruction::JUMPCI) {
-          jumpDest1 = (u64) vm->stack().back();
-          jumpDest2 = pc + 1;
-        }
-        if (prevInst == Instruction::JUMPCI) {
-          tracebits.insert(pc ^ recordParam.prevLocation);
-          /* Calculate branch distance */
-          if (lastCompValue != 0) {
-            /* Save predicate for uncovered branches */
-            u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
-            predicates[jumpDest ^ recordParam.prevLocation] = lastCompValue;
-            lastCompValue = 0;
-          }
-          recordParam.prevLocation = pc >> 1;
-        }
-        prevInst = inst;
+      /* Calculate left and right branches for valid jumpis*/
+      auto recordable = recordParam.isDeployment && get<0>(validJumpis).count(pc);
+      recordable = recordable || !recordParam.isDeployment && get<1>(validJumpis).count(pc);
+      if (inst == Instruction::JUMPCI && recordable) {
+        jumpDest1 = (u64) vm->stack().back();
+        jumpDest2 = pc + 1;
       }
+      /* Calculate actual jumpdest and add reverse branch to predicate */
+      recordable = recordParam.isDeployment && get<0>(validJumpis).count(recordParam.lastpc);
+      recordable = recordable || !recordParam.isDeployment && get<1>(validJumpis).count(recordParam.lastpc);
+      if (prevInst == Instruction::JUMPCI && recordable) {
+        tracebits.insert(pc ^ recordParam.prevLocation);
+        /* Calculate branch distance */
+        u64 jumpDest = pc == jumpDest1 ? jumpDest2 : jumpDest1;
+        predicates[jumpDest ^ recordParam.prevLocation] = lastCompValue;
+        recordParam.prevLocation = pc >> 1;
+      }
+      prevInst = inst;
+      recordParam.lastpc = pc;
     };
     /* Decode and call functions */
     ca.updateTestData(data);
@@ -130,11 +124,9 @@ namespace fuzzer {
     program->updateEnv(ca.decodeAccounts(), ca.decodeBlock());
     oracleFactory->initialize();
     /* Record all JUMPI in constructor */
-    recordParam.recording = true;
     recordParam.prevLocation = 0;
-    /* Who is sender */
+    recordParam.isDeployment = true;
     auto sender = ca.getSender();
-    /* record storage */
     OpcodePayload payload;
     payload.inst = Instruction::CALL;
     payload.data = ca.encodeConstructor();
@@ -156,9 +148,8 @@ namespace fuzzer {
       auto func = funcs[funcIdx];
       auto fd = ca.fds[funcIdx];
       /* Ignore JUMPI until program reaches inside function */
-      recordParam.recording = false;
-      recordParam.functionSignature = (u64) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
-      recordParam.prevLocation = recordParam.functionSignature;
+      recordParam.prevLocation = (uint64_t) u256("0x" + toHex(bytes(func.begin(), func.begin() + 4)));
+      recordParam.isDeployment = false;
       OpcodePayload payload;
       payload.data = func;
       payload.inst = Instruction::CALL;

@@ -179,10 +179,10 @@ namespace fuzzer {
     return str;
   }
 
-  vector<uint64_t> findValidJumpisInSegment(bytes code) {
+  unordered_set<uint64_t> findValidJumpisInSegment(bytes code) {
     uint64_t pc = 0;
     vector<Instruction> instructions;
-    vector<uint64_t> validJumpis;
+    unordered_set<uint64_t> validJumpis;
     Logger::debug(toHex(code));
     while (pc < code.size()) {
       auto inst = (Instruction) code[pc];
@@ -286,7 +286,7 @@ namespace fuzzer {
           isValid = isValid && isComparison;
         }
         Logger::debug("final " + to_string(isValid));
-        if (isValid) validJumpis.push_back(pc);
+        if (isValid) validJumpis.insert(pc);
       }
       instructions.push_back(inst);
       pc ++;
@@ -294,7 +294,7 @@ namespace fuzzer {
     return validJumpis;
   }
 
-  tuple<vector<uint64_t>, vector<uint64_t>> findValidJumpis(bytes bin, bytes binRuntime) {
+  tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> findValidJumpis(bytes bin, bytes binRuntime) {
     uint64_t idx = 0;
     while (idx < bin.size()) {
       auto temp = bytes(bin.begin() + idx, bin.end());

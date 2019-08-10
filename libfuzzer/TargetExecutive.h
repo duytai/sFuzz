@@ -14,10 +14,9 @@ using namespace std;
 
 namespace fuzzer {
   struct RecordParam {
-    bool recording = false;
-    u64 functionSignature = 0;
     u64 prevLocation = 0;
     u64 lastpc = 0;
+    bool isDeployment = false;
   };
   class TargetExecutive {
       TargetProgram *program;
@@ -33,7 +32,7 @@ namespace fuzzer {
         this->program = program;
         this->oracleFactory = oracleFactory;
       }
-      TargetContainerResult exec(bytes data);
+      TargetContainerResult exec(bytes data, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis);
       void deploy(bytes data, OnOpFunc onOp);
   };
 }

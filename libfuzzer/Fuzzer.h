@@ -58,7 +58,7 @@ namespace fuzzer {
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
-      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth);
+      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis);
       void showStats(const Mutation &mutation);
       void updateTracebits(unordered_set<uint64_t> tracebits);
       void updatePredicates(unordered_map<uint64_t, u256> predicates);

@@ -142,10 +142,10 @@ void Fuzzer::writeStats(const Mutation &mutation) {
 }
 
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth) {
+FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>>& validJumpis) {
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData);
-  item.res = te.exec(revisedData);
+  item.res = te.exec(revisedData, validJumpis);
   Logger::debug(Logger::testFormat(item.data));
   fuzzStat.totalExecs ++;
   for (auto tracebit: item.res.tracebits) {
@@ -226,8 +226,8 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
-      findValidJumpis(bin, binRuntime);
-      saveIfInterest(executive, ca.randomTestcase(), 0);
+      auto validJumpis = findValidJumpis(bin, binRuntime);
+      saveIfInterest(executive, ca.randomTestcase(), 0, validJumpis);
       int originHitCount = leaders.size();
       // No branch
       if (!originHitCount) {
@@ -276,7 +276,7 @@ void Fuzzer::start() {
           auto comparisonValue = leaderIt.second.comparisonValue;
           Mutation mutation(curItem, make_tuple(codeDict, addressDict));
           auto save = [&](bytes data) {
-            auto item = saveIfInterest(executive, data, curItem.depth);
+            auto item = saveIfInterest(executive, data, curItem.depth, validJumpis);
             /* Show every one second */
             u64 duration = timer.elapsed();
             if (!showSet.count(duration)) {
