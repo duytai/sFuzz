@@ -1,5 +1,4 @@
 #include "Util.h"
-#include "Logger.h"
 
 namespace fuzzer {
   u32 UR(u32 limit) {
@@ -183,17 +182,12 @@ namespace fuzzer {
     uint64_t pc = 0;
     vector<Instruction> instructions;
     unordered_set<uint64_t> validJumpis;
-    Logger::debug(toHex(code));
     while (pc < code.size()) {
       auto inst = (Instruction) code[pc];
       auto name = Tier::Invalid == instructionInfo(inst).gasPriceTier ? "Missing Opcode" : instructionInfo(inst).name;
       if (inst >= Instruction::PUSH1 && inst <= Instruction::PUSH32) {
         auto jumpNum = code[pc] - (uint64_t) Instruction::PUSH1 + 1;
-        auto payload = bytes(code.begin() + pc + 1, code.begin() + pc + 1 + jumpNum);
-        Logger::debug(to_string(pc) + " " + name + " 0x" + toHex(payload));
         pc += jumpNum;
-      } else {
-        Logger::debug(to_string(pc) + " " + name);
       }
       if (inst == Instruction ::JUMPI) {
         // Check user sends ether
@@ -206,7 +200,6 @@ namespace fuzzer {
           isValueCheck = isValueCheck && (*(it + 2) >= Instruction::DUP1 && *(it + 2) <= Instruction::DUP16);
           isValueCheck = isValueCheck && (*(it + 3) == Instruction::ISZERO);
           isValueCheck = isValueCheck && (*(it + 4) >= Instruction::PUSH1 && *(it + 4) <= Instruction::PUSH32);
-          Logger::debug("isValueCheck " + to_string(isValueCheck));
           isValid = isValid && !isValueCheck;
         }
         // Check size of function inputs
@@ -216,7 +209,6 @@ namespace fuzzer {
           isDataSize = isDataSize && (*it == Instruction::CALLDATASIZE);
           isDataSize = isDataSize && (*(it + 1) == Instruction::LT);
           isDataSize = isDataSize && (*(it + 2) >= Instruction::PUSH1 && *(it + 2) <= Instruction::PUSH32);
-          Logger::debug("isDataSize " + to_string(isDataSize));
           isValid = isValid && !isDataSize;
         }
         // Check function signature
@@ -227,7 +219,6 @@ namespace fuzzer {
           isFunctionCall = isFunctionCall && (*(it + 1) == Instruction::PUSH4);
           isFunctionCall = isFunctionCall && (*(it + 2) == Instruction::EQ);
           isFunctionCall = isFunctionCall && (*(it + 3) >= Instruction::PUSH1);
-          Logger::debug("isFunctionCall " + to_string(isFunctionCall));
           isValid = isValid && !isFunctionCall;
         }
         // Check if load data from memory
@@ -240,7 +231,6 @@ namespace fuzzer {
           isMemoryLoad = isMemoryLoad && (*(it + 3) == Instruction::ISZERO);
           isMemoryLoad = isMemoryLoad && (*(it + 4) == Instruction::ISZERO);
           isMemoryLoad = isMemoryLoad && (*(it + 5) >= Instruction::PUSH1 && *(it + 5) <= Instruction::PUSH32);
-          Logger::debug("isMemoryLoad " + to_string(isMemoryLoad));
           isValid = isValid && !isMemoryLoad;
         }
         // check if load data from strorage
@@ -253,7 +243,6 @@ namespace fuzzer {
           isStorageLoad = isStorageLoad && (*(it + 3) == Instruction::ISZERO);
           isStorageLoad = isStorageLoad && (*(it + 4) == Instruction::ISZERO);
           isStorageLoad = isStorageLoad && (*(it + 5) >= Instruction::PUSH1 && *(it + 5) <= Instruction::PUSH32);
-          Logger::debug("isStorageLoad " + to_string(isStorageLoad));
           isValid = isValid && !isStorageLoad;
         }
         // check if str
@@ -269,7 +258,6 @@ namespace fuzzer {
                             || *(it + 3) == Instruction::ISZERO);
           isStr = isStr && (*(it + 4) == Instruction::ISZERO);
           isStr = isStr && (*(it + 5) == Instruction::PUSH2);
-          Logger::debug("isStr " + to_string(isStr));
           isValid = isValid && !isStr;
         }
         // check if valid
@@ -282,10 +270,8 @@ namespace fuzzer {
                                 || *it == Instruction::ISZERO);
           isComparison = isComparison && (*(it + 1) == Instruction::ISZERO);
           isComparison = isComparison && (*(it + 2) >= Instruction::PUSH1 && *(it + 2) <= Instruction::PUSH32);
-          Logger::debug("isComparison " + to_string(isComparison));
           isValid = isValid && isComparison;
         }
-        Logger::debug("final " + to_string(isValid));
         if (isValid) validJumpis.insert(pc);
       }
       instructions.push_back(inst);

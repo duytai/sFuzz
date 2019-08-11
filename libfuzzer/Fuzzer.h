@@ -47,6 +47,7 @@ namespace fuzzer {
   };
   class Fuzzer {
     vector<bool> vulnerabilities;
+    vector<string> queues;
     unordered_set<string> tracebits;
     unordered_set<string> predicates;
     unordered_map<string, Leader> leaders;
