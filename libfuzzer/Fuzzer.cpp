@@ -68,8 +68,8 @@ void Fuzzer::showStats(const Mutation &mutation, const tuple<unordered_set<uint6
   auto cyclePercentage = (uint64_t)((float)(fuzzStat.idx + 1) / leaders.size() * 100);
   auto cycleProgress = padStr(to_string(fuzzStat.idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(fuzzStat.queueCycle), 15);
-  auto numBranches = padStr(to_string(tracebits.size()), 15);
   auto totalBranches = (get<0>(validJumpis).size() + get<1>(validJumpis).size()) * 2;
+  auto numBranches = padStr(to_string(totalBranches), 15);
   auto coverage = padStr(to_string((uint64_t)((float) tracebits.size() / (float) totalBranches * 100)) + "%", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(fuzzStat.stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
@@ -148,7 +148,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData);
   item.res = te.exec(revisedData, validJumpis);
-  Logger::debug(Logger::testFormat(item.data));
+  //Logger::debug(Logger::testFormat(item.data));
   fuzzStat.totalExecs ++;
   for (auto tracebit: item.res.tracebits) {
     if (!tracebits.count(tracebit)) {
@@ -281,6 +281,13 @@ void Fuzzer::start() {
         auto leaderIt = leaders.find(queues[fuzzStat.idx]);
         auto curItem = leaderIt->second.item;
         auto comparisonValue = leaderIt->second.comparisonValue;
+        if (comparisonValue != 0) {
+          Logger::debug(" == Leader ==");
+          Logger::debug("Branch \t\t\t\t " + leaderIt->first);
+          Logger::debug("Comp \t\t\t\t " + comparisonValue.str());
+          Logger::debug("Fuzzed \t\t\t\t " + to_string(curItem.fuzzedCount));
+          Logger::debug(Logger::testFormat(curItem.data));
+        }
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
         auto save = [&](bytes data) {
           auto item = saveIfInterest(executive, data, curItem.depth, validJumpis);
