@@ -5,6 +5,7 @@
 #include "ContractABI.h"
 #include "Dictionary.h"
 #include "Logger.h"
+#include "BytecodeBranch.h"
 
 using namespace dev;
 using namespace eth;
@@ -240,6 +241,9 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
+      // TODO
+      auto bytecodeBranch = BytecodeBranch(contractInfo);
+      exit(1);
       auto validJumpis = findValidJumpis(bin, binRuntime);
       if (!(get<0>(validJumpis).size() + get<1>(validJumpis).size())) {
         cout << "No valid jumpi" << endl;

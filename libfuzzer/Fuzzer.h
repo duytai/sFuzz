@@ -19,6 +19,9 @@ namespace fuzzer {
     string bin;
     string binRuntime;
     string contractName;
+    string srcmap;
+    string srcmapRuntime;
+    string source;
     bool isMain;
   };
   struct FuzzParam {

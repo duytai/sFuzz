@@ -26,6 +26,7 @@ int main(int argc, char* argv[]) {
   string assetsFolder = DEFAULT_ASSETS_FOLDER;
   string jsonFile = "";
   string contractName = "";
+  string sourceFile = "";
   string attackerName = DEFAULT_ATTACKER;
   po::options_description desc("Allowed options");
   po::variables_map vm;
@@ -37,10 +38,11 @@ int main(int argc, char* argv[]) {
     ("assets,a", po::value(&assetsFolder), "asset's folder path")
     ("file,f", po::value(&jsonFile), "fuzz a contract")
     ("name,n", po::value(&contractName), "contract name")
-    ("mode,m", po::value(&mode), "choose mode: 0 - Random | 1 - AFL ")
-    ("reporter,r", po::value(&reporter), "choose reporter: 0 - TERMINAL | 1 - CSV")
+    ("source,s", po::value(&sourceFile), "source file path")
+    ("mode,m", po::value(&mode), "choose mode: 0 - AFL ")
+    ("reporter,r", po::value(&reporter), "choose reporter: 0 - TERMINAL | 1 - JSON")
     ("duration,d", po::value(&duration), "fuzz duration")
-    ("attacker", po::value(&attackerName), "default is ReentrancyAttacker");
+    ("attacker", po::value(&attackerName), "choose attacker: NormalAttacker | ReentrancyAttacker");
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
   /* Show help message */
@@ -57,10 +59,10 @@ int main(int argc, char* argv[]) {
     return 0;
   }
   /* Fuzz a single contract */
-  if (vm.count("file") && vm.count("name")) {
+  if (vm.count("file") && vm.count("name") && vm.count("source")) {
     FuzzParam fuzzParam;
     auto contractInfo = parseAssets(assetsFolder);
-    contractInfo.push_back(parseJson(jsonFile, contractName, true));
+    contractInfo.push_back(parseSource(sourceFile, jsonFile, contractName, true));
     fuzzParam.contractInfo = contractInfo;
     fuzzParam.mode = (FuzzMode) mode;
     fuzzParam.duration = duration;
