@@ -1,22 +1,56 @@
 #include "BytecodeBranch.h"
+#include "Logger.h"
 
 namespace fuzzer {
 
   BytecodeBranch::BytecodeBranch(const ContractInfo &contractInfo) {
     auto deploymentBin = contractInfo.bin.substr(0, contractInfo.bin.size() - contractInfo.binRuntime.size());
     auto progInfo = {
-        make_pair(fromHex(deploymentBin), contractInfo.srcmap),
-        make_pair(fromHex(contractInfo.binRuntime), contractInfo.srcmapRuntime),
+        make_tuple(fromHex(deploymentBin), contractInfo.srcmap, false),
+        make_tuple(fromHex(contractInfo.binRuntime), contractInfo.srcmapRuntime, true),
     };
     for (auto progIt : progInfo) {
       auto opcodes = decodeBytecode(get<0>(progIt));
+      auto isRuntime = get<2>(progIt);
       auto decompressedSourcemap = decompressSourcemap(get<1>(progIt));
+      // offset - len - pc
+      vector<tuple<uint64_t, uint64_t, uint64_t>> candidates;
+      // Find: if (x > 0 && x < 1000)
       for (uint64_t i = 0; i < opcodes.size(); i ++) {
         if (get<1>(opcodes[i]) == Instruction::JUMPI) {
           auto offset = decompressedSourcemap[i][0];
           auto len = decompressedSourcemap[i][1];
-          cout << "---" << endl;
-          cout << contractInfo.source.substr(offset, len) << endl;
+          auto snippet = contractInfo.source.substr(offset, len);
+          if (boost::starts_with(snippet, "if")
+            || boost::starts_with(snippet, "while")
+            || boost::starts_with(snippet, "require")
+            || boost::starts_with(snippet, "assert")
+          ) {
+            Logger::debug("----");
+            for (auto candidate : candidates) {
+              if (get<0>(candidate) > offset && get<0>(candidate) + get<1>(candidate) < offset + len) {
+                Logger::debug(contractInfo.source.substr(get<0>(candidate), get<1>(candidate)));
+                if (isRuntime) {
+                  runtimeJumpis.insert(get<2>(candidate));
+                  Logger::debug("pc: " + to_string(get<2>(candidate)));
+                } else {
+                  deploymentJumpis.insert(get<0>(opcodes[i]));
+                  Logger::debug("pc: " + to_string(get<0>(opcodes[i])));
+                }
+              }
+            }
+            Logger::debug(contractInfo.source.substr(offset, len));
+            if (isRuntime) {
+              runtimeJumpis.insert(get<0>(opcodes[i]));
+              Logger::debug("pc: " + to_string(get<0>(opcodes[i])));
+            } else {
+              deploymentJumpis.insert(get<0>(opcodes[i]));
+              Logger::debug("pc: " + to_string(get<0>(opcodes[i])));
+            }
+            candidates.clear();
+          } else {
+            candidates.push_back(make_tuple(offset, len, get<0>(opcodes[i])));
+          }
         }
       }
     }
@@ -50,6 +84,10 @@ namespace fuzzer {
       pc ++;
     }
     return instructions;
+  }
+
+  pair<unordered_set<uint64_t>, unordered_set<uint64_t>> BytecodeBranch::findValidJumpis() {
+    return make_pair(deploymentJumpis, runtimeJumpis);
   }
 
   vector<vector<uint64_t>> BytecodeBranch::decompressSourcemap(string srcmap) {
