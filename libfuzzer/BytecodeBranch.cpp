@@ -26,26 +26,26 @@ namespace fuzzer {
             || boost::starts_with(snippet, "require")
             || boost::starts_with(snippet, "assert")
           ) {
-            Logger::debug("----");
+            Logger::info("----");
             for (auto candidate : candidates) {
               if (get<0>(candidate) > offset && get<0>(candidate) + get<1>(candidate) < offset + len) {
-                Logger::debug(contractInfo.source.substr(get<0>(candidate), get<1>(candidate)));
+                Logger::info(contractInfo.source.substr(get<0>(candidate), get<1>(candidate)));
                 if (isRuntime) {
                   runtimeJumpis.insert(get<2>(candidate));
-                  Logger::debug("pc: " + to_string(get<2>(candidate)));
+                  Logger::info("pc: " + to_string(get<2>(candidate)));
                 } else {
-                  deploymentJumpis.insert(get<0>(opcodes[i]));
-                  Logger::debug("pc: " + to_string(get<0>(opcodes[i])));
+                  deploymentJumpis.insert(get<2>(candidate));
+                  Logger::info("pc: " + to_string(get<2>(candidate)));
                 }
               }
             }
-            Logger::debug(contractInfo.source.substr(offset, len));
+            Logger::info(contractInfo.source.substr(offset, len));
             if (isRuntime) {
               runtimeJumpis.insert(get<0>(opcodes[i]));
-              Logger::debug("pc: " + to_string(get<0>(opcodes[i])));
+              Logger::info("pc: " + to_string(get<0>(opcodes[i])));
             } else {
               deploymentJumpis.insert(get<0>(opcodes[i]));
-              Logger::debug("pc: " + to_string(get<0>(opcodes[i])));
+              Logger::info("pc: " + to_string(get<0>(opcodes[i])));
             }
             candidates.clear();
           } else {
