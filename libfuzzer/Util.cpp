@@ -178,5 +178,20 @@ namespace fuzzer {
     while ((int)str.size() < len) str += " ";
     return str;
   }
+
+  vector<string> splitString(string str, char separator) {
+    vector<string> elements;
+    uint64_t sepIdx = 0;
+    if (!str.size()) return {};
+    for (uint64_t i = 0; i < str.length(); i ++) {
+      if (str[i] == separator) {
+        elements.push_back(str.substr(sepIdx, i - sepIdx));
+        sepIdx = i + 1;
+      }
+    }
+    elements.push_back(str.substr(sepIdx, str.length() - sepIdx));
+    return elements;
+  }
+
 }
 

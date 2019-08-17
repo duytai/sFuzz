@@ -54,6 +54,7 @@ namespace fuzzer {
     unordered_set<string> tracebits;
     unordered_set<string> predicates;
     unordered_map<string, Leader> leaders;
+    unordered_map<uint64_t, string> snippets;
     unordered_set<string> uniqExceptions;
     Timer timer;
     FuzzParam fuzzParam;

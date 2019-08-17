@@ -209,11 +209,36 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
 /* Stop fuzzing */
 void Fuzzer::stop() {
   Logger::debug("== TEST ==");
+  unordered_map<uint64_t, uint64_t> brs;
   for (auto it : leaders) {
+    auto pc = stoi(splitString(it.first, ':')[0]);
+    // Covered
+    if (it.second.comparisonValue == 0) {
+      if (brs.find(pc) == brs.end()) {
+        brs[pc] = 1;
+      } else {
+        brs[pc] += 1;
+      }
+    }
     Logger::debug("BR " + it.first);
+    Logger::debug("ComparisonValue " + it.second.comparisonValue.str());
     Logger::debug(Logger::testFormat(it.second.item.data));
   }
   Logger::debug("== END TEST ==");
+  for (auto it : snippets) {
+    if (brs.find(it.first) == brs.end()) {
+      Logger::info(">> Unreachable");
+      Logger::info(it.second);
+    } else {
+      if (brs[it.first] == 1) {
+        Logger::info(">> Haft");
+        Logger::info(it.second);
+      } else {
+        Logger::info(">> Full");
+        Logger::info(it.second);
+      }
+    }
+  }
   exit(1);
 }
 
@@ -243,6 +268,7 @@ void Fuzzer::start() {
       codeDict.fromCode(bin);
       auto bytecodeBranch = BytecodeBranch(contractInfo);
       auto validJumpis = bytecodeBranch.findValidJumpis();
+      snippets = bytecodeBranch.snippets;
       if (!(get<0>(validJumpis).size() + get<1>(validJumpis).size())) {
         cout << "No valid jumpi" << endl;
         stop();

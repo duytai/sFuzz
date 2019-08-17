@@ -105,6 +105,5 @@ namespace fuzzer {
   struct ExtraData {
     bytes data;
   };
-  tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> findValidJumpis(bytes bin, bytes binRuntime);
-  unordered_set<uint64_t> findValidJumpisInSegment(bytes bin);
+  vector<string> splitString(string str, char separator);
 }
