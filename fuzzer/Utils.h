@@ -46,7 +46,24 @@ ContractInfo parseJson(string jsonFile, string contractName, bool isMain) {
   contractInfo.srcmap = root.get<string>(srcmapPath);
   contractInfo.srcmapRuntime = root.get<string>(srcmapRuntimePath);
   contractInfo.contractName = fullContractName;
-  contractInfo.source = "";
+  for (auto it : root.get_child("sources")) {
+    auto ast = it.second.get_child("AST");
+    vector<pt::ptree> stack = {ast};
+    while (stack.size() > 0) {
+      auto item = stack[stack.size() - 1];
+      stack.pop_back();
+      if (item.get<string>("name") == "FunctionDefinition") {
+        if (item.get<bool>("attributes.constant")) {
+          contractInfo.constantFunctionSrcmap.push_back(item.get<string>("src"));
+        }
+      }
+      if (item.get_child_optional("children")) {
+        for (auto it : item.get_child("children")) {
+          stack.push_back(it.second);
+        }
+      }
+    }
+  }
   return contractInfo;
 }
 
@@ -90,7 +107,7 @@ string compileSolFiles(string folder) {
   forEachFile(folder, ".sol", [&](directory_entry file) {
     string filePath = file.path().string();
     ret << "solc";
-    ret << " --combined-json abi,bin,bin-runtime,srcmap,srcmap-runtime " + filePath;
+    ret << " --combined-json abi,bin,bin-runtime,srcmap,srcmap-runtime,ast " + filePath;
     ret << " > " + filePath + ".json";
     ret << endl;
   });

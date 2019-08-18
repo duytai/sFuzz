@@ -399,40 +399,40 @@ void Fuzzer::start() {
             fuzzStat.stageFinds[STAGE_FLIP32] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            Logger::debug("SingleArith");
-            mutation.singleArith(save);
-            fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - originHitCount;
-            originHitCount = leaders.size();
+            //Logger::debug("SingleArith");
+            //mutation.singleArith(save);
+            //fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
 
-            Logger::debug("TwoArith");
-            mutation.twoArith(save);
-            fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - originHitCount;
-            originHitCount = leaders.size();
+            //Logger::debug("TwoArith");
+            //mutation.twoArith(save);
+            //fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
 
-            Logger::debug("FourArith");
-            mutation.fourArith(save);
-            fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - originHitCount;
-            originHitCount = leaders.size();
+            //Logger::debug("FourArith");
+            //mutation.fourArith(save);
+            //fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
 
-            Logger::debug("SingleInterest");
-            mutation.singleInterest(save);
-            fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - originHitCount;
-            originHitCount = leaders.size();
+            //Logger::debug("SingleInterest");
+            //mutation.singleInterest(save);
+            //fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
 
-            Logger::debug("TwoInterest");
-            mutation.twoInterest(save);
-            fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - originHitCount;
-            originHitCount = leaders.size();
+            //Logger::debug("TwoInterest");
+            //mutation.twoInterest(save);
+            //fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
 
-            Logger::debug("FourInterest");
-            mutation.fourInterest(save);
-            fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - originHitCount;
-            originHitCount = leaders.size();
+            //Logger::debug("FourInterest");
+            //mutation.fourInterest(save);
+            //fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
 
-            Logger::debug("overwriteDict");
-            mutation.overwriteWithDictionary(save);
-            fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - originHitCount;
-            originHitCount = leaders.size();
+            //Logger::debug("overwriteDict");
+            //mutation.overwriteWithDictionary(save);
+            //fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
 
             Logger::debug("overwriteAddress");
             mutation.overwriteWithAddressDictionary(save);

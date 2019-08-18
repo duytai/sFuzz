@@ -10,6 +10,12 @@ namespace fuzzer {
         make_tuple(fromHex(deploymentBin), contractInfo.srcmap, false),
         make_tuple(fromHex(contractInfo.binRuntime), contractInfo.srcmapRuntime, true),
     };
+    // JUMPI inside constant function
+    vector<pair<uint64_t, uint64_t>> constantJumpis;
+    for (auto it : contractInfo.constantFunctionSrcmap) {
+      auto elements = splitString(it, ':');
+      constantJumpis.push_back(make_pair(stoi(elements[0]), stoi(elements[1])));
+    }
     for (auto progIt : progInfo) {
       auto opcodes = decodeBytecode(get<0>(progIt));
       auto isRuntime = get<2>(progIt);
@@ -31,27 +37,39 @@ namespace fuzzer {
             for (auto candidate : candidates) {
               if (get<0>(candidate) > offset && get<0>(candidate) + get<1>(candidate) < offset + len) {
                 auto candidateSnippet = contractInfo.source.substr(get<0>(candidate), get<1>(candidate));
-                Logger::info(candidateSnippet);
-                if (isRuntime) {
-                  runtimeJumpis.insert(get<2>(candidate));
-                  Logger::info("pc: " + to_string(get<2>(candidate)));
-                  snippets.insert(make_pair(get<2>(candidate), candidateSnippet));
-                } else {
-                  deploymentJumpis.insert(get<2>(candidate));
-                  Logger::info("pc: " + to_string(get<2>(candidate)));
-                  snippets.insert(make_pair(get<2>(candidate), candidateSnippet));
+                auto numConstant = count_if(constantJumpis.begin(), constantJumpis.end(), [&](const pair<uint64_t, uint64_t> &j) {
+                  return get<0>(candidate) >= get<0>(j)
+                      && get<0>(candidate) + get<1>(candidate) <= get<0>(j) + get<1>(j);
+                });
+                if (!numConstant) {
+                  Logger::info(candidateSnippet);
+                  if (isRuntime) {
+                    runtimeJumpis.insert(get<2>(candidate));
+                    Logger::info("pc: " + to_string(get<2>(candidate)));
+                    snippets.insert(make_pair(get<2>(candidate), candidateSnippet));
+                  } else {
+                    deploymentJumpis.insert(get<2>(candidate));
+                    Logger::info("pc: " + to_string(get<2>(candidate)));
+                    snippets.insert(make_pair(get<2>(candidate), candidateSnippet));
+                  }
                 }
               }
             }
-            Logger::info(contractInfo.source.substr(offset, len));
-            if (isRuntime) {
-              runtimeJumpis.insert(get<0>(opcodes[i]));
-              Logger::info("pc: " + to_string(get<0>(opcodes[i])));
-              snippets.insert(make_pair(get<0>(opcodes[i]), snippet));
-            } else {
-              deploymentJumpis.insert(get<0>(opcodes[i]));
-              Logger::info("pc: " + to_string(get<0>(opcodes[i])));
-              snippets.insert(make_pair(get<0>(opcodes[i]), snippet));
+            auto numConstant = count_if(constantJumpis.begin(), constantJumpis.end(), [&](const pair<uint64_t, uint64_t> &j) {
+              return offset >= get<0>(j)
+                     && offset + len <= get<0>(j) + get<1>(j);
+            });
+            if (!numConstant) {
+              Logger::info(contractInfo.source.substr(offset, len));
+              if (isRuntime) {
+                runtimeJumpis.insert(get<0>(opcodes[i]));
+                Logger::info("pc: " + to_string(get<0>(opcodes[i])));
+                snippets.insert(make_pair(get<0>(opcodes[i]), snippet));
+              } else {
+                deploymentJumpis.insert(get<0>(opcodes[i]));
+                Logger::info("pc: " + to_string(get<0>(opcodes[i])));
+                snippets.insert(make_pair(get<0>(opcodes[i]), snippet));
+              }
             }
             candidates.clear();
           } else {

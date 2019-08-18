@@ -22,6 +22,7 @@ namespace fuzzer {
     string srcmap;
     string srcmapRuntime;
     string source;
+    vector<string> constantFunctionSrcmap;
     bool isMain;
   };
   struct FuzzParam {
