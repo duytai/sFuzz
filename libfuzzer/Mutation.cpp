@@ -3,11 +3,12 @@
 #include "Dictionary.h"
 #include "Util.h"
 #include "FuzzItem.h"
+#include "Logger.h"
 
 using namespace std;
 using namespace fuzzer;
 
-int Mutation::stageCycles[32] = {};
+uint64_t Mutation::stageCycles[32] = {};
 
 Mutation::Mutation(FuzzItem item, Dicts dicts): curFuzzItem(item), dicts(dicts), dataSize(item.data.size()) {
   effCount = 0;
@@ -17,52 +18,33 @@ Mutation::Mutation(FuzzItem item, Dicts dicts): curFuzzItem(item), dicts(dicts),
     eff[effAPos(dataSize - 1)] = 1;
     effCount ++;
   }
-  stageName = stageShort = "init";
+  stageName = "init";
 }
 
 void Mutation::flipbit(int pos) {
   curFuzzItem.data[pos >> 3] ^= (128 >> (pos & 7));
 }
 
-vector<FuzzItem> Mutation::mixCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb) {
-  vector<FuzzItem> items;
-  if (orders.size()) {
-    int orderSize = orders.size() - 1;
-    for (int i = 0; i < orderSize; i += 1) {
-      auto lastOrder = orders.back();
-      orders.pop_back();
-      orders.insert(orders.begin(), lastOrder);
-      items.push_back(cb(data, orders));
-    }
-    stageCycles[STAGE_ORDER] += orderSize;
-  }
-  return items;
-}
-
 void Mutation::singleWalkingBit(OnMutateFunc cb) {
-  stageShort = "flip1";
   stageName = "bitflip 1/1";
   stageMax = dataSize << 3;
   /* Start fuzzing */
   for (stageCur = 0; stageCur < stageMax ; stageCur += 1) {
     flipbit(stageCur);
-    cb(curFuzzItem.data, curFuzzItem.orders);
-    mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+    cb(curFuzzItem.data);
     flipbit(stageCur);
   }
   stageCycles[STAGE_FLIP1] += stageMax;
 }
 
 void Mutation::twoWalkingBit(OnMutateFunc cb) {
-  stageShort = "flip2";
   stageName = "bitflip 2/1";
   stageMax = (dataSize << 3) - 1;
   /* Start fuzzing */
   for (stageCur = 0; stageCur < stageMax; stageCur += 1) {
     flipbit(stageCur);
     flipbit(stageCur + 1);
-    cb(curFuzzItem.data, curFuzzItem.orders);
-    mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+    cb(curFuzzItem.data);
     flipbit(stageCur);
     flipbit(stageCur + 1);
   }
@@ -70,7 +52,6 @@ void Mutation::twoWalkingBit(OnMutateFunc cb) {
 }
 
 void Mutation::fourWalkingBit(OnMutateFunc cb) {
-  stageShort = "flip4";
   stageName = "bitflip 4/1";
   stageMax = (dataSize << 3) - 3;
   /* Start fuzzing */
@@ -79,8 +60,7 @@ void Mutation::fourWalkingBit(OnMutateFunc cb) {
     flipbit(stageCur + 1);
     flipbit(stageCur + 2);
     flipbit(stageCur + 3);
-    cb(curFuzzItem.data, curFuzzItem.orders);
-    mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+    cb(curFuzzItem.data);
     flipbit(stageCur);
     flipbit(stageCur + 1);
     flipbit(stageCur + 2);
@@ -90,14 +70,12 @@ void Mutation::fourWalkingBit(OnMutateFunc cb) {
 }
 
 void Mutation::singleWalkingByte(OnMutateFunc cb) {
-  stageShort = "flip8";
   stageName = "bitflip 8/8";
   stageMax = dataSize;
   /* Start fuzzing */
   for (stageCur = 0; stageCur < stageMax; stageCur += 1) {
     curFuzzItem.data[stageCur] ^= 0xFF;
-    FuzzItem item = cb(curFuzzItem.data, curFuzzItem.orders);
-    mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+    FuzzItem item = cb(curFuzzItem.data);
     /* We also use this stage to pull off a simple trick: we identify
      bytes that seem to have no effect on the current execution path
      even when fully flipped - and we skip them during more expensive
@@ -120,7 +98,6 @@ void Mutation::singleWalkingByte(OnMutateFunc cb) {
 }
 
 void Mutation::twoWalkingByte(OnMutateFunc cb) {
-  stageShort = "flip16";
   stageName = "bitflip 16/8";
   stageMax = dataSize - 1;
   stageCur = 0;
@@ -133,8 +110,7 @@ void Mutation::twoWalkingByte(OnMutateFunc cb) {
       continue;
     }
     *(u16*)(buf + i) ^= 0xFFFF;
-    cb(curFuzzItem.data, curFuzzItem.orders);
-    mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+    cb(curFuzzItem.data);
     stageCur ++;
     *(u16*)(buf + i) ^= 0xFFFF;
   }
@@ -142,7 +118,6 @@ void Mutation::twoWalkingByte(OnMutateFunc cb) {
 }
 
 void Mutation::fourWalkingByte(OnMutateFunc cb) {
-  stageShort = "flip32";
   stageName = "bitflip 32/8";
   stageMax = dataSize - 3;
   stageCur = 0;
@@ -156,8 +131,7 @@ void Mutation::fourWalkingByte(OnMutateFunc cb) {
       continue;
     }
     *(u32*)(buf + i) ^= 0xFFFFFFFF;
-    cb(curFuzzItem.data, curFuzzItem.orders);
-    mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+    cb(curFuzzItem.data);
     stageCur ++;
     *(u32*)(buf + i) ^= 0xFFFFFFFF;
   }
@@ -165,7 +139,6 @@ void Mutation::fourWalkingByte(OnMutateFunc cb) {
 }
 
 void Mutation::singleArith(OnMutateFunc cb) {
-  stageShort = "arith8";
   stageName = "arith 8/8";
   stageMax = 2 * dataSize * ARITH_MAX;
   stageCur = 0;
@@ -181,15 +154,13 @@ void Mutation::singleArith(OnMutateFunc cb) {
       byte r = orig ^ (orig + j);
       if (!couldBeBitflip(r)) {
         curFuzzItem.data[i] = orig + j;
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       r = orig ^ (orig - j);
       if (!couldBeBitflip(r)) {
         curFuzzItem.data[i] = orig - j;
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       curFuzzItem.data[i] = orig;
@@ -199,7 +170,6 @@ void Mutation::singleArith(OnMutateFunc cb) {
 }
 
 void Mutation::twoArith(OnMutateFunc cb) {
-  stageShort = "arith16";
   stageName = "arith 16/8";
   stageMax = 4 * (dataSize - 1) * ARITH_MAX;
   stageCur = 0;
@@ -218,26 +188,22 @@ void Mutation::twoArith(OnMutateFunc cb) {
       u16 r4 = orig ^ swap16(swap16(orig) - j);
       if ((orig & 0xFF) + j > 0xFF && !couldBeBitflip(r1)) {
         *(u16*)(buf + i) = orig + j;
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       if ((orig & 0xFF) < j && !couldBeBitflip(r2)) {
         *(u16*)(buf + i) = orig - j;
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       if ((orig >> 8) + j > 0xFF && !couldBeBitflip(r3)) {
         *(u16*)(buf + i) = swap16(swap16(orig) + j);
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       if ((orig >> 8) < j && !couldBeBitflip(r4)) {
         *(u16*)(buf + i) = swap16(swap16(orig) - j);
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       *(u16*)(buf + i) = orig;
@@ -247,7 +213,6 @@ void Mutation::twoArith(OnMutateFunc cb) {
 }
 
 void Mutation::fourArith(OnMutateFunc cb) {
-  stageShort = "arith32";
   stageName = "arith 32/8";
   stageMax = 4 * (dataSize - 3) * ARITH_MAX;
   stageCur = 0;
@@ -267,26 +232,22 @@ void Mutation::fourArith(OnMutateFunc cb) {
       u32 r4 = orig ^ swap32(swap32(orig) - j);
       if ((orig & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r1)) {
         *(u32*)(buf + i) = orig + j;
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       if ((orig & 0xFFFF) < (u32)j && !couldBeBitflip(r2)) {
         *(u32*)(buf + i) = orig - j;
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       if ((swap32(orig) & 0xFFFF) + j > 0xFFFF && !couldBeBitflip(r3)) {
         *(u32*)(buf + i) = swap32(swap32(orig) + j);
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       if ((swap32(orig) & 0xFFFF) < (u32) j && !couldBeBitflip(r4)) {
         *(u32*)(buf + i) = swap32(swap32(orig) - j);
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       *(u32*)(buf + i) = orig;
@@ -296,7 +257,6 @@ void Mutation::fourArith(OnMutateFunc cb) {
 }
 
 void Mutation::singleInterest(OnMutateFunc cb) {
-  stageShort = "int8";
   stageName = "interest 8/8";
   stageMax = dataSize * sizeof(INTERESTING_8);
   stageCur = 0;
@@ -314,8 +274,7 @@ void Mutation::singleInterest(OnMutateFunc cb) {
         continue;
       }
       curFuzzItem.data[i] = INTERESTING_8[j];
-      cb(curFuzzItem.data, curFuzzItem.orders);
-      mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+      cb(curFuzzItem.data);
       stageCur ++;
       curFuzzItem.data[i] = orig;
     }
@@ -324,7 +283,6 @@ void Mutation::singleInterest(OnMutateFunc cb) {
 }
 
 void Mutation::twoInterest(OnMutateFunc cb) {
-  stageShort = "int16";
   stageName = "interest 16/8";
   stageMax = 2 * (dataSize - 1) * (sizeof(INTERESTING_16) >> 1);
   stageCur = 0;
@@ -341,8 +299,7 @@ void Mutation::twoInterest(OnMutateFunc cb) {
           !couldBeArith(orig, (u16)INTERESTING_16[j], 2) &&
           !couldBeInterest(orig, (u16)INTERESTING_16[j], 2, 0)) {
         *(u16*)(out_buf + i) = INTERESTING_16[j];
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
 
@@ -351,8 +308,7 @@ void Mutation::twoInterest(OnMutateFunc cb) {
           !couldBeArith(orig, swap16(INTERESTING_16[j]), 2) &&
           !couldBeInterest(orig, swap16(INTERESTING_16[j]), 2, 1)) {
         *(u16*)(out_buf + i) = swap16(INTERESTING_16[j]);
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
     }
@@ -362,7 +318,6 @@ void Mutation::twoInterest(OnMutateFunc cb) {
 }
 
 void Mutation::fourInterest(OnMutateFunc cb) {
-  stageShort = "int32";
   stageName = "interest 32/8";
   stageMax = 2 * (dataSize - 3) * (sizeof(INTERESTING_32) >> 2);
   stageCur = 0;
@@ -383,8 +338,7 @@ void Mutation::fourInterest(OnMutateFunc cb) {
           !couldBeArith(orig, INTERESTING_32[j], 4) &&
           !couldBeInterest(orig, INTERESTING_32[j], 4, 0)) {
         *(u32*)(out_buf + i) = INTERESTING_32[j];
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
       if ((u32)INTERESTING_32[j] != swap32(INTERESTING_32[j]) &&
@@ -392,8 +346,7 @@ void Mutation::fourInterest(OnMutateFunc cb) {
           !couldBeArith(orig, swap32(INTERESTING_32[j]), 4) &&
           !couldBeInterest(orig, swap32(INTERESTING_32[j]), 4, 1)) {
         *(u32*)(out_buf + i) = swap32(INTERESTING_32[j]);
-        cb(curFuzzItem.data, curFuzzItem.orders);
-        mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+        cb(curFuzzItem.data);
         stageCur ++;
       } else stageMax --;
     }
@@ -403,7 +356,6 @@ void Mutation::fourInterest(OnMutateFunc cb) {
 }
 
 void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
-  stageShort = "ext_UO";
   stageName = "dict (over)";
   auto dict = get<0>(dicts);
   stageMax = dataSize * dict.extras.size();
@@ -438,8 +390,7 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
       }
       lastLen = extrasLen;
       memcpy(outBuf + i, extrasBuf, lastLen);
-      cb(curFuzzItem.data, curFuzzItem.orders);
-      mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+      cb(curFuzzItem.data);
       stageCur ++;
     }
     /* Restore all the clobbered memory. */
@@ -449,7 +400,6 @@ void Mutation::overwriteWithDictionary(OnMutateFunc cb) {
 }
 
 void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
-  stageShort = "ext_AO";
   stageName = "address (over)";
   auto dict = get<1>(dicts);
 
@@ -469,8 +419,7 @@ void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
         continue;
       }
       memcpy(outBuf + i + 12, extrasBuf, extrasLen);
-      cb(curFuzzItem.data, curFuzzItem.orders);
-      mixCallOrders(curFuzzItem.data, curFuzzItem.orders, cb);
+      cb(curFuzzItem.data);
       stageCur ++;
     }
     /* Restore all the clobbered memory. */
@@ -479,223 +428,10 @@ void Mutation::overwriteWithAddressDictionary(OnMutateFunc cb) {
   stageCycles[STAGE_EXTRAS_AO] += stageMax;
 }
 
-FuzzItem Mutation::havocCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb) {
-  /* 50% wont change */
-  if (!orders.size()) return cb(data, orders);
-  if (UR(2) > 0) return cb(data, orders);
-  vector<uint64_t> newOrders;
-  bool isFirst = true;
-  while (UR(orders.size() + 1) > 0 || isFirst) {
-    /* 80% add, 20% ignore */
-    newOrders.push_back(orders[UR(orders.size())]);
-    isFirst = false;
-  }
-  return cb(data, newOrders);
-}
-
-u512 Mutation::minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates) {
-  u512 minSum = 0;
-  for (auto it : candidates) {
-    auto temp = *(it.second.begin());
-    auto m = (u512) temp.item.score[it.first];
-    minSum = minSum + m;
-  }
-  return minSum;
-}
-
-void Mutation::addCandidate(unordered_map<uint64_t, set<SubFuzzItem>>& candidates, FuzzItem& item, uint64_t stageCur) {
-  for (auto it : item.score) {
-    candidates[it.first].insert(SubFuzzItem(item, it.first, stageCur));
-  }
-}
-
-void Mutation::newHavoc(OnMutateFunc cb) {
-  stageShort = "heuristic";
-  stageName = "heuristic";
-  stageMax = HAVOC_MIN;
-  stageCur = 0;
-  /* keep top score */
-  unordered_map<uint64_t, set<SubFuzzItem>> candidates;
-  vector<FuzzItem> subQueues = {curFuzzItem};
-  auto dict = get<0>(dicts);
-  uint64_t idx = 0;
-  uint64_t numDups = 0;
-  u512 minScore = DEFAULT_MIN_SCORE;
-  while (true) {
-    auto fuzzItem = subQueues[idx];
-    auto origin = fuzzItem.data;
-    auto data = fuzzItem.data;
-    Mutation::addCandidate(candidates, curFuzzItem, stageCur);
-    for (int i = 0; i < HAVOC_MIN; i += 1) {
-      u32 useStacking = 1 << (1 + UR(HAVOC_STACK_POW2));
-      for (u32 j = 0; j < useStacking; j += 1) {
-        u32 val = UR(11 + ((dict.extras.size() + 0) ? 2 : 0));
-        dataSize = data.size();
-        byte *out_buf = data.data();
-        switch (val) {
-          case 0: {
-            /* Flip a single bit somewhere. Spooky! */
-            u32 pos = UR(dataSize << 3);
-            data[pos >> 3] ^= (128 >> (pos & 7));
-            break;
-          }
-          case 1: {
-            /* Set byte to interesting value. */
-            data[UR(dataSize)] = INTERESTING_8[UR(sizeof(INTERESTING_8))];
-            break;
-          }
-          case 2: {
-            /* Set word to interesting value, randomly choosing endian. */
-            if (dataSize < 2) break;
-            if (UR(2)) {
-              *(u16*)(out_buf + UR(dataSize - 1)) = INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)];
-            } else {
-              *(u16*)(out_buf + UR(dataSize - 1)) = swap16(INTERESTING_16[UR(sizeof(INTERESTING_16) >> 1)]);
-            }
-            break;
-          }
-          case 3: {
-            /* Set dword to interesting value, randomly choosing endian. */
-            if (dataSize < 4) break;
-            if (UR(2)) {
-              *(u32*)(out_buf + UR(dataSize - 3)) = INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)];
-            } else {
-              *(u32*)(out_buf + UR(dataSize - 3)) = swap32(INTERESTING_32[UR(sizeof(INTERESTING_32) >> 2)]);
-            }
-            break;
-          }
-          case 4: {
-            /* Randomly subtract from byte. */
-            out_buf[UR(dataSize)] -= 1 + UR(ARITH_MAX);
-            break;
-          }
-          case 5: {
-            /* Randomly add to byte. */
-            out_buf[UR(dataSize)] += 1 + UR(ARITH_MAX);
-            break;
-          }
-          case 6: {
-            /* Randomly subtract from word, random endian. */
-            if (dataSize < 2) break;
-            if (UR(2)) {
-              u32 pos = UR(dataSize - 1);
-              *(u16*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
-            } else {
-              u32 pos = UR(dataSize - 1);
-              u16 num = 1 + UR(ARITH_MAX);
-              *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) - num);
-            }
-            break;
-          }
-          case 7: {
-            /* Randomly add to word, random endian. */
-            if (dataSize < 2) break;
-            if (UR(2)) {
-              u32 pos = UR(dataSize - 1);
-              *(u16*)(out_buf + pos) += 1 + UR(ARITH_MAX);
-            } else {
-              u32 pos = UR(dataSize - 1);
-              u16 num = 1 + UR(ARITH_MAX);
-              *(u16*)(out_buf + pos) = swap16(swap16(*(u16*)(out_buf + pos)) + num);
-            }
-            break;
-          }
-          case 8: {
-            /* Randomly subtract from dword, random endian. */
-            if (dataSize < 4) break;
-            if (UR(2)) {
-              u32 pos = UR(dataSize - 3);
-              *(u32*)(out_buf + pos) -= 1 + UR(ARITH_MAX);
-            } else {
-              u32 pos = UR(dataSize - 3);
-              u32 num = 1 + UR(ARITH_MAX);
-              *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) - num);
-            }
-            break;
-          }
-          case 9: {
-            /* Randomly add to dword, random endian. */
-            if (dataSize < 4) break;
-            if (UR(2)) {
-              u32 pos = UR(dataSize - 3);
-              *(u32*)(out_buf + pos) += 1 + UR(ARITH_MAX);
-            } else {
-              u32 pos = UR(dataSize - 3);
-              u32 num = 1 + UR(ARITH_MAX);
-              *(u32*)(out_buf + pos) = swap32(swap32(*(u32*)(out_buf + pos)) + num);
-            }
-            break;
-          }
-          case 10: {
-            /* Just set a random byte to a random value. Because,
-             why not. We use XOR with 1-255 to eliminate the
-             possibility of a no-op. */
-            out_buf[UR(dataSize)] ^= 1 + UR(255);
-            break;
-          }
-          case 11: {
-            /* Overwrite bytes with a randomly selected chunk (75%) or fixed
-             bytes (25%). */
-            u32 copyFrom, copyTo, copyLen;
-            if (dataSize < 2) break;
-            copyLen = chooseBlockLen(dataSize - 1);
-            copyFrom = UR(dataSize - copyLen + 1);
-            copyTo = UR(dataSize - copyLen + 1);
-            if (UR(4)) {
-              if (copyFrom != copyTo)
-                memmove(out_buf + copyTo, out_buf + copyFrom, copyLen);
-            } else {
-              memset(out_buf + copyTo, UR(2) ? UR(256) : out_buf[UR(dataSize)], copyLen);
-            }
-            break;
-          }
-          case 12: {
-            /* No auto extras or odds in our favor. Use the dictionary. */
-            u32 useExtra = UR(dict.extras.size());
-            u32 extraLen = dict.extras[useExtra].data.size();
-            byte *extraBuf = dict.extras[useExtra].data.data();
-            u32 insertAt;
-            if (extraLen > (u32)dataSize) break;
-            insertAt = UR(dataSize - extraLen + 1);
-            memcpy(out_buf + insertAt, extraBuf, extraLen);
-            break;
-          }
-        } // -> end switch
-      } // --> end stack
-      stageCycles[STAGE_HAVOC] ++;
-      stageCur ++;
-      auto item = havocCallOrders(data, curFuzzItem.orders, cb);
-      if (item.isInteresting) {
-        stageMax = stageMax - (HAVOC_MIN - i);
-        return;
-      }
-      Mutation::addCandidate(candidates, item, stageCur);
-      /* Restore to original state */
-      data = origin;
-    } // --> end MIN_HAVOC
-    idx = (idx + 1) % subQueues.size();
-    if (idx == 0) {
-      auto temp = Mutation::minScore(candidates);
-      if (temp < minScore) {
-        minScore = temp;
-        numDups = 0;
-      } else numDups ++;
-      if (numDups > 5) return;
-      subQueues.clear();
-      for (auto it : candidates) {
-        auto temp = *(it.second.begin());
-        subQueues.push_back(temp.item);
-      }
-      candidates.clear();
-    }
-    stageMax = stageCur + HAVOC_MIN;
-  } // --> end while(true)
-}
 /*
  * TODO: If found more, do more havoc
  */
 void Mutation::havoc(OnMutateFunc cb) {
-  stageShort = "havoc";
   stageName = "havoc";
   stageMax = HAVOC_MIN;
   stageCur = 0;
@@ -839,7 +575,7 @@ void Mutation::havoc(OnMutateFunc cb) {
         }
       }
     }
-    havocCallOrders(data, curFuzzItem.orders, cb);
+    cb(data);
     stageCur ++;
     /* Restore to original state */
     data = origin;
@@ -851,8 +587,12 @@ bool Mutation::splice(vector<FuzzItem> queues) {
   u32 spliceCycle = 0;
   s32 firstDiff, lastDiff;
   bytes origin = curFuzzItem.data;
-  while (spliceCycle++ < SPLICE_CYCLES && queues.size() > 1
-      && curFuzzItem.data.size() > 1) {
+  if (queues.size() <= 1) return false;
+  auto numDiff = count_if(queues.begin(), queues.end(), [&](const FuzzItem &item) {
+    return item.res.cksum != queues[0].res.cksum;
+  });
+  if (!numDiff) return false;
+  while (spliceCycle++ < SPLICE_CYCLES && curFuzzItem.data.size() > 1) {
     u32 tid, splitAt;
     do {
       tid = UR(queues.size());
@@ -878,12 +618,11 @@ bool Mutation::splice(vector<FuzzItem> queues) {
 }
 
 void Mutation::random(OnMutateFunc cb) {
-  stageShort = "random";
   stageName = "random 8/8";
   stageMax = 1;
   for (int i = 0; i < dataSize; i ++) {
     curFuzzItem.data[stageCur] = UR(256);
   }
-  cb(curFuzzItem.data, curFuzzItem.orders);
+  cb(curFuzzItem.data);
   stageCycles[STAGE_RANDOM] += stageMax;
 }

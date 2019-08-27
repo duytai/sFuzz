@@ -1,22 +1,23 @@
 #include "Util.h"
+#include "Logger.h"
 
 namespace fuzzer {
   u32 UR(u32 limit) {
     return random() % limit;
   }
-  
+
   int effAPos(int p) {
     return p >> EFF_MAP_SCALE2;
   }
-  
+
   int effRem(int x) {
     return (x) & ((1 << EFF_MAP_SCALE2) - 1);
   }
-  
+
   int effALen(int l) {
     return effAPos(l) + !!effRem(l);
   }
-  
+
   int effSpanALen(int p, int l) {
     return (effAPos(p + l - 1) - effAPos(p) + 1);
   }
@@ -125,22 +126,22 @@ namespace fuzzer {
     }
     return false;
   }
-  
+
   u16 swap16(u16 x) {
     return x << 8 | x >> 8;
   }
-  
+
   u32 swap32(u32 x) {
     return x << 24 | x >> 24 | ((x << 8) & 0x00FF0000) | ((x >> 8) & 0x0000FF00);
   }
-  
+
   u32 chooseBlockLen(u32 limit) {
     /* Delete at most: 1/4 */
     int maxFactor = limit / (4 * 32);
     if (!maxFactor) return 0;
     return (UR(maxFactor) + 1) * 32;
   }
-    
+
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last) {
     s32 f_loc = -1;
     s32 l_loc = -1;
@@ -155,7 +156,7 @@ namespace fuzzer {
     *last = l_loc;
     return;
   }
-  
+
   string formatDuration(int duration) {
     stringstream ret;
     int days = duration / (60 * 60 * 24);
@@ -172,59 +173,25 @@ namespace fuzzer {
       << " sec";
     return padStr(ret.str(), 48);
   }
-  
+
   string padStr(string str, int len) {
     while ((int)str.size() < len) str += " ";
     return str;
   }
-  
-  bytes setVictimData(bytes data) {
-    bytes ret;
-    auto sig = fromHex("0399321e");
-    auto offset = u256ToBytes(32);
-    auto size = u256ToBytes(data.size());
-    ret.insert(ret.end(), sig.begin(), sig.end());
-    ret.insert(ret.end(), offset.begin(), offset.end());
-    ret.insert(ret.end(), size.begin(), size.end());
-    while (data.size() % 32 != 0) data.push_back(0);
-    ret.insert(ret.end(), data.begin(), data.end());
-    return ret;
-  }
-  
-  bytes u512ToBytes(u512 value) {
-    bytes ret;
-    for (int i = 0; i < 64; i += 1) {
-      byte b = (byte) (value >> ((64 - i - 1) * 8)) & 0xFF;
-      ret.push_back(b);
-    }
-    return ret;
-  }
-  
-  bytes u256ToBytes(u256 value) {
-    bytes ret;
-    for (int i = 0; i < 32; i += 1) {
-      byte b = (byte) (value >> ((32 - i - 1) * 8)) & 0xFF;
-      ret.push_back(b);
-    }
-    return ret;
-  }
-  
-  void printfWithColor(u256 value, string text) {
-    if (value > 0) cout << cRED + text  + cRST ;
-    if (!value) cout << cGRN + text  + cRST;
-  }
-  
-  void staticAnalyze(bytes code, function<void(Instruction)> cb) {
-    uint64_t pc = 0;
-    while (pc < code.size()) {
-      auto inst = (Instruction) code[pc];
-      if (inst >= Instruction::PUSH1 && inst <= Instruction::PUSH32) {
-        auto jumpNum = code[pc] - (uint64_t) Instruction::PUSH1 + 1;
-        pc += jumpNum;
+
+  vector<string> splitString(string str, char separator) {
+    vector<string> elements;
+    uint64_t sepIdx = 0;
+    if (!str.size()) return {};
+    for (uint64_t i = 0; i < str.length(); i ++) {
+      if (str[i] == separator) {
+        elements.push_back(str.substr(sepIdx, i - sepIdx));
+        sepIdx = i + 1;
       }
-      cb(inst);
-      pc ++;
     }
+    elements.push_back(str.substr(sepIdx, str.length() - sepIdx));
+    return elements;
   }
+
 }
 

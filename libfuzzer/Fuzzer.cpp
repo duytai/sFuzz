@@ -4,11 +4,14 @@
 #include "Util.h"
 #include "ContractABI.h"
 #include "Dictionary.h"
+#include "Logger.h"
+#include "BytecodeBranch.h"
 
 using namespace dev;
 using namespace eth;
 using namespace std;
 using namespace fuzzer;
+namespace pt = boost::property_tree;
 
 /* Setup virgin byte to 255 */
 Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
@@ -16,48 +19,27 @@ Fuzzer::Fuzzer(FuzzParam fuzzParam): fuzzParam(fuzzParam){
 }
 
 /* Detect new exception */
-bool Fuzzer::hasNewExceptions(unordered_map<string, unordered_set<u64>> uexps) {
-  int orginExceptions = 0;
-  int newExceptions = 0;
-  for (auto it : uniqExceptions) orginExceptions += it.second.size();
-  for (auto it : uexps) {
-    if (!uniqExceptions.count(it.first)) {
-      uniqExceptions[it.first] = it.second;
-    } else {
-      for (auto v : it.second) {
-        uniqExceptions[it.first].insert(v);
-      }
-    }
-  }
-  for (auto it : uniqExceptions) newExceptions += it.second.size();
-  return newExceptions - orginExceptions;
+void Fuzzer::updateExceptions(unordered_set<string> exps) {
+  for (auto it: exps) uniqExceptions.insert(it);
 }
 
 /* Detect new bits by comparing tracebits to virginbits */
-bool Fuzzer::hasNewBits(unordered_set<uint64_t> _tracebits) {
-  auto originSize = tracebits.size();
-  for (auto it : _tracebits) tracebits.insert(it);
-  auto newSize = tracebits.size();
-  return newSize - originSize;
-}
-/* Detect all uncover branches of predicates */
-bool Fuzzer::hasNewPredicates(unordered_map<uint64_t, u256> _pred) {
-  auto originSize = predicates.size();
-  for (auto it : _pred) {
-    if (!tracebits.count(it.first)) {
-      predicates.insert(it.first);
-    }
-  }
-  auto newSize = predicates.size();
-  return newSize - originSize;
+void Fuzzer::updateTracebits(unordered_set<string> _tracebits) {
+  for (auto it: _tracebits) tracebits.insert(it);
 }
 
-/* Detect new branch */
-bool Fuzzer::hasNewBranches(unordered_set<uint64_t> _branches) {
-  auto originSize = branches.size();
-  for (auto it : _branches) branches.insert(it);
-  auto newSize = branches.size();
-  return newSize - originSize;
+void Fuzzer::updatePredicates(unordered_map<string, u256> _pred) {
+  for (auto it : _pred) {
+    predicates.insert(it.first);
+  };
+  // Remove covered predicates
+  for(auto it = predicates.begin(); it != predicates.end(); ) {
+    if (tracebits.count(*it)) {
+      it = predicates.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 ContractInfo Fuzzer::mainContract() {
@@ -69,31 +51,27 @@ ContractInfo Fuzzer::mainContract() {
   return *it;
 }
 
-void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
-//  return;
-  int numLines = 26, i = 0, expCout = 0;;
+void Fuzzer::showStats(const Mutation &mutation, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis) {
+  int numLines = 24, i = 0;
   if (!fuzzStat.clearScreen) {
     for (i = 0; i < numLines; i++) cout << endl;
     fuzzStat.clearScreen = true;
   }
-
   double duration = timer.elapsed();
   double fromLastNewPath = timer.elapsed() - fuzzStat.lastNewPath;
   for (i = 0; i < numLines; i++) cout << "\x1b[A";
   auto nowTrying = padStr(mutation.stageName, 20);
   auto stageExecProgress = to_string(mutation.stageCur) + "/" + to_string(mutation.stageMax);
-  auto stageExecPercentage = to_string((int)((float) (mutation.stageCur) / mutation.stageMax * 100));
+  auto stageExecPercentage = mutation.stageMax == 0 ? to_string(100) : to_string((uint64_t)((float) (mutation.stageCur) / mutation.stageMax * 100));
   auto stageExec = padStr(stageExecProgress + " (" + stageExecPercentage + "%)", 20);
   auto allExecs = padStr(to_string(fuzzStat.totalExecs), 20);
   auto execSpeed = padStr(to_string((int)(fuzzStat.totalExecs / duration)), 20);
-  auto cyclePercentage = (int)((float)(fuzzStat.idx + 1) / queues.size() * 100);
+  auto cyclePercentage = (uint64_t)((float)(fuzzStat.idx + 1) / leaders.size() * 100);
   auto cycleProgress = padStr(to_string(fuzzStat.idx + 1) + " (" + to_string(cyclePercentage) + "%)", 20);
   auto cycleDone = padStr(to_string(fuzzStat.queueCycle), 15);
-  auto coveredTupleStr = padStr(to_string(fuzzStat.coveredTuples), 15);
-  auto tupleSpeed = fuzzStat.coveredTuples ? mutation.dataSize * 8 / fuzzStat.coveredTuples : mutation.dataSize * 8;
-  auto bitPerTupe = padStr(to_string(tupleSpeed) + " bits", 15);
-  auto numBranches = padStr(to_string(branches.size()), 15);
-  auto coverage = padStr(to_string((int) ((float) branches.size() / (fuzzStat.numJumpis * 2) * 100)) + " %", 15);
+  auto totalBranches = (get<0>(validJumpis).size() + get<1>(validJumpis).size()) * 2;
+  auto numBranches = padStr(to_string(totalBranches), 15);
+  auto coverage = padStr(to_string((uint64_t)((float) tracebits.size() / (float) totalBranches * 100)) + "%", 15);
   auto flip1 = to_string(fuzzStat.stageFinds[STAGE_FLIP1]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP1]);
   auto flip2 = to_string(fuzzStat.stageFinds[STAGE_FLIP2]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP2]);
   auto flip4 = to_string(fuzzStat.stageFinds[STAGE_FLIP4]) + "/" + to_string(mutation.stageCycles[STAGE_FLIP4]);
@@ -115,267 +93,167 @@ void Fuzzer::showStats(Mutation mutation, OracleResult oracleResult) {
   auto dictionary = padStr(dict1 + ", " + addrDict1, 30);
   auto hav1 = to_string(fuzzStat.stageFinds[STAGE_HAVOC]) + "/" + to_string(mutation.stageCycles[STAGE_HAVOC]);
   auto havoc = padStr(hav1, 30);
-  auto random1 = to_string(fuzzStat.stageFinds[STAGE_RANDOM]) + "/" + to_string(mutation.stageCycles[STAGE_RANDOM]);
-  auto random = padStr(random1, 30);
-  auto callOrder1 = to_string(mutation.stageCycles[STAGE_ORDER]);
-  auto callOrder = padStr(callOrder1, 30);
-  auto pending = padStr(to_string(queues.size() - fuzzStat.idx - 1), 5);
-  auto fav = count_if(queues.begin() + fuzzStat.idx + 1, queues.end(), [](FuzzItem item) {
-    return !item.fuzzedCount;
+  auto pending = padStr(to_string(leaders.size() - fuzzStat.idx - 1), 5);
+  auto fav = count_if(leaders.begin(), leaders.end(), [](const pair<string, Leader> &p) {
+    return !p.second.item.fuzzedCount;
   });
   auto pendingFav = padStr(to_string(fav), 5);
   auto maxdepthStr = padStr(to_string(fuzzStat.maxdepth), 5);
-  for (auto exp: uniqExceptions) expCout+= exp.second.size();
-  auto exceptionCount = padStr(to_string(expCout), 5);
+  auto exceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto predicateSize = padStr(to_string(predicates.size()), 5);
-  auto typeExceptionCount = padStr(to_string(uniqExceptions.size()), 5);
   auto contract = mainContract();
+  auto toResult = [](bool val) { return val ? "found" : "none "; };
   printf(cGRN Bold "%sAFL Solidity v0.0.1 (%s)" cRST "\n", padStr("", 10).c_str(), contract.contractName.substr(0, 20).c_str());
   printf(bTL bV5 cGRN " processing time " cRST bV20 bV20 bV5 bV2 bV2 bV5 bV bTR "\n");
   printf(bH "      run time : %s " bH "\n", formatDuration(duration).data());
   printf(bH " last new path : %s " bH "\n",formatDuration(fromLastNewPath).data());
   printf(bLTR bV5 cGRN " stage progress " cRST bV5 bV10 bV2 bV bTTR bV2 cGRN " overall results " cRST bV2 bV5 bV2 bV2 bV bRTR "\n");
   printf(bH "  now trying : %s" bH " cycles done : %s" bH "\n", nowTrying.c_str(), cycleDone.c_str());
-  printf(bH " stage execs : %s" bH "      tuples : %s" bH "\n", stageExec.c_str(), coveredTupleStr.c_str());
-  printf(bH " total execs : %s" bH "    branches : %s" bH "\n", allExecs.c_str(), numBranches.c_str());
-  printf(bH "  exec speed : %s" bH "  bit/tuples : %s" bH "\n", execSpeed.c_str(), bitPerTupe.c_str());
-  printf(bH "  cycle prog : %s" bH "    coverage : %s" bH "\n", cycleProgress.c_str(), coverage.c_str());
+  printf(bH " stage execs : %s" bH "    branches : %s" bH "\n", stageExec.c_str(), numBranches.c_str());
+  printf(bH " total execs : %s" bH "    coverage : %s" bH "\n", allExecs.c_str(), coverage.c_str());
+  printf(bH "  exec speed : %s" bH "               %s" bH "\n", execSpeed.c_str(), padStr("", 15).c_str());
+  printf(bH "  cycle prog : %s" bH "               %s" bH "\n", cycleProgress.c_str(), padStr("", 15).c_str());
   printf(bLTR bV5 cGRN " fuzzing yields " cRST bV5 bV5 bV5 bV2 bV bBTR bV10 bV bTTR bV cGRN " path geometry " cRST bV2 bV2 bRTR "\n");
   printf(bH "   bit flips : %s" bH "     pending : %s" bH "\n", bitflip.c_str(), pending.c_str());
   printf(bH "  byte flips : %s" bH " pending fav : %s" bH "\n", byteflip.c_str(), pendingFav.c_str());
   printf(bH " arithmetics : %s" bH "   max depth : %s" bH "\n", arithmetic.c_str(), maxdepthStr.c_str());
-  printf(bH "  known ints : %s" bH " except type : %s" bH "\n", knownInts.c_str(), typeExceptionCount.c_str());
-  printf(bH "  dictionary : %s" bH " uniq except : %s" bH "\n", dictionary.c_str(), exceptionCount.c_str());
-  printf(bH "       havoc : %s" bH "  predicates : %s" bH "\n", havoc.c_str(), predicateSize.c_str());
-  printf(bH "      random : %s" bH "                    " bH "\n", random.c_str());
-  printf(bH "  call order : %s" bH "                    " bH "\n", callOrder.c_str());
+  printf(bH "  known ints : %s" bH " uniq except : %s" bH "\n", knownInts.c_str(), exceptionCount.c_str());
+  printf(bH "  dictionary : %s" bH "  predicates : %s" bH "\n", dictionary.c_str(), predicateSize.c_str());
+  printf(bH "       havoc : %s" bH "               %s" bH "\n", havoc.c_str(), padStr("", 5).c_str());
   printf(bLTR bV5 cGRN " oracle yields " cRST bV bV10 bV5 bV bTTR bV2 bV10 bV bBTR bV bV2 bV5 bV5 bV2 bV2 bV5 bV bRTR "\n");
-  auto toResult = [](u256 val){
-    if (val > 0) return "found";
-    return "none ";
-  };
-  printf(bH "            gasless send : %s " bH " dangerous delegatecall : %s " bH "\n", toResult(oracleResult.gaslessSend), toResult(oracleResult.dangerDelegateCall));
-  printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(oracleResult.exceptionDisorder), toResult(oracleResult.freezingEther));
-  printf(bH "              reentrancy : %s " bH "       integer overflow : %s " bH "\n", toResult(oracleResult.reentrancy), toResult(oracleResult.integerOverflow));
-  printf(bH "    timestamp dependency : %s " bH "      integer underflow : %s " bH "\n", toResult(oracleResult.timestampDependency), toResult(oracleResult.integerUnderflow));
-  printf(bH " block number dependency : %s " bH "%s" bH "\n", toResult(oracleResult.blockNumDependency), padStr(" ", 32).c_str());
+  printf(bH "            gasless send : %s " bH " dangerous delegatecall : %s " bH "\n", toResult(vulnerabilities[GASLESS_SEND]), toResult(vulnerabilities[DELEGATE_CALL]));
+  printf(bH "      exception disorder : %s " bH "         freezing ether : %s " bH "\n", toResult(vulnerabilities[EXCEPTION_DISORDER]), toResult(vulnerabilities[FREEZING]));
+  printf(bH "              reentrancy : %s " bH "       integer overflow : %s " bH "\n", toResult(vulnerabilities[REENTRANCY]), toResult(vulnerabilities[OVERFLOW]));
+  printf(bH "    timestamp dependency : %s " bH "      integer underflow : %s " bH "\n", toResult(vulnerabilities[TIME_DEPENDENCY]), toResult(vulnerabilities[UNDERFLOW]));
+  printf(bH " block number dependency : %s " bH "%s" bH "\n", toResult(vulnerabilities[NUMBER_DEPENDENCY]), padStr(" ", 32).c_str());
   printf(bBL bV20 bV2 bV10 bV5 bV2 bV bBTR bV10 bV5 bV20 bV2 bV2 bBR "\n");
 }
 
-void Fuzzer::writeStats(Mutation mutation, OracleResult oracleResult) {
+void Fuzzer::writeStats(const Mutation &mutation) {
   auto contract = mainContract();
-  ofstream stats(contract.contractName + "/stats.csv", ofstream::app);
-  if (timer.elapsed() < fuzzParam.csvInterval) {
-    stats << "duration, execution, speed, cycle, tuple, exception type, exception, flip1-tuple, flip1-exec, flip2-tuples, flip2-exec, flip4-tuple, flip4-exec, flip8-tuple, flip8-exec, flip16-tuple, flip16-exec, flip32-tuple, flip32-exec, arith8-tuple, arith8-exec, arith16-tuple, arith16-exec, arith32-tuple, arith32-exec, int8-tuple, int8-exec, int16-tuple, int16-exec, int32-tuple, int32-exec, ext_UO-tuple, ext_UO-exec, ext_AO-tuple, ext_AO-exec, havoc-tuple, havoc-exec, max depth, gasless, disorder, reentrancy, timestamp, number, delegate, freezing, branches, coverage, callorder, predicates, random-havoc, heuristic-havoc, overflow, underflow" << endl;
-  }
-  cout << "** Write stats: " << timer.elapsed() << "" << endl;
-  stats << timer.elapsed() << ",";
-  stats << fuzzStat.totalExecs << ",";
-  stats << fuzzStat.totalExecs / (double) timer.elapsed() << ",";
-  stats << fuzzStat.queueCycle << ",";
-  stats << fuzzStat.coveredTuples << ",";
-  int expCout = 0;
-  for (auto exp: uniqExceptions) expCout += exp.second.size();
-  stats << uniqExceptions.size() << ",";
-  stats << expCout << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP1] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP1] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP2] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP2] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP4] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP4] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP8] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP8] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP16] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP16] << ",";
-  stats << fuzzStat.stageFinds[STAGE_FLIP32] << ",";
-  stats << mutation.stageCycles[STAGE_FLIP32] << ",";
-  stats << fuzzStat.stageFinds[STAGE_ARITH8] << ",";
-  stats << mutation.stageCycles[STAGE_ARITH8] << ",";
-  stats << fuzzStat.stageFinds[STAGE_ARITH16] << ",";
-  stats << mutation.stageCycles[STAGE_ARITH16] << ",";
-  stats << fuzzStat.stageFinds[STAGE_ARITH32] << ",";
-  stats << mutation.stageCycles[STAGE_ARITH32] << ",";
-  stats << fuzzStat.stageFinds[STAGE_INTEREST8] << ",";
-  stats << mutation.stageCycles[STAGE_INTEREST8] << ",";
-  stats << fuzzStat.stageFinds[STAGE_INTEREST16] << ",";
-  stats << mutation.stageCycles[STAGE_INTEREST16] << ",";
-  stats << fuzzStat.stageFinds[STAGE_INTEREST32] << ",";
-  stats << mutation.stageCycles[STAGE_INTEREST32] << ",";
-  stats << fuzzStat.stageFinds[STAGE_EXTRAS_AO] << ",";
-  stats << mutation.stageCycles[STAGE_EXTRAS_AO] << ",";
-  stats << fuzzStat.stageFinds[STAGE_EXTRAS_UO] << ",";
-  stats << mutation.stageCycles[STAGE_EXTRAS_UO] << ",";
-  stats << fuzzStat.stageFinds[STAGE_HAVOC] << ",";
-  stats << mutation.stageCycles[STAGE_HAVOC] << ",";
-  stats << fuzzStat.maxdepth << ",";
-  stats << oracleResult.gaslessSend << ",";
-  stats << oracleResult.exceptionDisorder << ",";
-  stats << oracleResult.reentrancy << ",";
-  stats << oracleResult.timestampDependency << ",";
-  stats << oracleResult.blockNumDependency << ",";
-  stats << oracleResult.dangerDelegateCall << ",";
-  stats << oracleResult.freezingEther << ",";
-  stats << branches.size() << ",";
-  stats << (int) ((float) branches.size() / (fuzzStat.numJumpis * 2) * 100) << ",";
-  stats << mutation.stageCycles[STAGE_ORDER] << ",";
-  stats << predicates.size() << ",";
-  stats << fuzzStat.randomHavoc << ",";
-  stats << fuzzStat.heuristicHavoc << ",";
-  stats << oracleResult.integerOverflow << ",";
-  stats << oracleResult.integerUnderflow;
-  stats << endl;
+  stringstream ss;
+  pt::ptree root;
+  ofstream stats(contract.contractName + "/stats.json");
+  root.put("duration", timer.elapsed());
+  root.put("totalExecs", fuzzStat.totalExecs);
+  root.put("speed", (double) fuzzStat.totalExecs / timer.elapsed());
+  root.put("queueCycles", fuzzStat.queueCycle);
+  root.put("uniqExceptions", uniqExceptions.size());
+  pt::write_json(ss, root);
+  stats << ss.str() << endl;
   stats.close();
-  /* write test cases relationship here */
-  ofstream relationship(contract.contractName + "/relationships.txt", ofstream::app);
-  for (auto it : queues) {
-    relationship << it.stage + ", " + to_string(it.from) << endl;
-  }
-  relationship << "===" << endl;
-  relationship.close();
 }
 
-void Fuzzer::writeVulnerability(bytes data, string prefix) {
-  auto contract = mainContract();
-  ContractABI ca(contract.abiJson);
-  ca.updateTestData(data);
-  string ret = ca.toStandardJson();
-  ofstream test(contract.contractName + "/" + prefix + ".json");
-  test << ret;
-  test.close();
-}
-
-void Fuzzer::writeStorage(string data, string prefix) {
-  auto contract = mainContract();
-  fuzzStat.numStorage ++;
-  ofstream storage(contract.contractName + "/" + prefix + to_string(fuzzStat.numStorage) + "__.bin");
-  storage << data;
-  storage.close();
-}
-
-void Fuzzer::writeTestcase(bytes data, vector<bytes> outputs, map<h256, pair<u256, u256>> storage, unordered_map<Address, u256> addresses, vector<uint64_t> orders, string prefix) {
-  auto contract = mainContract();
-  ContractABI ca(contract.abiJson);
-  ca.updateTestData(data);
-  fuzzStat.numTest ++;
-  string ret = ca.toStandardJson();
-  // write decoded data
-  ofstream testFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
-  testFile << ret;
-  testFile.close();
-  // write full data
-  ofstream fullTest(contract.contractName + "/" + prefix + toString(fuzzStat.numTest) + "__.bin");
-  fullTest << toHex(data) << endl;
-  fullTest.close();
-  // write order
-  ofstream orderFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.order");
-  orderFile << orders << endl;
-  orderFile.close();
-  // write outputs
-  ofstream outFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.out");
-  for (auto it : outputs) {
-    outFile << toHex(it) << endl;
-  }
-  outFile.close();
-  // write addresses
-  ofstream addressFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.address");
-  for (auto it : addresses) {
-    addressFile << it.first << " : " << it.second << endl;
-  }
-  addressFile.close();
-  // write storage
-  ofstream storageFile(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.storage");
-  for (auto it : storage) {
-    storageFile << get<0>(it.second) << " : " << get<1>(it.second) << endl;
-  }
-  storageFile.close();
-}
-
-void Fuzzer::writeException(bytes data, string prefix) {
-  auto contract = mainContract();
-  ContractABI ca(contract.abiJson);
-  ca.updateTestData(data);
-  fuzzStat.numException ++;
-  string ret = ca.toStandardJson();
-  ofstream exp(contract.contractName + "/" + prefix + to_string(fuzzStat.numException) + "__.json");
-  exp << ret;
-  exp.close();
-}
-/*
- * - fuzzedCount < MAX_FUZZED_COUNT
- * - hasUncovered == true
- */
-bool Fuzzer::hasInterestingFuzzedCount() {
-  for (auto it : queues) {
-    if (it.fuzzedCount < MAX_FUZZED_COUNT) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void Fuzzer::updateAllScore() {
-  for (auto &it : queues) updateScore(it);
-}
-
-void Fuzzer::updateAllPredicates() {
-  predicates.clear();
-  for (auto it : queues) hasNewPredicates(it.res.predicates);
-}
-/* Calculate score */
-void Fuzzer::updateScore(FuzzItem& item) {
-  item.score.clear();
-  for (auto branch : predicates) {
-    u256 value = DEFAULT_SCORE;
-    if (item.res.predicates.count(branch) > 0) {
-      value = item.res.predicates[branch];
-    }
-    item.score.insert(pair<uint64_t, u256>(branch, value));
-  }
-}
 /* Save data if interest */
-FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth, string stageName) {
+FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>>& validJumpis) {
   auto revisedData = ContractABI::postprocessTestData(data);
-  FuzzItem item(revisedData, orders, totalFuncs);
-  item.res = te.exec(revisedData, orders);
+  FuzzItem item(revisedData);
+  item.res = te.exec(revisedData, validJumpis);
+  //Logger::debug(Logger::testFormat(item.data));
   fuzzStat.totalExecs ++;
-  if (hasNewBits(item.res.tracebits)) {
-    if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
-    item.depth = depth + 1;
-    item.isInteresting = true;
-    fuzzStat.lastNewPath = timer.elapsed();
-    fuzzStat.coveredTuples = tracebits.size();
-    writeTestcase(revisedData, item.res.outputs, item.res.storage, item.res.addresses, orders, "__TEST__");
-  };
-  if (hasNewExceptions(item.res.uniqExceptions)) {
-    writeException(revisedData, "__EXCEPTION__");
+  for (auto tracebit: item.res.tracebits) {
+    if (!tracebits.count(tracebit)) {
+      // Remove leader
+      auto lIt = find_if(leaders.begin(), leaders.end(), [=](const pair<string, Leader>& p) { return p.first == tracebit;});
+      if (lIt != leaders.end()) leaders.erase(lIt);
+      auto qIt = find_if(queues.begin(), queues.end(), [=](const string &s) { return s == tracebit; });
+      if (qIt == queues.end()) queues.push_back(tracebit);
+      // Insert leader
+      item.depth = depth + 1;
+      auto leader = Leader(item, 0);
+      leaders.insert(make_pair(tracebit, leader));
+      if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+      fuzzStat.lastNewPath = timer.elapsed();
+      Logger::debug("Cover new branch "  + tracebit);
+      Logger::debug(Logger::testFormat(item.data));
+    }
   }
-  hasNewBranches(item.res.branches);
-  hasNewPredicates(item.res.predicates);
-  /* New testcase */
-  if (item.isInteresting) {
-    /* update origin */
-    item.from = fuzzStat.idx;
-    item.stage = stageName;
-    /* update score */
-    queues.push_back(item);
-    updateAllPredicates(); /* must do before updating score */
-    updateAllScore();
+  for (auto predicateIt: item.res.predicates) {
+    auto lIt = find_if(leaders.begin(), leaders.end(), [=](const pair<string, Leader>& p) { return p.first == predicateIt.first;});
+    if (
+        lIt != leaders.end() // Found Leader
+        && lIt->second.comparisonValue > 0 // Not a covered branch
+        && lIt->second.comparisonValue > predicateIt.second // ComparisonValue is better
+    ) {
+      // Debug now
+      Logger::debug("Found better test case for uncovered branch " + predicateIt.first);
+      Logger::debug("prev: " + lIt->second.comparisonValue.str());
+      Logger::debug("now : " + predicateIt.second.str());
+      // Stop debug
+      leaders.erase(lIt); // Remove leader
+      item.depth = depth + 1;
+      auto leader = Leader(item, predicateIt.second);
+      leaders.insert(make_pair(predicateIt.first, leader)); // Insert leader
+      if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+      fuzzStat.lastNewPath = timer.elapsed();
+      Logger::debug(Logger::testFormat(item.data));
+    } else if (lIt == leaders.end()) {
+      auto leader = Leader(item, predicateIt.second);
+      item.depth = depth + 1;
+      leaders.insert(make_pair(predicateIt.first, leader)); // Insert leader
+      queues.push_back(predicateIt.first);
+      if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
+      fuzzStat.lastNewPath = timer.elapsed();
+      // Debug
+      Logger::debug("Found new uncovered branch");
+      Logger::debug("now: " + predicateIt.second.str());
+      Logger::debug(Logger::testFormat(item.data));
+    }
   }
-  updateScore(item);
+  updateExceptions(item.res.uniqExceptions);
+  updateTracebits(item.res.tracebits);
+  updatePredicates(item.res.predicates);
   return item;
+}
+
+/* Stop fuzzing */
+void Fuzzer::stop() {
+  Logger::debug("== TEST ==");
+  unordered_map<uint64_t, uint64_t> brs;
+  for (auto it : leaders) {
+    auto pc = stoi(splitString(it.first, ':')[0]);
+    // Covered
+    if (it.second.comparisonValue == 0) {
+      if (brs.find(pc) == brs.end()) {
+        brs[pc] = 1;
+      } else {
+        brs[pc] += 1;
+      }
+    }
+    Logger::debug("BR " + it.first);
+    Logger::debug("ComparisonValue " + it.second.comparisonValue.str());
+    Logger::debug(Logger::testFormat(it.second.item.data));
+  }
+  Logger::debug("== END TEST ==");
+  for (auto it : snippets) {
+    if (brs.find(it.first) == brs.end()) {
+      Logger::info(">> Unreachable");
+      Logger::info(it.second);
+    } else {
+      if (brs[it.first] == 1) {
+        Logger::info(">> Haft");
+        Logger::info(it.second);
+      } else {
+        Logger::info(">> Full");
+        Logger::info(it.second);
+      }
+    }
+  }
+  exit(1);
 }
 
 /* Start fuzzing */
 void Fuzzer::start() {
   TargetContainer container;
   Dictionary codeDict, addressDict;
-  unordered_map<u64, u64> showMap;
+  unordered_set<u64> showSet;
   for (auto contractInfo : fuzzParam.contractInfo) {
     auto isAttacker = contractInfo.contractName.find(fuzzParam.attackerName) != string::npos;
     if (!contractInfo.isMain && !isAttacker) continue;
     ContractABI ca(contractInfo.abiJson);
     auto bin = fromHex(contractInfo.bin);
+    auto binRuntime = fromHex(contractInfo.binRuntime);
+    // Accept only valid jumpis
     auto executive = container.loadContract(bin, ca);
     if (!contractInfo.isMain) {
       /* Load Attacker agent contract */
@@ -388,182 +266,201 @@ void Fuzzer::start() {
       boost::filesystem::remove_all(contractName);
       boost::filesystem::create_directory(contractName);
       codeDict.fromCode(bin);
-      staticAnalyze(bin, [&](Instruction inst) {
-        if (inst == Instruction::JUMPI) fuzzStat.numJumpis ++;
-      });
-      auto totalFuncs = ca.totalFuncs();
-      auto orders = FuzzItem::fixedOrders(totalFuncs);
-      saveIfInterest(executive, ca.randomTestcase(), orders, totalFuncs, 0, "INIT");
-      int origHitCount = queues.size();
-      while (true) {
-        FuzzItem curItem = queues[fuzzStat.idx];
+      auto bytecodeBranch = BytecodeBranch(contractInfo);
+      auto validJumpis = bytecodeBranch.findValidJumpis();
+      snippets = bytecodeBranch.snippets;
+      if (!(get<0>(validJumpis).size() + get<1>(validJumpis).size())) {
+        cout << "No valid jumpi" << endl;
+        stop();
+      }
+      saveIfInterest(executive, ca.randomTestcase(), 0, validJumpis);
+      int originHitCount = leaders.size();
+      // No branch
+      if (!originHitCount) {
+        cout << "No branch" << endl;
+        stop();
+      }
+      // There are uncovered branches or not
+      auto fi = [&](const pair<string, Leader> &p) { return p.second.comparisonValue != 0;};
+      auto numUncoveredBranches = count_if(leaders.begin(), leaders.end(), fi);
+      if (!numUncoveredBranches) {
+        auto curItem = (*leaders.begin()).second.item;
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
-        auto save = [&](bytes data, vector<uint64_t> orders) {
-          auto item = saveIfInterest(executive, data, orders, totalFuncs, curItem.depth, mutation.stageName);
-          /* Show every one second */
-          u64 dur = timer.elapsed();
-          if (!showMap.count(dur)) {
-            showMap.insert(make_pair(dur, 1));
-            if (fuzzParam.reporter == CSV_FILE) {
-              if (dur % fuzzParam.csvInterval == 0)
-                writeStats(mutation, container.oracleResult());
-            } else if (fuzzParam.reporter == TERMINAL) {
-              showStats(mutation, container.oracleResult());
-            }
-          }
-          /* Analyze every 1000 test cases */
-          if (!(fuzzStat.totalExecs % 500)) {
-            auto data = container.analyze();
-            for (auto it : data) {
-              writeVulnerability(get<1>(it), get<0>(it));
-            }
-          }
-          /* Stop program */
-          int speed = (int)(fuzzStat.totalExecs / timer.elapsed());
-          if (timer.elapsed() > fuzzParam.duration || speed <= 10) {
-            auto data = container.analyze();
-            for (auto it : data) {
-              writeVulnerability(get<1>(it), get<0>(it));
-            }
-            writeStats(mutation, container.oracleResult());
-            exit(0);
-          }
-          if (fuzzParam.storage > 0 && !(fuzzStat.totalExecs % fuzzParam.storage)) {
-            stringstream ss;
-            ss << mutation.stageName << endl;
-            for (auto it : item.res.storage) {
-              ss << it.first << " : " << endl;
-              ss << "  " << get<0>(it.second) << " : " <<  get<1>(it.second) << endl;
-            }
-            writeStorage(ss.str(), "__STORAGE__");
-          }
-          return item;
-        };
-        switch (fuzzParam.mode) {
-          case AFL: {
-            if (!curItem.fuzzedCount) {
-              mutation.singleWalkingBit(save);
-              fuzzStat.stageFinds[STAGE_FLIP1] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.twoWalkingBit(save);
-              fuzzStat.stageFinds[STAGE_FLIP2] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.fourWalkingBit(save);
-              fuzzStat.stageFinds[STAGE_FLIP4] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.singleWalkingByte(save);
-              fuzzStat.stageFinds[STAGE_FLIP8] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.twoWalkingByte(save);
-              fuzzStat.stageFinds[STAGE_FLIP16] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.fourWalkingByte(save);
-              fuzzStat.stageFinds[STAGE_FLIP32] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.singleArith(save);
-              fuzzStat.stageFinds[STAGE_ARITH8] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.twoArith(save);
-              fuzzStat.stageFinds[STAGE_ARITH16] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.fourArith(save);
-              fuzzStat.stageFinds[STAGE_ARITH32] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.singleInterest(save);
-              fuzzStat.stageFinds[STAGE_INTEREST8] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.twoInterest(save);
-              fuzzStat.stageFinds[STAGE_INTEREST16] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.fourInterest(save);
-              fuzzStat.stageFinds[STAGE_INTEREST32] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.overwriteWithDictionary(save);
-              fuzzStat.stageFinds[STAGE_EXTRAS_UO] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-
-              mutation.overwriteWithAddressDictionary(save);
-              fuzzStat.stageFinds[STAGE_EXTRAS_AO] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-              
-              mutation.havoc(save);
-              fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-              origHitCount = queues.size();
-            } else {
-              if (hasInterestingFuzzedCount()) {
-                if (curItem.fuzzedCount < MAX_FUZZED_COUNT) {
-                  mutation.havoc(save);
-                  queues[fuzzStat.idx].fuzzedCount ++;
-                  fuzzStat.randomHavoc = queues.size() - origHitCount;
-                  fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-                }
-              } else if(!predicates.size()) {
-                mutation.havoc(save);
-                queues[fuzzStat.idx].fuzzedCount ++;
-                fuzzStat.randomHavoc = queues.size() - origHitCount;
-                fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-              } else {
-                mutation.newHavoc(save);
-                queues[fuzzStat.idx].fuzzedCount ++;
-                fuzzStat.heuristicHavoc = queues.size() - origHitCount;
-                fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-              }
-              origHitCount = queues.size();
-
-              if (mutation.splice(queues)) {
-                mutation.havoc(save);
-                fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-                origHitCount = queues.size();
-              };
-            }
-            queues[fuzzStat.idx].fuzzedCount ++;
+        vulnerabilities = container.analyze();
+        switch (fuzzParam.reporter) {
+          case TERMINAL: {
+            showStats(mutation, validJumpis);
             break;
           }
-          case RANDOM: {
-            mutation.random(save);
-            fuzzStat.stageFinds[STAGE_RANDOM] += queues.size() - origHitCount;
-            origHitCount = queues.size();
-            queues[fuzzStat.idx].fuzzedCount ++;
+          case JSON: {
+            writeStats(mutation);
             break;
           }
-          case HAVOC_COMPLEX: {
-            if (hasInterestingFuzzedCount()) {
-              if (curItem.fuzzedCount < MAX_FUZZED_COUNT) {
-                mutation.havoc(save);
-                queues[fuzzStat.idx].fuzzedCount ++;
-              }
-            } else if (!predicates.size()) {
-              mutation.havoc(save);
-              queues[fuzzStat.idx].fuzzedCount ++;
-            } else {
-              mutation.newHavoc(save);
-              queues[fuzzStat.idx].fuzzedCount ++;
-            }
-            fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-            origHitCount = queues.size();
-            break;
-          }
-          case HAVOC_SIMPLE: {
-            mutation.havoc(save);
-            fuzzStat.stageFinds[STAGE_HAVOC] += queues.size() - origHitCount;
-            origHitCount = queues.size();
-            queues[fuzzStat.idx].fuzzedCount ++;
+          case BOTH: {
+            showStats(mutation, validJumpis);
+            writeStats(mutation);
             break;
           }
         }
-        fuzzStat.idx = (fuzzStat.idx + 1) % queues.size();
+        stop();
+      }
+      // Jump to fuzz loop
+      while (true) {
+        auto leaderIt = leaders.find(queues[fuzzStat.idx]);
+        auto curItem = leaderIt->second.item;
+        auto comparisonValue = leaderIt->second.comparisonValue;
+        if (comparisonValue != 0) {
+          Logger::debug(" == Leader ==");
+          Logger::debug("Branch \t\t\t\t " + leaderIt->first);
+          Logger::debug("Comp \t\t\t\t " + comparisonValue.str());
+          Logger::debug("Fuzzed \t\t\t\t " + to_string(curItem.fuzzedCount));
+          Logger::debug(Logger::testFormat(curItem.data));
+        }
+        Mutation mutation(curItem, make_tuple(codeDict, addressDict));
+        auto save = [&](bytes data) {
+          auto item = saveIfInterest(executive, data, curItem.depth, validJumpis);
+          /* Show every one second */
+          u64 duration = timer.elapsed();
+          if (!showSet.count(duration)) {
+            showSet.insert(duration);
+            if (duration % fuzzParam.analyzingInterval == 0) {
+              vulnerabilities = container.analyze();
+            }
+            switch (fuzzParam.reporter) {
+              case TERMINAL: {
+                showStats(mutation, validJumpis);
+                break;
+              }
+              case JSON: {
+                writeStats(mutation);
+                break;
+              }
+              case BOTH: {
+                showStats(mutation, validJumpis);
+                writeStats(mutation);
+                break;
+              }
+            }
+          }
+          /* Stop program */
+          u64 speed = (u64)(fuzzStat.totalExecs / timer.elapsed());
+          if (timer.elapsed() > fuzzParam.duration || speed <= 10 || !predicates.size()) {
+            vulnerabilities = container.analyze();
+            switch(fuzzParam.reporter) {
+              case TERMINAL: {
+                showStats(mutation, validJumpis);
+                break;
+              }
+              case JSON: {
+                writeStats(mutation);
+                break;
+              }
+              case BOTH: {
+                showStats(mutation, validJumpis);
+                writeStats(mutation);
+                break;
+              }
+            }
+            stop();
+          }
+          return item;
+        };
+        // If it is uncovered branch
+        if (comparisonValue != 0) {
+          // Haven't fuzzed before
+          if (!curItem.fuzzedCount) {
+            Logger::debug("SingleWalkingBit");
+            mutation.singleWalkingBit(save);
+            fuzzStat.stageFinds[STAGE_FLIP1] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+
+            Logger::debug("TwoWalkingBit");
+            mutation.twoWalkingBit(save);
+            fuzzStat.stageFinds[STAGE_FLIP2] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+
+            Logger::debug("FourWalkingBtit");
+            mutation.fourWalkingBit(save);
+            fuzzStat.stageFinds[STAGE_FLIP4] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+
+            Logger::debug("SingleWalkingByte");
+            mutation.singleWalkingByte(save);
+            fuzzStat.stageFinds[STAGE_FLIP8] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+
+            Logger::debug("TwoWalkingByte");
+            mutation.twoWalkingByte(save);
+            fuzzStat.stageFinds[STAGE_FLIP16] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+
+            Logger::debug("FourWalkingByte");
+            mutation.fourWalkingByte(save);
+            fuzzStat.stageFinds[STAGE_FLIP32] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+
+            //Logger::debug("SingleArith");
+            //mutation.singleArith(save);
+            //fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
+
+            //Logger::debug("TwoArith");
+            //mutation.twoArith(save);
+            //fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
+
+            //Logger::debug("FourArith");
+            //mutation.fourArith(save);
+            //fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
+
+            //Logger::debug("SingleInterest");
+            //mutation.singleInterest(save);
+            //fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
+
+            //Logger::debug("TwoInterest");
+            //mutation.twoInterest(save);
+            //fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
+
+            //Logger::debug("FourInterest");
+            //mutation.fourInterest(save);
+            //fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
+
+            //Logger::debug("overwriteDict");
+            //mutation.overwriteWithDictionary(save);
+            //fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - originHitCount;
+            //originHitCount = leaders.size();
+
+            Logger::debug("overwriteAddress");
+            mutation.overwriteWithAddressDictionary(save);
+            fuzzStat.stageFinds[STAGE_EXTRAS_AO] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+
+            Logger::debug("havoc");
+            mutation.havoc(save);
+            fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+          } else {
+            Logger::debug("havoc");
+            mutation.havoc(save);
+            fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
+            originHitCount = leaders.size();
+            Logger::debug("Splice");
+            vector<FuzzItem> items = {};
+            for (auto it : leaders) items.push_back(it.second.item);
+            if (mutation.splice(items)) {
+              Logger::debug("havoc");
+              mutation.havoc(save);
+              fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
+              originHitCount = leaders.size();
+            }
+          }
+        }
+        leaderIt->second.item.fuzzedCount += 1;
+        fuzzStat.idx = (fuzzStat.idx + 1) % leaders.size();
         if (fuzzStat.idx == 0) fuzzStat.queueCycle ++;
       }
     }

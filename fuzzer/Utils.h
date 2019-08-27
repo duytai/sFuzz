@@ -36,14 +36,51 @@ ContractInfo parseJson(string jsonFile, string contractName, bool isMain) {
   pt::ptree::path_type abiPath("contracts|"+ fullContractName +"|abi", '|');
   pt::ptree::path_type binPath("contracts|"+ fullContractName +"|bin", '|');
   pt::ptree::path_type binRuntimePath("contracts|" + fullContractName + "|bin-runtime", '|');
+  pt::ptree::path_type srcmapPath("contracts|" + fullContractName + "|srcmap", '|');
+  pt::ptree::path_type srcmapRuntimePath("contracts|" + fullContractName + "|srcmap-runtime", '|');
   ContractInfo contractInfo;
   contractInfo.isMain = isMain;
   contractInfo.abiJson = root.get<string>(abiPath);
   contractInfo.bin = root.get<string>(binPath);
-  contractInfo.binRuntime = root.get_child_optional(binRuntimePath) ? root.get<string>(binRuntimePath) : "";
+  contractInfo.binRuntime = root.get<string>(binRuntimePath);
+  contractInfo.srcmap = root.get<string>(srcmapPath);
+  contractInfo.srcmapRuntime = root.get<string>(srcmapRuntimePath);
   contractInfo.contractName = fullContractName;
+  for (auto it : root.get_child("sources")) {
+    auto ast = it.second.get_child("AST");
+    vector<pt::ptree> stack = {ast};
+    while (stack.size() > 0) {
+      auto item = stack[stack.size() - 1];
+      stack.pop_back();
+      if (item.get<string>("name") == "FunctionDefinition") {
+        if (item.get<bool>("attributes.constant")) {
+          contractInfo.constantFunctionSrcmap.push_back(item.get<string>("src"));
+        }
+      }
+      if (item.get_child_optional("children")) {
+        for (auto it : item.get_child("children")) {
+          stack.push_back(it.second);
+        }
+      }
+    }
+  }
   return contractInfo;
 }
+
+ContractInfo parseSource(string sourceFile, string jsonFile, string contractName, bool isMain) {
+  std::ifstream file(sourceFile);
+  if (!file.is_open()) {
+    stringstream output;
+    output << "[x] File " + jsonFile + " is not found" << endl;
+    cout << output.str();
+    exit(0);
+  }
+  auto contractInfo = parseJson(jsonFile, contractName, isMain);
+  std::string sourceContent((std::istreambuf_iterator<char>(file)),(std::istreambuf_iterator<char>()));
+  contractInfo.source = sourceContent;
+  return contractInfo;
+}
+
 
 string toContractName(directory_entry file) {
   string filePath = file.path().string();
@@ -70,33 +107,16 @@ string compileSolFiles(string folder) {
   forEachFile(folder, ".sol", [&](directory_entry file) {
     string filePath = file.path().string();
     ret << "solc";
-    ret << " --combined-json abi,bin,bin-runtime,srcmap,srcmap-runtime " + filePath;
+    ret << " --combined-json abi,bin,bin-runtime,srcmap,srcmap-runtime,ast " + filePath;
     ret << " > " + filePath + ".json";
     ret << endl;
   });
   return ret.str();
 }
 
-string fuzzJsonFiles(string contracts, string assets, int duration, int mode, int reporter, int logOption, string attackerName, int storageOption) {
+string fuzzJsonFiles(string contracts, string assets, int duration, int mode, int reporter, string attackerName) {
   stringstream ret;
-  /* search for json file */
   unordered_set<string> contractNames;
-  forEachFile(contracts, ".json", [&](directory_entry file) {
-    auto filePath = file.path().string();
-    auto contractName = toContractName(file);
-    contractNames.insert(contractName);
-    ret << "./fuzzer";
-    ret << " --file " + filePath;
-    ret << " --name " + contractName;
-    ret << " --assets " + assets;
-    ret << " --duration " + to_string(duration);
-    ret << " --mode " + to_string(mode);
-    ret << " --reporter " + to_string(reporter);
-    ret << " --log " + to_string(logOption);
-    ret << " --attacker " + attackerName;
-    ret << " --storage " + to_string(storageOption);
-    ret << endl;
-  });
   /* search for sol file */
   forEachFile(contracts, ".sol", [&](directory_entry file) {
     auto filePath = file.path().string();
@@ -104,14 +124,13 @@ string fuzzJsonFiles(string contracts, string assets, int duration, int mode, in
     if (contractNames.count(contractName)) return;
     ret << "./fuzzer";
     ret << " --file " + filePath + ".json";
+    ret << " --source " + filePath;
     ret << " --name " + contractName;
     ret << " --assets " + assets;
     ret << " --duration " + to_string(duration);
     ret << " --mode " + to_string(mode);
     ret << " --reporter " + to_string(reporter);
-    ret << " --log " + to_string(logOption);
     ret << " --attacker " + attackerName;
-    ret << " --storage " + to_string(storageOption);
     ret << endl;
   });
   return ret.str();

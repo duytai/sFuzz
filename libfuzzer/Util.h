@@ -47,29 +47,14 @@ namespace fuzzer {
   typedef int32_t  s32;
   typedef int64_t  s64;
   
-  static uint64_t MAX_FUZZED_COUNT = 20;
-  static u256 DEFAULT_SCORE = u256("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-  static u512 DEFAULT_MIN_SCORE = u512("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff");
-  static u160 DEFAULT_SENDER_ADDRESS = u160("0xffffffff");
-  static int REFRESH_RATE = 1000;
   static u256 MAX_GAS = 100000000000;
   static u160 ATTACKER_ADDRESS = 0xf0;
-  static string ATTACKER_ADDRESS_HEX = "00000000000000000000000000000000000000f0";
   static u160 CONTRACT_ADDRESS = 0xf1;
   static u256 DEFAULT_BALANCE = 0xffffffffff;
-  static bytes SET_DATA_SIG = fromHex("0399321e");
   static OnOpFunc EMPTY_ONOP = [](u64, u64, Instruction, bigint, bigint, bigint, VMFace const*, ExtVMFace const*) {};
 
   static u32 SPLICE_CYCLES = 15;
   static u32 MAX_DET_EXTRAS = 200;
-  static u32 HAVOC_BLK_XL = 640;
-  static u32 HAVOC_BLK_SMALL = 32;
-  static u32 HAVOC_BLK_MEDIUM = 128;
-  static u32 HAVOC_BLK_LARGE = 320;
-  static u32 MAX_FILE = (1024 * 100); // 100kb
-  static u32 MIN_AUTO_EXTRA = 3;
-  static u32 MAX_AUTO_EXTRA = 33;
-  static u32 MAX_AUTO_EXTRAS = 200;
   static int STAGE_FLIP1 = 0;
   static int STAGE_FLIP2 = 1;
   static int STAGE_FLIP4 = 2;
@@ -83,21 +68,12 @@ namespace fuzzer {
   static int STAGE_INTEREST16 = 10;
   static int STAGE_INTEREST32 = 11;
   static int STAGE_EXTRAS_UO = 12;
-  static int STAGE_EXTRAS_UI = 13;
   static int STAGE_EXTRAS_AO = 14;
   static int STAGE_HAVOC = 15;
   static int STAGE_RANDOM = 16;
-  static int STAGE_ORDER = 17;
   static int HAVOC_STACK_POW2 = 7;
-  static int HAVOC_CYCLES_INIT = 1024;
-  static int HAVOC_CYCLES = 256;
-  static int SPLICE_HAVOC = 32;
   static int HAVOC_MIN = 16;
-  static int EFF_MIN_LEN = 1;
   static int EFF_MAP_SCALE2 = 4; // 32 bytes block
-  static int MAP_SIZE_POW2 = 16;
-  static int MAP_SIZE = (1 << MAP_SIZE_POW2);
-  static int HASH_CONST = 0xa5b35705;
   static int ARITH_MAX = 35;
   static int EFF_MAX_PERC = 90;
   static s8 INTERESTING_8[] = { -128, -1, 0, 1, 16, 32, 64, 100, 127};
@@ -125,31 +101,9 @@ namespace fuzzer {
   void locateDiffs(byte* ptr1, byte* ptr2, u32 len, s32* first, s32* last);
   string formatDuration(int duration);
   string padStr(string str, int len);
-  bytes setVictimData(bytes data);
-  bytes u256ToBytes(u256 v);
-  bytes u512ToBytes(u512 v);
-  void printfWithColor(u256 value, string text);
   /* Data struct */
   struct ExtraData {
     bytes data;
   };
-  /* Static analyze */
-  void staticAnalyze(bytes code, function<void(Instruction)>);
-  template<typename TK, typename TV>
-  std::vector<TK> extract_keys(std::unordered_map<TK, TV> const& input_map) {
-    std::vector<TK> retval;
-    for (auto const& element : input_map) {
-      retval.push_back(element.first);
-    }
-    return retval;
-  }
-  
-  template<typename TK, typename TV>
-  std::vector<TV> extract_values(std::unordered_map<TK, TV> const& input_map) {
-    std::vector<TV> retval;
-    for (auto const& element : input_map) {
-      retval.push_back(element.second);
-    }
-    return retval;
-  }
+  vector<string> splitString(string str, char separator);
 }

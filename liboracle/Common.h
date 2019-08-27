@@ -7,59 +7,33 @@ using namespace dev;
 using namespace eth;
 using namespace std;
 
-namespace fuzzer {
-  struct CallLogItemPayload {
-    u256 wei = 0;
-    u256 gas = 0;
-    u256 pc = 0;
-    Instruction inst;
-    bytes data;
-    bytes testData;
-    Address caller;
-    Address callee;
-    bool isOverflow = false;
-    bool isUnderflow = false;
-    bool storageChanged = false;
-  };
+const uint8_t GASLESS_SEND = 0;
+const uint8_t EXCEPTION_DISORDER = 1;
+const uint8_t TIME_DEPENDENCY = 2;
+const uint8_t NUMBER_DEPENDENCY = 3;
+const uint8_t DELEGATE_CALL = 4;
+const uint8_t REENTRANCY = 5;
+const uint8_t FREEZING = 6;
+const uint8_t OVERFLOW = 7;
+const uint8_t UNDERFLOW = 8;
 
-  struct CallLogItem {
-    CallLogItemPayload payload;
-    u256 level;
-    CallLogItem(u256 _level, CallLogItemPayload _payload): payload(_payload), level(_level) {}
-  };
-  
-  struct OracleResult {
-    u256 gaslessSend = 0;
-    u256 exceptionDisorder = 0;
-    u256 timestampDependency = 0;
-    u256 blockNumDependency = 0;
-    u256 dangerDelegateCall = 0;
-    u256 reentrancy = 0;
-    u256 freezingEther = 0;
-    u256 integerOverflow = 0;
-    u256 integerUnderflow = 0;
-  };
-  
-  using CallLogs = vector<vector<CallLogItem>>;
-  using CallLog = vector<CallLogItem>;
-  
-  class Oracle {
-    protected:
-      bytes testData;
-      bool static hasEthTransfer(CallLog callLog) {
-        for (auto callLogItem : callLog) {
-          if (callLogItem.payload.wei > 0) return true;
-        }
-        return false;
-      }
-      bool static hasStorageChanged(CallLog callLog) {
-        return callLog[0].payload.storageChanged;
-      }
-      CallLogItem static getRootCall(CallLog callLog) {
-        return callLog[0];
-      }
-    public:
-      virtual bool analyze(CallLog callLog) = 0;
-      bytes getTestData() { return testData; }
-  };
-}
+struct OpcodePayload {
+  u256 wei = 0;
+  u256 gas = 0;
+  u256 pc = 0;
+  Instruction inst;
+  bytes data;
+  Address caller;
+  Address callee;
+  bool isOverflow = false;
+  bool isUnderflow = false;
+};
+
+struct OpcodeContext {
+  u256 level;
+  OpcodePayload payload;
+  OpcodeContext(u256 _level, OpcodePayload _payload): level(_level), payload(_payload) {}
+};
+
+using SingleFunction = vector<OpcodeContext>;
+using MultipleFunction = vector<SingleFunction>;

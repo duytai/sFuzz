@@ -12,68 +12,64 @@ using namespace eth;
 using namespace std;
 
 namespace fuzzer {
-  enum FuzzMode { RANDOM, AFL, HAVOC_COMPLEX, HAVOC_SIMPLE };
-  enum Reporter { TERMINAL, CSV_FILE };
+  enum FuzzMode { AFL };
+  enum Reporter { TERMINAL, JSON, BOTH };
   struct ContractInfo {
     string abiJson;
     string bin;
     string binRuntime;
     string contractName;
+    string srcmap;
+    string srcmapRuntime;
+    string source;
+    vector<string> constantFunctionSrcmap;
     bool isMain;
   };
   struct FuzzParam {
     vector<ContractInfo> contractInfo;
     FuzzMode mode;
     Reporter reporter;
-    bool log;
     int duration;
-    int csvInterval;
-    int storage;
+    int analyzingInterval;
     string attackerName;
   };
   struct FuzzStat {
     int idx = 0;
     uint64_t maxdepth = 0;
-    uint64_t randomHavoc = 0;
-    uint64_t heuristicHavoc = 0;
     bool clearScreen = false;
     int totalExecs = 0;
     int queueCycle = 0;
     int stageFinds[32];
-    int coveredTuples = 0;
     double lastNewPath = 0;
-    int numTest = 0;
-    int numException = 0;
-    int numJumpis = 0;
-    int numStorage = 0;
+  };
+  struct Leader {
+    FuzzItem item;
+    u256 comparisonValue = 0;
+    Leader(FuzzItem _item, u256 _comparisionValue): item(_item) {
+      comparisonValue = _comparisionValue;
+    }
   };
   class Fuzzer {
-    unordered_set<uint64_t> tracebits;
-    unordered_set<uint64_t> predicates;
-    unordered_set<uint64_t> branches;
-    vector<FuzzItem> queues;
-    unordered_map<string, unordered_set<u64>> uniqExceptions;
+    vector<bool> vulnerabilities;
+    vector<string> queues;
+    unordered_set<string> tracebits;
+    unordered_set<string> predicates;
+    unordered_map<string, Leader> leaders;
+    unordered_map<uint64_t, string> snippets;
+    unordered_set<string> uniqExceptions;
     Timer timer;
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
-    void writeStats(Mutation mutation, OracleResult oracleResult);
+    void writeStats(const Mutation &mutation);
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);
-      bool hasInterestingFuzzedCount();
-      bool hasNewBits(unordered_set<uint64_t> tracebits);
-      bool hasNewPredicates(unordered_map<uint64_t, u256> predicates);
-      bool hasNewBranches(unordered_set<uint64_t> branches);
-      bool hasNewExceptions(unordered_map<string, unordered_set<u64>> uniqExceptions);
-      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, vector<uint64_t> orders, uint64_t totalFuncs, uint64_t depth, string stageName);
+      FuzzItem saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis);
+      void showStats(const Mutation &mutation, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>> &validJumpis);
+      void updateTracebits(unordered_set<string> tracebits);
+      void updatePredicates(unordered_map<string, u256> predicates);
+      void updateExceptions(unordered_set<string> uniqExceptions);
       void start();
-      void writeStorage(string data, string prefix);
-      void writeTestcase(bytes data, vector<bytes> outputs, map<h256, pair<u256, u256>> storage, unordered_map<Address, u256> addresses, vector<uint64_t> orders, string prefix);
-      void writeException(bytes data, string prefix);
-      void writeVulnerability(bytes data, string prefix);
-      void showStats(Mutation mutation, OracleResult oracleResult);
-      void updateScore(FuzzItem &item);
-      void updateAllScore();
-      void updateAllPredicates();
+      void stop();
   };
 }

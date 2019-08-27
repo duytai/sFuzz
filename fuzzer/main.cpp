@@ -1,5 +1,4 @@
 #include <iostream>
-#include <vector>
 #include <libfuzzer/Fuzzer.h>
 #include "Utils.h"
 
@@ -8,10 +7,8 @@ using namespace fuzzer;
 
 static int DEFAULT_MODE = AFL;
 static int DEFAULT_DURATION = 120; // 2 mins
-static int DEFAULT_REPORTER = CSV_FILE;
-static int DEFAULT_CSV_INTERVAL = 5; // 5 sec
-static int DEFAULT_LOG_OPTION = 0;
-static int DEFAULT_STORAGE_OPTION = 0; // write storage file every 0 contracts
+static int DEFAULT_REPORTER = JSON;
+static int DEFAULT_ANALYZING_INTERVAL = 5; // 5 sec
 static string DEFAULT_CONTRACTS_FOLDER = "contracts/";
 static string DEFAULT_ASSETS_FOLDER = "assets/";
 static string DEFAULT_ATTACKER = "ReentrancyAttacker";
@@ -25,12 +22,11 @@ int main(int argc, char* argv[]) {
   int mode = DEFAULT_MODE;
   int duration = DEFAULT_DURATION;
   int reporter = DEFAULT_REPORTER;
-  int logOption = DEFAULT_LOG_OPTION;
-  int storageOption = DEFAULT_STORAGE_OPTION;
   string contractsFolder = DEFAULT_CONTRACTS_FOLDER;
   string assetsFolder = DEFAULT_ASSETS_FOLDER;
   string jsonFile = "";
   string contractName = "";
+  string sourceFile = "";
   string attackerName = DEFAULT_ATTACKER;
   po::options_description desc("Allowed options");
   po::variables_map vm;
@@ -42,12 +38,11 @@ int main(int argc, char* argv[]) {
     ("assets,a", po::value(&assetsFolder), "asset's folder path")
     ("file,f", po::value(&jsonFile), "fuzz a contract")
     ("name,n", po::value(&contractName), "contract name")
-    ("mode,m", po::value(&mode), "choose mode: 0 - Random | 1 - AFL ")
-    ("reporter,r", po::value(&reporter), "choose reporter: 0 - TERMINAL | 1 - CSV")
+    ("source,s", po::value(&sourceFile), "source file path")
+    ("mode,m", po::value(&mode), "choose mode: 0 - AFL ")
+    ("reporter,r", po::value(&reporter), "choose reporter: 0 - TERMINAL | 1 - JSON")
     ("duration,d", po::value(&duration), "fuzz duration")
-    ("log,l", po::value(&logOption), "write log: 0 - false | 1 - true")
-    ("storage,s", po::value(&storageOption), "1 storage file is written every how many contracts")
-    ("attacker", po::value(&attackerName), "default is ReentrancyAttacker");
+    ("attacker", po::value(&attackerName), "choose attacker: NormalAttacker | ReentrancyAttacker");
   po::store(po::parse_command_line(argc, argv, desc), vm);
   po::notify(vm);
   /* Show help message */
@@ -58,24 +53,22 @@ int main(int argc, char* argv[]) {
     fuzzMe << "#!/bin/bash" << endl;
     fuzzMe << compileSolFiles(contractsFolder);
     fuzzMe << compileSolFiles(assetsFolder);
-    fuzzMe << fuzzJsonFiles(contractsFolder, assetsFolder, duration, mode, reporter, logOption, attackerName, storageOption);
+    fuzzMe << fuzzJsonFiles(contractsFolder, assetsFolder, duration, mode, reporter, attackerName);
     fuzzMe.close();
     showGenerate();
     return 0;
   }
   /* Fuzz a single contract */
-  if (vm.count("file") && vm.count("name")) {
+  if (vm.count("file") && vm.count("name") && vm.count("source")) {
     FuzzParam fuzzParam;
     auto contractInfo = parseAssets(assetsFolder);
-    contractInfo.push_back(parseJson(jsonFile, contractName, true));
+    contractInfo.push_back(parseSource(sourceFile, jsonFile, contractName, true));
     fuzzParam.contractInfo = contractInfo;
     fuzzParam.mode = (FuzzMode) mode;
     fuzzParam.duration = duration;
     fuzzParam.reporter = (Reporter) reporter;
-    fuzzParam.csvInterval = DEFAULT_CSV_INTERVAL;
-    fuzzParam.log = logOption > 0;
+    fuzzParam.analyzingInterval = DEFAULT_ANALYZING_INTERVAL;
     fuzzParam.attackerName = attackerName;
-    fuzzParam.storage = storageOption;
     Fuzzer fuzzer(fuzzParam);
     cout << ">> Fuzz " << contractName << endl;
     fuzzer.start();

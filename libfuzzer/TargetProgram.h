@@ -30,7 +30,8 @@ namespace fuzzer {
       void deploy(Address addr, bytes code);
       void updateEnv(Accounts accounts, FakeBlock block);
       unordered_map<Address, u256> addresses();
-      void rollback();
+      size_t savepoint();
+      void rollback(size_t savepoint);
       ExecutionResult invoke(Address addr, ContractCall type, bytes data, bool payable, OnOpFunc onOp);
   };
 }

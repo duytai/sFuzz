@@ -289,6 +289,12 @@ namespace fuzzer {
       if (node.second.get_child_optional("constant")) {
         constant = node.second.get<string>("constant");
       }
+      if (type == "fallback") {
+        if (node.second.get_child_optional("payable")) {
+          payable = node.second.get<bool>("payable");
+        }
+        this->fds.push_back(FuncDef("fallback", tds, payable));
+      }
       if ((type == "constructor" || type == "function") && constant == "false") {
         auto inputNodes = node.second.get_child("inputs");
         string name = type == "constructor" ? "" : node.second.get<string>("name");

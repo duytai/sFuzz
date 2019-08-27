@@ -32,10 +32,6 @@ namespace fuzzer {
     return state.balance(addr);
   }
 
-  map<h256, pair<u256, u256>> TargetProgram::storage(Address const& addr) {
-    return state.storage(addr);
-  }
-
   void TargetProgram::deploy(Address addr, bytes code) {
     state.clearStorage(addr);
     state.setCode(addr, bytes{code});
@@ -94,12 +90,12 @@ namespace fuzzer {
     timestamp = get<2>(block);
   }
 
-  unordered_map<Address, u256> TargetProgram::addresses() {
-    return state.maddresses();
+  void TargetProgram::rollback(size_t savepoint) {
+    state.rollback(savepoint);
   }
 
-  void TargetProgram::rollback() {
-    state.rollback(0);
+  size_t TargetProgram::savepoint() {
+    return state.savepoint();
   }
   
   TargetProgram::~TargetProgram() {

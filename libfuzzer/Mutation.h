@@ -14,13 +14,16 @@ namespace fuzzer {
   class Mutation {
     FuzzItem curFuzzItem;
     Dicts dicts;
-    int effCount;
+    uint64_t effCount = 0;
     bytes eff;
     void flipbit(int pos);
     public:
+      uint64_t dataSize = 0;
+      uint64_t stageMax = 0;
+      uint64_t stageCur = 0;
+      string stageName = "";
+      static uint64_t stageCycles[32];
       Mutation(FuzzItem item, Dicts dicts);
-      vector<FuzzItem> mixCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb);
-      FuzzItem havocCallOrders(bytes data, vector<uint64_t> orders, OnMutateFunc cb);
       void singleWalkingBit(OnMutateFunc cb);
       void twoWalkingBit(OnMutateFunc cb);
       void fourWalkingBit(OnMutateFunc cb);
@@ -35,19 +38,8 @@ namespace fuzzer {
       void fourInterest(OnMutateFunc cb);
       void overwriteWithAddressDictionary(OnMutateFunc cb);
       void overwriteWithDictionary(OnMutateFunc cb);
-      void insertWithDictionary(OnMutateFunc cb);
-      void overwriteWithAutoDictionary(OnMutateFunc cb);
       void random(OnMutateFunc cb);
       void havoc(OnMutateFunc cb);
-      void newHavoc(OnMutateFunc cb);
       bool splice(vector<FuzzItem> items);
-      static void addCandidate(unordered_map<uint64_t, set<SubFuzzItem>>& candidates, FuzzItem& item, uint64_t stageCur);
-      static u512 minScore(unordered_map<uint64_t, set<SubFuzzItem>> candidates);
-      int dataSize;
-      int stageMax;
-      int stageCur;
-      string stageName;
-      string stageShort;
-      static int stageCycles[32];
   };
 }
