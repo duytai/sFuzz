@@ -41,6 +41,9 @@ namespace fuzzer {
     int queueCycle = 0;
     int stageFinds[32];
     double lastNewPath = 0;
+	int numTest = 0;
+    int numException = 0;
+    int numJumpis = 0;
   };
   struct Leader {
     FuzzItem item;
@@ -61,6 +64,9 @@ namespace fuzzer {
     FuzzParam fuzzParam;
     FuzzStat fuzzStat;
     void writeStats(const Mutation &mutation);
+	void writeVulnerability(bytes data, string prefix);
+	void writeTestcase(bytes data, string prefix);
+	void writeException(bytes data, string prefix);
     ContractInfo mainContract();
     public:
       Fuzzer(FuzzParam fuzzParam);

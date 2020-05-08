@@ -4,7 +4,6 @@
 #include "Util.h"
 #include "ContractABI.h"
 #include "Dictionary.h"
-#include "Logger.h"
 #include "BytecodeBranch.h"
 
 using namespace dev;
@@ -144,12 +143,38 @@ void Fuzzer::writeStats(const Mutation &mutation) {
   stats.close();
 }
 
+void Fuzzer::writeTestcase(bytes data, string prefix) {
+  auto contract = mainContract();
+  ContractABI ca(contract.abiJson);
+  ca.updateTestData(data);
+  fuzzStat.numTest ++;
+  string ret = ca.toStandardJson();
+  // write decoded data
+  ofstream test(contract.contractName + "/" + prefix + to_string(fuzzStat.numTest) + "__.json");
+  test << ret;
+  test.close();
+  // write full data
+  ofstream fullTest(contract.contractName + "/" + prefix + toString(fuzzStat.numTest) + "__.bin");
+  fullTest << toHex(data) << endl;
+  fullTest.close();
+}
+
+void Fuzzer::writeException(bytes data, string prefix) {
+  auto contract = mainContract();
+  ContractABI ca(contract.abiJson);
+  ca.updateTestData(data);
+  fuzzStat.numException ++;
+  string ret = ca.toStandardJson();
+  ofstream exp(contract.contractName + "/" + prefix + to_string(fuzzStat.numException) + "__.json");
+  exp << ret;
+  exp.close();
+}
+
 /* Save data if interest */
 FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth, const tuple<unordered_set<uint64_t>, unordered_set<uint64_t>>& validJumpis) {
   auto revisedData = ContractABI::postprocessTestData(data);
   FuzzItem item(revisedData);
   item.res = te.exec(revisedData, validJumpis);
-  //Logger::debug(Logger::testFormat(item.data));
   fuzzStat.totalExecs ++;
   for (auto tracebit: item.res.tracebits) {
     if (!tracebits.count(tracebit)) {
@@ -164,8 +189,7 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
       leaders.insert(make_pair(tracebit, leader));
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
       fuzzStat.lastNewPath = timer.elapsed();
-      Logger::debug("Cover new branch "  + tracebit);
-      Logger::debug(Logger::testFormat(item.data));
+	  writeTestcase(revisedData, "__TEST__");
     }
   }
   for (auto predicateIt: item.res.predicates) {
@@ -175,18 +199,12 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
         && lIt->second.comparisonValue > 0 // Not a covered branch
         && lIt->second.comparisonValue > predicateIt.second // ComparisonValue is better
     ) {
-      // Debug now
-      Logger::debug("Found better test case for uncovered branch " + predicateIt.first);
-      Logger::debug("prev: " + lIt->second.comparisonValue.str());
-      Logger::debug("now : " + predicateIt.second.str());
-      // Stop debug
       leaders.erase(lIt); // Remove leader
       item.depth = depth + 1;
       auto leader = Leader(item, predicateIt.second);
       leaders.insert(make_pair(predicateIt.first, leader)); // Insert leader
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
       fuzzStat.lastNewPath = timer.elapsed();
-      Logger::debug(Logger::testFormat(item.data));
     } else if (lIt == leaders.end()) {
       auto leader = Leader(item, predicateIt.second);
       item.depth = depth + 1;
@@ -194,52 +212,12 @@ FuzzItem Fuzzer::saveIfInterest(TargetExecutive& te, bytes data, uint64_t depth,
       queues.push_back(predicateIt.first);
       if (depth + 1 > fuzzStat.maxdepth) fuzzStat.maxdepth = depth + 1;
       fuzzStat.lastNewPath = timer.elapsed();
-      // Debug
-      Logger::debug("Found new uncovered branch");
-      Logger::debug("now: " + predicateIt.second.str());
-      Logger::debug(Logger::testFormat(item.data));
     }
   }
   updateExceptions(item.res.uniqExceptions);
   updateTracebits(item.res.tracebits);
   updatePredicates(item.res.predicates);
   return item;
-}
-
-/* Stop fuzzing */
-void Fuzzer::stop() {
-  Logger::debug("== TEST ==");
-  unordered_map<uint64_t, uint64_t> brs;
-  for (auto it : leaders) {
-    auto pc = stoi(splitString(it.first, ':')[0]);
-    // Covered
-    if (it.second.comparisonValue == 0) {
-      if (brs.find(pc) == brs.end()) {
-        brs[pc] = 1;
-      } else {
-        brs[pc] += 1;
-      }
-    }
-    Logger::debug("BR " + it.first);
-    Logger::debug("ComparisonValue " + it.second.comparisonValue.str());
-    Logger::debug(Logger::testFormat(it.second.item.data));
-  }
-  Logger::debug("== END TEST ==");
-  for (auto it : snippets) {
-    if (brs.find(it.first) == brs.end()) {
-      Logger::info(">> Unreachable");
-      Logger::info(it.second);
-    } else {
-      if (brs[it.first] == 1) {
-        Logger::info(">> Haft");
-        Logger::info(it.second);
-      } else {
-        Logger::info(">> Full");
-        Logger::info(it.second);
-      }
-    }
-  }
-  exit(1);
 }
 
 /* Start fuzzing */
@@ -271,14 +249,14 @@ void Fuzzer::start() {
       snippets = bytecodeBranch.snippets;
       if (!(get<0>(validJumpis).size() + get<1>(validJumpis).size())) {
         cout << "No valid jumpi" << endl;
-        stop();
+		exit(0);
       }
       saveIfInterest(executive, ca.randomTestcase(), 0, validJumpis);
       int originHitCount = leaders.size();
       // No branch
       if (!originHitCount) {
         cout << "No branch" << endl;
-        stop();
+		exit(0);
       }
       // There are uncovered branches or not
       auto fi = [&](const pair<string, Leader> &p) { return p.second.comparisonValue != 0;};
@@ -302,20 +280,13 @@ void Fuzzer::start() {
             break;
           }
         }
-        stop();
+		exit(0);
       }
       // Jump to fuzz loop
       while (true) {
         auto leaderIt = leaders.find(queues[fuzzStat.idx]);
         auto curItem = leaderIt->second.item;
         auto comparisonValue = leaderIt->second.comparisonValue;
-        if (comparisonValue != 0) {
-          Logger::debug(" == Leader ==");
-          Logger::debug("Branch \t\t\t\t " + leaderIt->first);
-          Logger::debug("Comp \t\t\t\t " + comparisonValue.str());
-          Logger::debug("Fuzzed \t\t\t\t " + to_string(curItem.fuzzedCount));
-          Logger::debug(Logger::testFormat(curItem.data));
-        }
         Mutation mutation(curItem, make_tuple(codeDict, addressDict));
         auto save = [&](bytes data) {
           auto item = saveIfInterest(executive, data, curItem.depth, validJumpis);
@@ -361,7 +332,7 @@ void Fuzzer::start() {
                 break;
               }
             }
-            stop();
+			exit(0);
           }
           return item;
         };
@@ -369,90 +340,72 @@ void Fuzzer::start() {
         if (comparisonValue != 0) {
           // Haven't fuzzed before
           if (!curItem.fuzzedCount) {
-            Logger::debug("SingleWalkingBit");
             mutation.singleWalkingBit(save);
             fuzzStat.stageFinds[STAGE_FLIP1] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            Logger::debug("TwoWalkingBit");
             mutation.twoWalkingBit(save);
             fuzzStat.stageFinds[STAGE_FLIP2] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            Logger::debug("FourWalkingBtit");
             mutation.fourWalkingBit(save);
             fuzzStat.stageFinds[STAGE_FLIP4] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            Logger::debug("SingleWalkingByte");
             mutation.singleWalkingByte(save);
             fuzzStat.stageFinds[STAGE_FLIP8] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            Logger::debug("TwoWalkingByte");
             mutation.twoWalkingByte(save);
             fuzzStat.stageFinds[STAGE_FLIP16] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            Logger::debug("FourWalkingByte");
             mutation.fourWalkingByte(save);
             fuzzStat.stageFinds[STAGE_FLIP32] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            //Logger::debug("SingleArith");
-            //mutation.singleArith(save);
-            //fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - originHitCount;
-            //originHitCount = leaders.size();
+			mutation.singleArith(save);
+			fuzzStat.stageFinds[STAGE_ARITH8] += leaders.size() - originHitCount;
+			originHitCount = leaders.size();
 
-            //Logger::debug("TwoArith");
-            //mutation.twoArith(save);
-            //fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - originHitCount;
-            //originHitCount = leaders.size();
+			mutation.twoArith(save);
+			fuzzStat.stageFinds[STAGE_ARITH16] += leaders.size() - originHitCount;
+			originHitCount = leaders.size();
 
-            //Logger::debug("FourArith");
-            //mutation.fourArith(save);
-            //fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - originHitCount;
-            //originHitCount = leaders.size();
+			mutation.fourArith(save);
+			fuzzStat.stageFinds[STAGE_ARITH32] += leaders.size() - originHitCount;
+			originHitCount = leaders.size();
 
-            //Logger::debug("SingleInterest");
-            //mutation.singleInterest(save);
-            //fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - originHitCount;
-            //originHitCount = leaders.size();
+			mutation.singleInterest(save);
+			fuzzStat.stageFinds[STAGE_INTEREST8] += leaders.size() - originHitCount;
+			originHitCount = leaders.size();
 
-            //Logger::debug("TwoInterest");
-            //mutation.twoInterest(save);
-            //fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - originHitCount;
-            //originHitCount = leaders.size();
+			mutation.twoInterest(save);
+			fuzzStat.stageFinds[STAGE_INTEREST16] += leaders.size() - originHitCount;
+			originHitCount = leaders.size();
 
-            //Logger::debug("FourInterest");
-            //mutation.fourInterest(save);
-            //fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - originHitCount;
-            //originHitCount = leaders.size();
+			mutation.fourInterest(save);
+			fuzzStat.stageFinds[STAGE_INTEREST32] += leaders.size() - originHitCount;
+			originHitCount = leaders.size();
 
-            //Logger::debug("overwriteDict");
-            //mutation.overwriteWithDictionary(save);
-            //fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - originHitCount;
-            //originHitCount = leaders.size();
+			mutation.overwriteWithDictionary(save);
+			fuzzStat.stageFinds[STAGE_EXTRAS_UO] += leaders.size() - originHitCount;
+			originHitCount = leaders.size();
 
-            Logger::debug("overwriteAddress");
             mutation.overwriteWithAddressDictionary(save);
             fuzzStat.stageFinds[STAGE_EXTRAS_AO] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
 
-            Logger::debug("havoc");
             mutation.havoc(save);
             fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
           } else {
-            Logger::debug("havoc");
             mutation.havoc(save);
             fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
             originHitCount = leaders.size();
-            Logger::debug("Splice");
             vector<FuzzItem> items = {};
             for (auto it : leaders) items.push_back(it.second.item);
             if (mutation.splice(items)) {
-              Logger::debug("havoc");
               mutation.havoc(save);
               fuzzStat.stageFinds[STAGE_HAVOC] += leaders.size() - originHitCount;
               originHitCount = leaders.size();

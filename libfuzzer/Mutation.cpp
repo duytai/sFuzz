@@ -3,7 +3,6 @@
 #include "Dictionary.h"
 #include "Util.h"
 #include "FuzzItem.h"
-#include "Logger.h"
 
 using namespace std;
 using namespace fuzzer;

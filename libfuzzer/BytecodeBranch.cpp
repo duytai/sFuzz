@@ -1,5 +1,4 @@
 #include "BytecodeBranch.h"
-#include "Logger.h"
 #include "Util.h"
 
 namespace fuzzer {
@@ -33,7 +32,6 @@ namespace fuzzer {
             || boost::starts_with(snippet, "require")
             || boost::starts_with(snippet, "assert")
           ) {
-            Logger::info("----");
             for (auto candidate : candidates) {
               if (get<0>(candidate) > offset && get<0>(candidate) + get<1>(candidate) < offset + len) {
                 auto candidateSnippet = contractInfo.source.substr(get<0>(candidate), get<1>(candidate));
@@ -42,14 +40,11 @@ namespace fuzzer {
                       && get<0>(candidate) + get<1>(candidate) <= get<0>(j) + get<1>(j);
                 });
                 if (!numConstant) {
-                  Logger::info(candidateSnippet);
                   if (isRuntime) {
                     runtimeJumpis.insert(get<2>(candidate));
-                    Logger::info("pc: " + to_string(get<2>(candidate)));
                     snippets.insert(make_pair(get<2>(candidate), candidateSnippet));
                   } else {
                     deploymentJumpis.insert(get<2>(candidate));
-                    Logger::info("pc: " + to_string(get<2>(candidate)));
                     snippets.insert(make_pair(get<2>(candidate), candidateSnippet));
                   }
                 }
@@ -60,14 +55,11 @@ namespace fuzzer {
                      && offset + len <= get<0>(j) + get<1>(j);
             });
             if (!numConstant) {
-              Logger::info(contractInfo.source.substr(offset, len));
               if (isRuntime) {
                 runtimeJumpis.insert(get<0>(opcodes[i]));
-                Logger::info("pc: " + to_string(get<0>(opcodes[i])));
                 snippets.insert(make_pair(get<0>(opcodes[i]), snippet));
               } else {
                 deploymentJumpis.insert(get<0>(opcodes[i]));
-                Logger::info("pc: " + to_string(get<0>(opcodes[i])));
                 snippets.insert(make_pair(get<0>(opcodes[i]), snippet));
               }
             }

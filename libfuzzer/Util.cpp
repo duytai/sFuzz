@@ -1,5 +1,4 @@
 #include "Util.h"
-#include "Logger.h"
 
 namespace fuzzer {
   u32 UR(u32 limit) {
