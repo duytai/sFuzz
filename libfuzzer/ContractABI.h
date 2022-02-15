@@ -44,6 +44,8 @@ namespace fuzzer {
     string name;
     bool payable;
     vector<TypeDef> tds;
+    uint32_t selector;
+    bytes selectorBytes;
     FuncDef(){};
     FuncDef(string name, vector<TypeDef> tds, bool payable);
   };
@@ -52,13 +54,20 @@ namespace fuzzer {
     vector<bytes> accounts;
     bytes block;
     public:
+      int constructorIdx = -1;
+      int totalFuncsNum;
       vector<FuncDef> fds;
+      unordered_map<uint32_t, size_t> funcIdxs;
       ContractABI(){};
       ContractABI(string abiJson);
+      /* get Ith FuncDef except for constructor*/
+      int ithFuncDefIndex(int i);
       /* encoded ABI of contract constructor */
       bytes encodeConstructor();
       /* encoded ABI of contract functions */
       vector<bytes> encodeFunctions();
+      /* encoded contract functions with given data and order */
+      vector<bytes> encodeFunctions(bytes data, vector<size_t> order);
       /* Create random testcase for fuzzer */
       bytes randomTestcase();
       /* Update then call encodeConstructor/encodeFunction to feed to evm */
@@ -74,7 +83,8 @@ namespace fuzzer {
       static bytes encode2DArray(vector<vector<DataType>> dtss, bool isDynamic, bool isSubDynamic);
       static bytes encodeArray(vector<DataType> dts, bool isDynamicArray);
       static bytes encodeSingle(DataType dt);
-      static bytes functionSelector(string name, vector<TypeDef> tds);
       static bytes postprocessTestData(bytes data);
-  };
+  }; 
+  static bytes functionSelector(string name, vector<TypeDef> tds);
+      
 }

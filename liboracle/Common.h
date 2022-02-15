@@ -14,8 +14,8 @@ const uint8_t NUMBER_DEPENDENCY = 3;
 const uint8_t DELEGATE_CALL = 4;
 const uint8_t REENTRANCY = 5;
 const uint8_t FREEZING = 6;
-const uint8_t OVERFLOW = 7;
-const uint8_t UNDERFLOW = 8;
+const uint8_t ORACLE_OVERFLOW = 7;
+const uint8_t ORACLE_UNDERFLOW = 8;
 
 struct OpcodePayload {
   u256 wei = 0;

@@ -122,7 +122,7 @@ string fuzzJsonFiles(string contracts, string assets, int duration, int mode, in
     auto filePath = file.path().string();
     auto contractName = toContractName(file);
     if (contractNames.count(contractName)) return;
-    ret << "./fuzzer";
+    ret << "timeout 603s ./fuzzer";
     ret << " --file " + filePath + ".json";
     ret << " --source " + filePath;
     ret << " --name " + contractName;

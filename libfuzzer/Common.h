@@ -1,5 +1,6 @@
 #include <iostream>
 #include <functional>
+#include <ctime>
 #include <libdevcore/Common.h>
 #include <libdevcore/CommonIO.h>
 #include <libevm/Instruction.h>
