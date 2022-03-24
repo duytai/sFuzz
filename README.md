@@ -5,7 +5,7 @@
 Git and GitHub are used to maintain the source code. Clone the repository by:
 
 ```shell
-git clone --recursive git clone --recursive https://github.com/duytai/sFuzz
+git clone --recursive https://github.com/duytai/sFuzz
 cd aleth
 ```
 
