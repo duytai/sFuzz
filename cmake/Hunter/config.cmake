@@ -17,4 +17,9 @@ hunter_config(
     HTTP_CLIENT=NO
 )
 
-hunter_config(Boost VERSION 1.65.1)
+HunterGate(
+    Boost
+    VERSION "1.65.1"
+    SHA1 "c066ac5c2f42fa2b870362c3c931ef73ffc6f24f"
+    URL "https://boostorg.jfrog.io/artifactory/main/release/1.65.1/source/boost_1_65_1.tar.gz"
+  )
